@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git --version)",
+      "Bash(Get-ChildItem -Path \"D:\\\\projects\\\\asteroids\" -Recurse -Force)",
+      "Bash(Select-Object FullName, Length)",
+      "Bash(Get-ChildItem -Path \"D:\\\\projects\\\\asteroids\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "WebFetch(domain:stuettgen.eu)",
+      "WebSearch"
+    ]
+  }
+}
