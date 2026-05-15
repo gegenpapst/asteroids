@@ -13,7 +13,21 @@ Controls:
 
 ## Architecture
 
-All game logic lives in `game.js` (~500 lines, vanilla JS + Canvas 2D). `index.html` loads it as a plain `<script>`. `style.css` handles layout only.
+Game logic is split across `src/` (vanilla JS + Canvas 2D). `index.html` loads each file as a plain `<script>` in dependency order. `style.css` handles layout only.
+
+| File | Role |
+|---|---|
+| `src/Globals.js` | Constants, utility functions, `Input` singleton, background/star data |
+| `src/Game.js` | State machine, game loop, collision detection, HUD |
+| `src/main.js` | Entry point — `Input.init()`, `new Game()`, `requestAnimationFrame` loop |
+| `src/entities/Ship.js` | Player ship — movement, firing, power-up timers |
+| `src/entities/Asteroid.js` | Destructible rocks — splitting on hit |
+| `src/entities/Bullet.js` | Player projectile |
+| `src/entities/UfoBullet.js` | UFO projectile (red, slightly slower) |
+| `src/entities/Particle.js` | Explosion / thrust trail sparks |
+| `src/entities/PowerUp.js` | Collectible pickups (`shield`, `rapid`, `spread`) |
+| `src/entities/Ufo.js` | Enemy saucer — sinusoidal movement, fires at ship |
+| `src/entities/Sound.js` | Web Audio API wrapper — procedural sounds, no files |
 
 ### Game state machine
 
@@ -31,7 +45,24 @@ Every entity follows the same contract:
 - `draw()` — renders to `ctx`; reads from module-level `canvas`/`ctx` globals
 - `radius` getter — used for circular collision detection
 
-Active entities live in `Game` arrays (`bullets`, `asteroids`, `particles`). Each frame they are filtered with `.filter(e => e.update(dt))` and then iterated for draw. The ship is a single nullable field (`this.ship`).
+Active entities live in `Game` arrays: `bullets`, `asteroids`, `particles`, `powerups`, `ufos`, `ufoBullets`. Each frame they are filtered with `.filter(e => e.update(dt))` and then iterated for draw. The ship is a single nullable field (`this.ship`).
+
+### Power-ups
+
+`PowerUp` has three types: `shield` (cyan hexagon), `rapid` (orange arrows), `spread` (yellow rays).
+Spawns at asteroid destruction with 12 % probability (`POWERUP_SPAWN_CHANCE`).
+Drifts slowly, rotates, expires after 8 s. On collection, sets the matching timer on `Ship`
+(`shieldTimer`, `rapidTimer`, `spreadTimer`) to `POWERUP_DURATION` (5 s).
+HUD shows a colour-coded drain bar per active power-up (bottom-right).
+
+### UFO
+
+`Ufo` has two sizes: large (size 0, red, 200 pts) and small (size 1, green, 1000 pts).
+Enters from a random edge, travels horizontally with sinusoidal vertical oscillation.
+Fires every 1.2–2.5 s; small UFOs aim at the ship (±0.26 rad spread), large ones fire randomly.
+Bullets are `UfoBullet` instances (red, radius 3, `BULLET_SPEED * 0.75`).
+A new UFO spawns every 25–40 s; at score ≥ 5000 there is a 40 % chance of the small variant.
+UFOs persist across level transitions; the UFO hum sound plays as long as any UFO is alive.
 
 ### Input system
 
@@ -43,7 +74,7 @@ All movement is Euler integration: `pos += vel * dt`. Screen wrapping uses `wrap
 
 ### Tuning constants
 
-All balance/physics values are declared at the top of `game.js`:
+All balance/physics values are declared in `src/Globals.js`:
 
 | Constant | What it controls |
 |---|---|
@@ -53,6 +84,8 @@ All balance/physics values are declared at the top of `game.js`:
 | `ASTEROID_RADIUS`, `ASTEROID_SPEED`, `ASTEROID_SCORE` | Asteroid balance (indexed by size 0–2) |
 | `INITIAL_ROCKS`, `MAX_ROCKS_PER_LEVEL` | Difficulty ramp |
 | `EXTRA_LIFE_SCORE` | Bonus life threshold |
+| `UFO_RADIUS`, `UFO_SPEED`, `UFO_SCORE` | UFO size/speed/points (indexed by size 0–1) |
+| `POWERUP_DURATION`, `POWERUP_SPAWN_CHANCE`, `POWERUP_TYPES` | Power-up balance |
 
 ### Audio
 
