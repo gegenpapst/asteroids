@@ -73,20 +73,21 @@ class Ship {
 
     canFire() { return this.fireTimer <= 0 && Input.fire(); }
 
-    fire() {
+    fire(bulletLife = BULLET_LIFE) {
         this.fireTimer = this.rapidTimer > 0 ? FIRE_RATE / 2 : FIRE_RATE;
         const tx = this.x + Math.cos(this.angle) * SHIP_SIZE;
         const ty = this.y + Math.sin(this.angle) * SHIP_SIZE;
         if (this.spreadTimer > 0) {
             return [
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle - 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle - 0.26) * BULLET_SPEED),
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle)         * BULLET_SPEED, this.vy + Math.sin(this.angle)         * BULLET_SPEED),
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle + 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle + 0.26) * BULLET_SPEED),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle - 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle - 0.26) * BULLET_SPEED, bulletLife),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle)         * BULLET_SPEED, this.vy + Math.sin(this.angle)         * BULLET_SPEED, bulletLife),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle + 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle + 0.26) * BULLET_SPEED, bulletLife),
             ];
         }
         return [new Bullet(tx, ty,
             this.vx + Math.cos(this.angle) * BULLET_SPEED,
             this.vy + Math.sin(this.angle) * BULLET_SPEED,
+            bulletLife,
         )];
     }
 

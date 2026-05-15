@@ -1,7 +1,7 @@
 'use strict';
 
 // ─── Game ────────────────────────────────────────────────────────────────────
-const STATE = Object.freeze({ START: 0, PLAYING: 1, DEAD: 2, GAMEOVER: 3, HELP: 4 });
+const STATE = Object.freeze({ START: 0, PLAYING: 1, DEAD: 2, GAMEOVER: 3, HELP: 4, CONFIG: 5 });
 
 class Game {
     constructor() {
@@ -32,6 +32,9 @@ class Game {
         this.beatTimer    = 1.0;
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
+
+        this.config = { bulletRange: 2, powerupFreq: 2 };
+        this._configCursor = 0;
 
         this._rockCanvas = Object.assign(document.createElement('canvas'), { width: W, height: H });
     }
@@ -77,8 +80,26 @@ class Game {
             return;
         }
 
+        if (this.state === STATE.CONFIG) {
+            const params = ['bulletRange', 'powerupFreq'];
+            if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
+            if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
+            const key = params[this._configCursor];
+            if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
+            if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(3, this.config[key] + 1);
+            if (Input.config() || Input.wasPressed('Escape')) this.state = STATE.PLAYING;
+            Input.flush();
+            return;
+        }
+
         if (this.state === STATE.PLAYING && Input.help()) {
             this.state = STATE.HELP;
+            Input.flush();
+            return;
+        }
+
+        if (this.state === STATE.PLAYING && Input.config()) {
+            this.state = STATE.CONFIG;
             Input.flush();
             return;
         }
@@ -150,7 +171,7 @@ class Game {
         }
 
         if (this.bullets.length < MAX_BULLETS && this.ship.canFire()) {
-            this.bullets.push(...this.ship.fire());
+            this.bullets.push(...this.ship.fire(this._bulletLife));
             this.snd.shoot();
         }
 
@@ -177,7 +198,7 @@ class Game {
                 if (dist(b, a) < a.radius + b.radius) {
                     this._addScore(a.score);
                     this._boom(a.x, a.y, a.size);
-                    if (Math.random() < POWERUP_SPAWN_CHANCE)
+                    if (Math.random() < this._powerupChance)
                         this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 2)]));
                     const children = a.split();
                     Matter.World.remove(this.engine.world, a.body);
@@ -316,8 +337,9 @@ class Game {
         }
         ctx.globalAlpha = 1;
 
-        if (this.state === STATE.START) { this._drawStart(); return; }
-        if (this.state === STATE.HELP)  { this._drawHelp();  return; }
+        if (this.state === STATE.START)  { this._drawStart();  return; }
+        if (this.state === STATE.HELP)   { this._drawHelp();   return; }
+        if (this.state === STATE.CONFIG) { this._drawConfig(); return; }
 
         this._drawRocks();
         this.asteroids.forEach(a => a.draw());
@@ -498,6 +520,70 @@ class Game {
         }
     }
 
+    get _bulletLife()    { return [0.35, 0.65, 1.0][this.config.bulletRange  - 1]; }
+    get _powerupChance() { return [0.05, 0.12, 0.25][this.config.powerupFreq - 1]; }
+
+    _drawConfig() {
+        const cx = W / 2, cy = H / 2;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.82)';
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.textAlign   = 'center';
+        ctx.shadowColor = '#4af';
+        ctx.shadowBlur  = 24;
+        ctx.fillStyle   = '#fff';
+        ctx.font        = 'bold 36px monospace';
+        ctx.fillText('KONFIGURATION', cx, cy - 130);
+        ctx.shadowBlur  = 0;
+
+        const params = [
+            { key: 'bulletRange',  label: 'Reichweite Schüsse', opts: ['kurz', 'normal', 'weit'] },
+            { key: 'powerupFreq',  label: 'Häufigkeit Powerups', opts: ['selten', 'normal', 'häufig'] },
+        ];
+
+        let y = cy - 60;
+        params.forEach((p, i) => {
+            const active   = i === this._configCursor;
+            const val      = this.config[p.key];
+
+            ctx.textAlign = 'center';
+            ctx.font      = active ? 'bold 15px monospace' : '14px monospace';
+            ctx.fillStyle = active ? '#4af' : '#888';
+            ctx.fillText(p.label, cx, y);
+            y += 28;
+
+            const slotW = 130, gap = 14;
+            const totalW = 3 * slotW + 2 * gap;
+            const startX = cx - totalW / 2;
+
+            for (let n = 1; n <= 3; n++) {
+                const selected = val === n;
+                const bx = startX + (n - 1) * (slotW + gap);
+                const by = y;
+
+                ctx.fillStyle   = selected ? (active ? '#4af' : '#557') : 'rgba(255,255,255,0.06)';
+                ctx.strokeStyle = selected ? (active ? '#4af' : '#557') : 'rgba(255,255,255,0.2)';
+                ctx.lineWidth   = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(bx, by, slotW, 30, 6);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = selected ? '#fff' : '#666';
+                ctx.font      = (selected ? 'bold ' : '') + '13px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${n}  ${p.opts[n - 1]}`, bx + slotW / 2, by + 20);
+            }
+            y += 52;
+        });
+
+        ctx.fillStyle   = '#555';
+        ctx.font        = '13px monospace';
+        ctx.textAlign   = 'center';
+        ctx.fillText('↑ ↓  Parameter   ← →  Wert   C / ESC  Zurück', cx, cy + 160);
+    }
+
     _drawStart() {
         const cx = W / 2, cy = H / 2;
         ctx.textAlign   = 'center';
@@ -556,6 +642,7 @@ class Game {
                 ['Space / Z',             'Schießen'],
                 ['Enter / Space',         'Starten / Neustart'],
                 ['H / ESC',               'Hilfe ein/aus'],
+                ['C',                     'Konfiguration'],
                 ['S / Pfeil-unten',       'Teleportieren'],
             ]},
             { head: 'POWER-UPS', rows: [
