@@ -209,7 +209,7 @@ class Game {
         }
 
         // Ship × Rock
-        if (this.ship.invulnerable <= 0) {
+        if (this.ship && this.ship.invulnerable <= 0) {
             for (const r of this.rocks) {
                 if (dist(this.ship, r) < r.radius + this.ship.radius) {
                     if (this.ship.shieldTimer > 0) {
