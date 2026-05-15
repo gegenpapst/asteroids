@@ -64,7 +64,7 @@ class Game {
         this.beatPhase   = 0;
         this.pumices     = Array.from({ length: randInt(1, 3) }, () => new Pumice(rand(80, W - 80), rand(80, H - 80)));
         Matter.World.add(this.engine.world, this.rocks.map(r => r.body));
-        Matter.World.add(this.engine.world, this.pumices.map(p => p.body));
+        Matter.World.add(this.engine.world, this.pumices.flatMap(p => p.cells.map(c => c.body)));
         this._nextLevel();
         this.state = STATE.PLAYING;
     }
@@ -248,26 +248,23 @@ class Game {
         }
 
         // Bullet × Pumice
+        outerPumice:
         for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
             const b = this.bullets[bi];
-            const pi = this.pumices.findIndex(p => p.alive && dist(b, p) < p.currentRadius + b.radius);
-            if (pi < 0) continue;
-            const p = this.pumices[pi];
-            p.hit(b.x, b.y);
-            for (let k = 0; k < 4; k++)
-                this.particles.push(new Particle(b.x, b.y, `hsl(${rand(25,40)},18%,${rand(55,72)}%)`));
-            if (!p.alive) {
-                Matter.World.remove(this.engine.world, p.body);
-                this.pumices.splice(pi, 1);
-            } else {
-                Matter.World.remove(this.engine.world, p.body);
-                p.body = Matter.Bodies.circle(p.x, p.y, p.currentRadius, {
-                    isStatic: true, friction: 0, frictionAir: 0, restitution: 1, label: 'pumice',
-                });
-                Matter.World.add(this.engine.world, p.body);
+            for (const p of this.pumices) {
+                const hits = p.findHit(b.x, b.y, b.radius);
+                if (hits.length === 0) continue;
+                for (const c of hits) {
+                    c.alive = false;
+                    Matter.World.remove(this.engine.world, c.body);
+                    for (let k = 0; k < 3; k++)
+                        this.particles.push(new Particle(c.x, c.y, `hsl(${rand(25,40)},18%,${rand(55,72)}%)`));
+                }
+                this.bullets.splice(bi, 1);
+                continue outerPumice;
             }
-            this.bullets.splice(bi, 1);
         }
+        this.pumices = this.pumices.filter(p => p.alive);
 
         // Ship × Asteroid
         if (this.ship.invulnerable <= 0) {
@@ -303,6 +300,21 @@ class Game {
                         this._killShip();
                     }
                     break;
+                }
+            }
+        }
+
+        // Ship × Pumice
+        if (this.ship && this.ship.invulnerable <= 0) {
+            outerSP:
+            for (const p of this.pumices) {
+                for (const c of p.cells) {
+                    if (!c.alive) continue;
+                    if (dist(this.ship, c) < c.r + this.ship.radius) {
+                        if (this.ship.shieldTimer > 0) this.ship.shieldTimer = 0;
+                        else this._killShip();
+                        break outerSP;
+                    }
                 }
             }
         }
