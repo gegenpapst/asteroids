@@ -139,3 +139,5 @@ class Ship {
         ctx.restore();
     }
 }
+
+if (typeof module !== 'undefined') module.exports = { Ship };
