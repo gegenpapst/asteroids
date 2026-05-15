@@ -34,6 +34,15 @@ class Ship {
         if (Input.left())  this.angle -= SHIP_ROTATION * dt;
         if (Input.right()) this.angle += SHIP_ROTATION * dt;
 
+        if (Input.strafeLeft()) {
+            this.vx += Math.sin(this.angle) * SHIP_THRUST * dt;
+            this.vy -= Math.cos(this.angle) * SHIP_THRUST * dt;
+        }
+        if (Input.strafeRight()) {
+            this.vx -= Math.sin(this.angle) * SHIP_THRUST * dt;
+            this.vy += Math.cos(this.angle) * SHIP_THRUST * dt;
+        }
+
         this.thrusting = Input.up();
         if (this.thrusting) {
             this.vx += Math.cos(this.angle) * SHIP_THRUST * dt;

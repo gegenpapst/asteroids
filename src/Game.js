@@ -553,11 +553,12 @@ class Game {
 
         const sections = [
             { head: 'STEUERUNG', rows: [
-                ['Pfeiltasten / WASD', 'Drehen & Schub'],
-                ['Space / Z',          'Schießen'],
-                ['Enter / Space',      'Starten / Neustart'],
-                ['H / ESC',            'Hilfe ein/aus'],
-                ['S / Pfeil-unten',    'Teleportieren'],
+                ['Pfeiltasten / WASD',    'Drehen & Schub'],
+                ['Shift + ← / →',        'Seitwärts'],
+                ['Space / Z',             'Schießen'],
+                ['Enter / Space',         'Starten / Neustart'],
+                ['H / ESC',               'Hilfe ein/aus'],
+                ['S / Pfeil-unten',       'Teleportieren'],
             ]},
             { head: 'POWER-UPS', rows: [
                 ['SH — Shield',  'Absorbiert einen Treffer'],
