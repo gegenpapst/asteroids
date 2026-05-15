@@ -90,7 +90,7 @@ class Game {
             const key = params[this._configCursor];
             if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
             if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(3, this.config[key] + 1);
-            if (Input.config() || Input.wasPressed('Escape')) this.state = this._configPrevState;
+            if (Input.config() || Input.wasPressed('Enter')) this.state = this._configPrevState;
             Input.flush();
             return;
         }
@@ -548,7 +548,7 @@ class Game {
             { key: 'rockCount',   label: 'Anzahl Rocks',        opts: ['wenige', 'normal', 'viele']   },
         ];
 
-        let y = cy - 60;
+        let y = cy - 90;
         params.forEach((p, i) => {
             const active   = i === this._configCursor;
             const val      = this.config[p.key];
@@ -587,7 +587,7 @@ class Game {
         ctx.fillStyle   = '#555';
         ctx.font        = '13px monospace';
         ctx.textAlign   = 'center';
-        ctx.fillText('↑ ↓  Parameter   ← →  Wert   C / ESC  Zurück', cx, cy + 160);
+        ctx.fillText('↑ ↓  Parameter   ← →  Wert   ENTER / C  Zurück', cx, cy + 160);
     }
 
     _drawStart() {
