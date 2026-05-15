@@ -84,7 +84,7 @@ class Game {
         }
 
         if (this.state === STATE.CONFIG) {
-            const params = ['bulletRange', 'powerupFreq'];
+            const params = ['bulletRange', 'powerupFreq', 'rockCount'];
             if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
             if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
             const key = params[this._configCursor];
