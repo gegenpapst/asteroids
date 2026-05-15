@@ -23,6 +23,7 @@ class Game {
         this.ufos        = [];
         this.ufoBullets  = [];
         this.rocks       = [];
+        this.pumices     = [];
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -61,7 +62,9 @@ class Game {
         this.ufoHumTimer = 0;
         this.beatTimer   = 1.0;
         this.beatPhase   = 0;
+        this.pumices     = Array.from({ length: randInt(1, 3) }, () => new Pumice(rand(80, W - 80), rand(80, H - 80)));
         Matter.World.add(this.engine.world, this.rocks.map(r => r.body));
+        Matter.World.add(this.engine.world, this.pumices.map(p => p.body));
         this._nextLevel();
         this.state = STATE.PLAYING;
     }
@@ -244,6 +247,13 @@ class Game {
             }
         }
 
+        // Bullet × Pumice
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            const hit = this.pumices.find(p => dist(b, p) < p.radius + b.radius);
+            if (hit) { hit.addHole(b.x, b.y); this.bullets.splice(bi, 1); }
+        }
+
         // Ship × Asteroid
         if (this.ship.invulnerable <= 0) {
             for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
@@ -356,6 +366,7 @@ class Game {
         if (this.state === STATE.CONFIG) { this._drawConfig(); return; }
 
         this._drawRocks();
+        this.pumices.forEach(p => p.draw());
         this.asteroids.forEach(a => a.draw());
         this.powerups.forEach(p => p.draw());
         this.ufos.forEach(u => u.draw());
