@@ -1,7 +1,10 @@
 {
   "name": "asteroids",
+  "description": "Vanilla JS Canvas Asteroids clone",
+  "private": true,
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "devDependencies": {
     "jest": "^29"
