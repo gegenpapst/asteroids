@@ -130,6 +130,7 @@ const Input = {
     fire()       { return this.isHeld('Space') || this.isHeld('KeyZ'); },
     start()      { return this.wasPressed('Enter') || this.wasPressed('Space'); },
     help()       { return this.wasPressed('KeyH'); },
+    config()     { return this.wasPressed('KeyC'); },
     teleport()   { return this.wasPressed('KeyS') || this.wasPressed('ArrowDown'); },
     strafeLeft()  { return this._shift() && (this.isHeld('ArrowLeft')  || this.isHeld('KeyA')); },
     strafeRight() { return this._shift() && (this.isHeld('ArrowRight') || this.isHeld('KeyD')); },

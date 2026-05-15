@@ -1,10 +1,11 @@
 'use strict';
 
 class Bullet {
-    constructor(x, y, vx, vy) {
+    constructor(x, y, vx, vy, life = BULLET_LIFE) {
         this.x = x; this.y = y;
         this.vx = vx; this.vy = vy;
-        this.life = BULLET_LIFE;
+        this.life    = life;
+        this.maxLife = life;
     }
 
     get radius() { return 3; }
@@ -17,7 +18,7 @@ class Bullet {
     }
 
     draw() {
-        const alpha = clamp(this.life / BULLET_LIFE * 2, 0, 1);
+        const alpha = clamp(this.life / this.maxLife * 2, 0, 1);
         ctx.beginPath();
         ctx.arc(this.x, this.y, 2.5, 0, TAU);
         ctx.fillStyle   = `rgba(255,255,100,${alpha})`;
