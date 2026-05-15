@@ -27,3 +27,22 @@ global.window = {
 const g = require('../src/Globals.js');
 Object.assign(global, g);
 global.ctx = ctxStub;
+
+// Matter.js stub — keeps entity constructors working without the real physics engine
+const _mkBody = (x = 0, y = 0) => ({
+    position: { x, y }, velocity: { x: 0, y: 0 }, angle: 0, plugin: {},
+});
+global.Matter = {
+    use:    () => {},
+    Engine: { create: () => ({ world: {} }), update: () => {} },
+    World:  { add: () => {}, remove: () => {}, clear: () => {} },
+    Bodies: { circle: (x, y) => _mkBody(x, y) },
+    Body:   {
+        setVelocity:        (b, v) => { b.velocity.x = v.x; b.velocity.y = v.y; },
+        setAngularVelocity: () => {},
+        setPosition:        (b, p) => { b.position.x = p.x; b.position.y = p.y; },
+        setAngle:           () => {},
+    },
+    Events: { on: () => {} },
+};
+global.MatterWrap = {};

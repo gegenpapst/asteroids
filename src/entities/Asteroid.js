@@ -27,11 +27,15 @@ class Asteroid {
                 r: this.radius * rand(0.62, 1.28),
             };
         });
+
+        this.body = Matter.Bodies.circle(x, y, this.radius, {
+            friction: 0, frictionAir: 0, restitution: 1, label: 'asteroid',
+            plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } },
+        });
+        Matter.Body.setVelocity(this.body, { x: this.vx, y: this.vy });
     }
 
     update(dt) {
-        this.x   = wrap(this.x + this.vx * dt, W);
-        this.y   = wrap(this.y + this.vy * dt, H);
         this.rot += this.rotSpeed * dt;
     }
 

@@ -5,6 +5,9 @@ const STATE = Object.freeze({ START: 0, PLAYING: 1, DEAD: 2, GAMEOVER: 3, HELP: 
 
 class Game {
     constructor() {
+        Matter.use(MatterWrap);
+        this.engine = Matter.Engine.create({ gravity: { x: 0, y: 0 } });
+
         this.snd     = new Sound();
         this.hiScore = parseInt(localStorage.getItem('ast_hi') || '0');
         this.state   = STATE.START;
@@ -43,6 +46,7 @@ class Game {
         this.powerups    = [];
         this.ufos        = [];
         this.ufoBullets  = [];
+        Matter.World.clear(this.engine.world, false);
         this.rocks       = Array.from({ length: randInt(1, 5) }, () => new Rock(rand(60, W - 60), rand(60, H - 60)));
         this.ship        = new Ship();
         [this.ship.x, this.ship.y] = this._safeShipPos();
@@ -52,6 +56,7 @@ class Game {
         this.ufoHumTimer = 0;
         this.beatTimer   = 1.0;
         this.beatPhase   = 0;
+        Matter.World.add(this.engine.world, this.rocks.map(r => r.body));
         this._nextLevel();
         this.state = STATE.PLAYING;
     }
@@ -104,8 +109,9 @@ class Game {
         if (this.state === STATE.DEAD) {
             this.deadTimer -= dt;
             this.asteroids.forEach(a => a.update(dt));
-            this._bounceAsteroidsOffRocks();
             this.ufos = this.ufos.filter(u => u.update(dt, null));
+            Matter.Engine.update(this.engine, dt * 1000);
+            this._syncBodies();
             if (this.deadTimer <= 0) {
                 if (this.lives > 0) {
                     this.ship = new Ship();
@@ -150,7 +156,8 @@ class Game {
 
         this.bullets   = this.bullets.filter(b => b.update(dt));
         this.asteroids.forEach(a => a.update(dt));
-        this._bounceAsteroidsOffRocks();
+        Matter.Engine.update(this.engine, dt * 1000);
+        this._syncBodies();
 
         // UFO spawn
         this.ufoTimer -= dt;
@@ -172,7 +179,10 @@ class Game {
                     this._boom(a.x, a.y, a.size);
                     if (Math.random() < POWERUP_SPAWN_CHANCE)
                         this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 2)]));
-                    this.asteroids.splice(ai, 1, ...a.split());
+                    const children = a.split();
+                    Matter.World.remove(this.engine.world, a.body);
+                    if (children.length) Matter.World.add(this.engine.world, children.map(c => c.body));
+                    this.asteroids.splice(ai, 1, ...children);
                     this.bullets.splice(bi, 1);
                     continue outer;
                 }
@@ -211,7 +221,10 @@ class Game {
                     if (this.ship.shieldTimer > 0) {
                         this.ship.shieldTimer = 0;
                         this._boom(a.x, a.y, a.size);
-                        this.asteroids.splice(ai, 1, ...a.split());
+                        const children = a.split();
+                        Matter.World.remove(this.engine.world, a.body);
+                        if (children.length) Matter.World.add(this.engine.world, children.map(c => c.body));
+                        this.asteroids.splice(ai, 1, ...children);
                     } else {
                         this._killShip();
                     }
@@ -333,24 +346,12 @@ class Game {
         return [x, y];
     }
 
-    _bounceAsteroidsOffRocks() {
+    _syncBodies() {
         for (const a of this.asteroids) {
-            for (const r of this.rocks) {
-                const dx      = a.x - r.x;
-                const dy      = a.y - r.y;
-                const d       = Math.sqrt(dx * dx + dy * dy) || 1;
-                const overlap = a.radius + r.radius - d;
-                if (overlap <= 0) continue;
-
-                const nx  = dx / d, ny = dy / d;
-                const dot = a.vx * nx + a.vy * ny;
-                if (dot >= 0) continue;             // already moving away
-
-                a.vx -= 2 * dot * nx;
-                a.vy -= 2 * dot * ny;
-                a.x   = wrap(a.x + nx * (overlap + 0.5), W);
-                a.y   = wrap(a.y + ny * (overlap + 0.5), H);
-            }
+            a.x  = a.body.position.x;
+            a.y  = a.body.position.y;
+            a.vx = a.body.velocity.x;
+            a.vy = a.body.velocity.y;
         }
     }
 
@@ -364,7 +365,9 @@ class Game {
                 x = rand(0, W);
                 y = rand(0, H);
             } while (dist({ x, y }, { x: cx, y: cy }) < W * 0.22);
-            this.asteroids.push(new Asteroid(x, y, 0));
+            const a = new Asteroid(x, y, 0);
+            this.asteroids.push(a);
+            Matter.World.add(this.engine.world, a.body);
         }
     }
 

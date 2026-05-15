@@ -45,25 +45,23 @@ describe('Asteroid constructor', () => {
     });
 });
 
-describe('Asteroid.update', () => {
-    test('position advances by velocity * dt', () => {
+describe('Asteroid body', () => {
+    test('creates a Matter body at constructor position', () => {
+        const a = new Asteroid(150, 250, 0);
+        expect(a.body).toBeDefined();
+        expect(a.body.position.x).toBe(150);
+        expect(a.body.position.y).toBe(250);
+    });
+
+    test('body velocity is set to initial vx and vy', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0.5);
-        const a = new Asteroid(100, 100, 0, 0);
-        const vx = a.vx;
-        const vy = a.vy;
-        a.update(1);
-        expect(a.x).toBeCloseTo(wrap(100 + vx, W));
-        expect(a.y).toBeCloseTo(wrap(100 + vy, H));
+        const a = new Asteroid(0, 0, 0, 0);
+        expect(a.body.velocity.x).toBeCloseTo(a.vx);
+        expect(a.body.velocity.y).toBeCloseTo(a.vy);
     });
+});
 
-    test('position wraps at screen edge', () => {
-        const a = new Asteroid(W - 1, 100, 0, 0);
-        a.vx = 10;
-        a.vy = 0;
-        a.update(1);
-        expect(a.x).toBeCloseTo(wrap(W - 1 + 10, W));
-    });
-
+describe('Asteroid.update', () => {
     test('rotation advances by rotSpeed * dt', () => {
         const a = new Asteroid(0, 0, 0);
         const rotBefore = a.rot;
