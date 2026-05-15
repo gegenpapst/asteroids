@@ -104,6 +104,7 @@ class Game {
         if (this.state === STATE.DEAD) {
             this.deadTimer -= dt;
             this.asteroids.forEach(a => a.update(dt));
+            this._bounceAsteroidsOffRocks();
             this.ufos = this.ufos.filter(u => u.update(dt, null));
             if (this.deadTimer <= 0) {
                 if (this.lives > 0) {
@@ -149,6 +150,7 @@ class Game {
 
         this.bullets   = this.bullets.filter(b => b.update(dt));
         this.asteroids.forEach(a => a.update(dt));
+        this._bounceAsteroidsOffRocks();
 
         // UFO spawn
         this.ufoTimer -= dt;
@@ -329,6 +331,27 @@ class Game {
             tries++;
         } while (tries < 200 && this.rocks.some(r => dist({ x, y }, r) < r.radius + margin));
         return [x, y];
+    }
+
+    _bounceAsteroidsOffRocks() {
+        for (const a of this.asteroids) {
+            for (const r of this.rocks) {
+                const dx      = a.x - r.x;
+                const dy      = a.y - r.y;
+                const d       = Math.sqrt(dx * dx + dy * dy) || 1;
+                const overlap = a.radius + r.radius - d;
+                if (overlap <= 0) continue;
+
+                const nx  = dx / d, ny = dy / d;
+                const dot = a.vx * nx + a.vy * ny;
+                if (dot >= 0) continue;             // already moving away
+
+                a.vx -= 2 * dot * nx;
+                a.vy -= 2 * dot * ny;
+                a.x   = wrap(a.x + nx * (overlap + 0.5), W);
+                a.y   = wrap(a.y + ny * (overlap + 0.5), H);
+            }
+        }
     }
 
     _nextLevel() {
