@@ -29,7 +29,7 @@ const SHIP_FRICTION      = 0.985;
 const SHIP_MIN_SPEED     = 5;
 
 const BULLET_SPEED = 560;
-const BULLET_LIFE  = 1.35;
+const BULLET_LIFE  = 0.65;
 const MAX_BULLETS  = 8;
 const FIRE_RATE    = 0.22;
 
