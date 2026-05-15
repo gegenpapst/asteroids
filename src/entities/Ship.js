@@ -37,9 +37,13 @@ class Ship {
         if (Input.strafeLeft() || Input.strafeRight()) {
             const dir = Input.strafeLeft() ? 1 : -1;
             const cos = Math.cos(this.angle), sin = Math.sin(this.angle);
+            const speedBefore = Math.hypot(this.vx, this.vy);
             const fwd = this.vx * cos + this.vy * sin;
             this.vx = fwd * cos + dir * sin * SHIP_STRAFE_SPEED;
             this.vy = fwd * sin - dir * cos * SHIP_STRAFE_SPEED;
+            const cap = Math.max(speedBefore, SHIP_STRAFE_SPEED);
+            const speedAfter = Math.hypot(this.vx, this.vy);
+            if (speedAfter > cap) { this.vx *= cap / speedAfter; this.vy *= cap / speedAfter; }
         }
 
         this.thrusting = Input.up();
