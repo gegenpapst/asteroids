@@ -41,7 +41,7 @@ class Game {
         this.powerups    = [];
         this.ufos        = [];
         this.ufoBullets  = [];
-        this.rocks       = [new Rock(W / 2, H / 2)];
+        this.rocks       = Array.from({ length: randInt(1, 5) }, () => new Rock(rand(60, W - 60), rand(60, H - 60)));
         this.ship        = new Ship();
         [this.ship.x, this.ship.y] = this._safeShipPos();
         this.deadTimer   = 0;
