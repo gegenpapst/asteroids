@@ -32,7 +32,7 @@ class Asteroid {
             friction: 0, frictionAir: 0, restitution: 1, label: 'asteroid',
             plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } },
         });
-        Matter.Body.setVelocity(this.body, { x: this.vx, y: this.vy });
+        Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
     }
 
     update(dt) {
