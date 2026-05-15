@@ -35,7 +35,6 @@ class Game {
         this.score       = 0;
         this.lives       = 3;
         this.level       = 0;
-        this.ship        = new Ship();
         this.bullets     = [];
         this.asteroids   = [];
         this.particles   = [];
@@ -43,6 +42,8 @@ class Game {
         this.ufos        = [];
         this.ufoBullets  = [];
         this.rocks       = [new Rock(W / 2, H / 2)];
+        this.ship        = new Ship();
+        [this.ship.x, this.ship.y] = this._safeShipPos();
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -104,7 +105,8 @@ class Game {
             this.ufos = this.ufos.filter(u => u.update(dt, null));
             if (this.deadTimer <= 0) {
                 if (this.lives > 0) {
-                    this.ship  = new Ship();
+                    this.ship = new Ship();
+                    [this.ship.x, this.ship.y] = this._safeShipPos();
                     this.state = STATE.PLAYING;
                 } else {
                     this.state = STATE.GAMEOVER;
@@ -307,6 +309,17 @@ class Game {
     }
 
     // ── Private helpers ─────────────────────────────────────────────────────
+
+    _safeShipPos() {
+        const margin = 60;
+        let x, y, tries = 0;
+        do {
+            x = rand(60, W - 60);
+            y = rand(60, H - 60);
+            tries++;
+        } while (tries < 200 && this.rocks.some(r => dist({ x, y }, r) < r.radius + margin));
+        return [x, y];
+    }
 
     _nextLevel() {
         this.level++;
