@@ -10,6 +10,7 @@ Controls:
 - **Arrow keys / WASD** — rotate and thrust
 - **Space / Z** — fire
 - **Enter / Space** — start or restart
+- **H / ESC** — toggle help screen (pauses game)
 
 ## Architecture
 

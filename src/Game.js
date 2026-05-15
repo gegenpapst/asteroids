@@ -1,7 +1,7 @@
 'use strict';
 
 // ─── Game ────────────────────────────────────────────────────────────────────
-const STATE = Object.freeze({ START: 0, PLAYING: 1, DEAD: 2, GAMEOVER: 3 });
+const STATE = Object.freeze({ START: 0, PLAYING: 1, DEAD: 2, GAMEOVER: 3, HELP: 4 });
 
 class Game {
     constructor() {
@@ -57,6 +57,18 @@ class Game {
 
         if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
             if (Input.start()) this.start();
+            Input.flush();
+            return;
+        }
+
+        if (this.state === STATE.HELP) {
+            if (Input.help() || Input.wasPressed('Escape')) this.state = STATE.PLAYING;
+            Input.flush();
+            return;
+        }
+
+        if (this.state === STATE.PLAYING && Input.help()) {
+            this.state = STATE.HELP;
             Input.flush();
             return;
         }
@@ -257,6 +269,7 @@ class Game {
         ctx.globalAlpha = 1;
 
         if (this.state === STATE.START) { this._drawStart(); return; }
+        if (this.state === STATE.HELP)  { this._drawHelp();  return; }
 
         this.asteroids.forEach(a => a.draw());
         this.powerups.forEach(p => p.draw());
@@ -405,6 +418,75 @@ class Game {
             ctx.fillStyle = '#fff';
             ctx.font      = '22px monospace';
             ctx.fillText('PRESS ENTER OR SPACE TO START', cx, cy + 140);
+        }
+    }
+
+    _drawHelp() {
+        const cx = W / 2, cy = H / 2;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.82)';
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.textAlign   = 'center';
+        ctx.shadowColor = '#4af';
+        ctx.shadowBlur  = 24;
+        ctx.fillStyle   = '#fff';
+        ctx.font        = 'bold 36px monospace';
+        ctx.fillText('HILFE', cx, cy - 200);
+        ctx.shadowBlur = 0;
+
+        const sections = [
+            { head: 'STEUERUNG', rows: [
+                ['Pfeiltasten / WASD', 'Drehen & Schub'],
+                ['Space / Z',          'Schießen'],
+                ['Enter / Space',      'Starten / Neustart'],
+                ['H / ESC',            'Hilfe ein/aus'],
+            ]},
+            { head: 'POWER-UPS', rows: [
+                ['SH — Shield',  'Absorbiert einen Treffer'],
+                ['RF — Rapid',   'Schnellfeuer'],
+                ['SP — Spread',  'Dreifachschuss (5 s)'],
+            ]},
+            { head: 'PUNKTE', rows: [
+                ['Großer Asteroid',   '20'],
+                ['Mittlerer Asteroid','50'],
+                ['Kleiner Asteroid',  '100'],
+                ['Großes UFO',        '200'],
+                ['Kleines UFO',       '1 000'],
+                ['Extra-Leben',       'alle 10 000 Pkt.'],
+            ]},
+        ];
+
+        let y = cy - 148;
+        ctx.font = '13px monospace';
+
+        for (const sec of sections) {
+            ctx.fillStyle   = '#4af';
+            ctx.font        = 'bold 14px monospace';
+            ctx.textAlign   = 'center';
+            ctx.fillText(sec.head, cx, y);
+            y += 22;
+
+            ctx.font      = '13px monospace';
+            ctx.fillStyle = '#ccc';
+            for (const [left, right] of sec.rows) {
+                ctx.textAlign = 'right';
+                ctx.fillText(left, cx - 12, y);
+                ctx.fillStyle = '#888';
+                ctx.fillText('—', cx, y);
+                ctx.fillStyle = '#ccc';
+                ctx.textAlign = 'left';
+                ctx.fillText(right, cx + 12, y);
+                y += 19;
+            }
+            y += 10;
+        }
+
+        if (Math.floor(Date.now() / 520) % 2) {
+            ctx.fillStyle = '#666';
+            ctx.font      = '13px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('H oder ESC — Zurück zum Spiel', cx, cy + 222);
         }
     }
 
