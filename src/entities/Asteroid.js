@@ -64,9 +64,12 @@ class Asteroid {
 
     split() {
         if (this.size >= 2) return [];
+        const offset = ASTEROID_RADIUS[this.size + 1];
+        const perp   = rand(0, TAU);
+        const ox = Math.cos(perp) * offset, oy = Math.sin(perp) * offset;
         return [
-            new Asteroid(this.x, this.y, this.size + 1, rand(0, TAU)),
-            new Asteroid(this.x, this.y, this.size + 1, rand(0, TAU)),
+            new Asteroid(this.x + ox, this.y + oy, this.size + 1, rand(0, TAU)),
+            new Asteroid(this.x - ox, this.y - oy, this.size + 1, rand(0, TAU)),
         ];
     }
 }

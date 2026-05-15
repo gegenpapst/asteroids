@@ -83,12 +83,11 @@ describe('Asteroid.split', () => {
         expect(new Asteroid(100, 100, 2).split()).toHaveLength(0);
     });
 
-    test('children spawn at parent position', () => {
-        const [c1, c2] = new Asteroid(200, 300, 0).split();
-        expect(c1.x).toBe(200);
-        expect(c1.y).toBe(300);
-        expect(c2.x).toBe(200);
-        expect(c2.y).toBe(300);
+    test('children spawn within parent radius of parent position', () => {
+        const parent = new Asteroid(200, 300, 0);
+        const [c1, c2] = parent.split();
+        expect(Math.hypot(c1.x - 200, c1.y - 300)).toBeLessThanOrEqual(parent.radius);
+        expect(Math.hypot(c2.x - 200, c2.y - 300)).toBeLessThanOrEqual(parent.radius);
     });
 
     test('children are valid Asteroid instances', () => {
