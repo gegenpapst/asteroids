@@ -42,6 +42,7 @@ global.Matter = {
         setAngularVelocity: () => {},
         setPosition:        (b, p) => { b.position.x = p.x; b.position.y = p.y; },
         setAngle:           () => {},
+        set:                (b, k, v) => { b[k] = v; },
     },
     Events: { on: () => {} },
 };

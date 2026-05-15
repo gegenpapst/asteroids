@@ -16,8 +16,9 @@ class Particle {
     update(dt) {
         this.x    = wrap(this.x + this.vx * dt, W);
         this.y    = wrap(this.y + this.vy * dt, H);
-        this.vx  *= 0.97;
-        this.vy  *= 0.97;
+        const drag = Math.pow(0.97, dt * 60);
+        this.vx  *= drag;
+        this.vy  *= drag;
         this.life -= dt;
         return this.life > 0;
     }
@@ -32,3 +33,5 @@ class Particle {
         ctx.globalAlpha = 1;
     }
 }
+
+if (typeof module !== 'undefined') module.exports = { Particle };
