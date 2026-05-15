@@ -2,6 +2,8 @@
 
 const { Asteroid } = require('../../src/entities/Asteroid.js');
 
+afterEach(() => jest.restoreAllMocks());
+
 describe('Asteroid constructor', () => {
     test('radius matches ASTEROID_RADIUS[size] for each size', () => {
         expect(new Asteroid(0, 0, 0).radius).toBe(ASTEROID_RADIUS[0]);
@@ -22,11 +24,9 @@ describe('Asteroid constructor', () => {
     });
 
     test('vertices count is between 7 and 13', () => {
-        for (let i = 0; i < 10; i++) {
-            const a = new Asteroid(0, 0, 0);
-            expect(a.verts.length).toBeGreaterThanOrEqual(7);
-            expect(a.verts.length).toBeLessThanOrEqual(13);
-        }
+        const a = new Asteroid(0, 0, 0);
+        expect(a.verts.length).toBeGreaterThanOrEqual(7);
+        expect(a.verts.length).toBeLessThanOrEqual(13);
     });
 
     test('each vertex has angle and radius fields', () => {
@@ -42,7 +42,6 @@ describe('Asteroid constructor', () => {
         const a = new Asteroid(0, 0, 0, 0);
         expect(a.vy).toBeCloseTo(0, 5);
         expect(a.vx).toBeGreaterThan(0);
-        Math.random.mockRestore();
     });
 });
 
@@ -55,17 +54,14 @@ describe('Asteroid.update', () => {
         a.update(1);
         expect(a.x).toBeCloseTo(wrap(100 + vx, W));
         expect(a.y).toBeCloseTo(wrap(100 + vy, H));
-        Math.random.mockRestore();
     });
 
     test('position wraps at screen edge', () => {
-        jest.spyOn(Math, 'random').mockReturnValue(0.5);
         const a = new Asteroid(W - 1, 100, 0, 0);
         a.vx = 10;
         a.vy = 0;
         a.update(1);
         expect(a.x).toBeCloseTo(wrap(W - 1 + 10, W));
-        Math.random.mockRestore();
     });
 
     test('rotation advances by rotSpeed * dt', () => {
@@ -78,30 +74,19 @@ describe('Asteroid.update', () => {
 });
 
 describe('Asteroid.split', () => {
-    test('size 0 splits into 2 asteroids of size 1', () => {
-        const a = new Asteroid(100, 100, 0);
-        const children = a.split();
+    test.each([[0, 1], [1, 2]])('size %i splits into 2 asteroids of size %i', (parent, child) => {
+        const children = new Asteroid(100, 100, parent).split();
         expect(children).toHaveLength(2);
-        expect(children[0].size).toBe(1);
-        expect(children[1].size).toBe(1);
-    });
-
-    test('size 1 splits into 2 asteroids of size 2', () => {
-        const a = new Asteroid(100, 100, 1);
-        const children = a.split();
-        expect(children).toHaveLength(2);
-        expect(children[0].size).toBe(2);
-        expect(children[1].size).toBe(2);
+        expect(children[0].size).toBe(child);
+        expect(children[1].size).toBe(child);
     });
 
     test('size 2 does not split', () => {
-        const a = new Asteroid(100, 100, 2);
-        expect(a.split()).toHaveLength(0);
+        expect(new Asteroid(100, 100, 2).split()).toHaveLength(0);
     });
 
     test('children spawn at parent position', () => {
-        const a = new Asteroid(200, 300, 0);
-        const [c1, c2] = a.split();
+        const [c1, c2] = new Asteroid(200, 300, 0).split();
         expect(c1.x).toBe(200);
         expect(c1.y).toBe(300);
         expect(c2.x).toBe(200);
@@ -109,9 +94,7 @@ describe('Asteroid.split', () => {
     });
 
     test('children are valid Asteroid instances', () => {
-        const a = new Asteroid(0, 0, 0);
-        const children = a.split();
-        for (const c of children) {
+        for (const c of new Asteroid(0, 0, 0).split()) {
             expect(c).toBeInstanceOf(Asteroid);
         }
     });

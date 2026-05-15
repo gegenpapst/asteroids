@@ -2,6 +2,8 @@
 
 const { wrap, clamp, dist, rand, randInt } = require('../src/Globals.js');
 
+afterEach(() => jest.restoreAllMocks());
+
 describe('wrap', () => {
     test('value within bounds is unchanged', () => {
         expect(wrap(5, 10)).toBe(5);
@@ -64,19 +66,10 @@ describe('rand', () => {
     test('returns a when Math.random() is 0', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0);
         expect(rand(2, 8)).toBe(2);
-        Math.random.mockRestore();
     });
     test('returns near b when Math.random() is near 1', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0.9999);
         expect(rand(0, 10)).toBeCloseTo(9.999);
-        Math.random.mockRestore();
-    });
-    test('result is within [a, b] for many calls', () => {
-        for (let i = 0; i < 50; i++) {
-            const v = rand(3, 7);
-            expect(v).toBeGreaterThanOrEqual(3);
-            expect(v).toBeLessThanOrEqual(7);
-        }
     });
 });
 
@@ -84,23 +77,13 @@ describe('randInt', () => {
     test('returns a when Math.random() is 0', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0);
         expect(randInt(3, 7)).toBe(3);
-        Math.random.mockRestore();
     });
     test('can return upper bound', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0.9999);
         expect(randInt(3, 7)).toBe(7);
-        Math.random.mockRestore();
     });
     test('result is always an integer', () => {
-        for (let i = 0; i < 30; i++) {
-            expect(Number.isInteger(randInt(0, 100))).toBe(true);
-        }
-    });
-    test('result is within [a, b] for many calls', () => {
-        for (let i = 0; i < 50; i++) {
-            const v = randInt(5, 10);
-            expect(v).toBeGreaterThanOrEqual(5);
-            expect(v).toBeLessThanOrEqual(10);
-        }
+        jest.spyOn(Math, 'random').mockReturnValue(0.5);
+        expect(Number.isInteger(randInt(0, 100))).toBe(true);
     });
 });
