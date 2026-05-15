@@ -47,7 +47,7 @@ class Game {
         this.ufos        = [];
         this.ufoBullets  = [];
         Matter.World.clear(this.engine.world, false);
-        this.rocks       = Array.from({ length: randInt(1, 5) }, () => new Rock(rand(60, W - 60), rand(60, H - 60)));
+        this.rocks       = Array.from({ length: randInt(ROCK_COUNT_MIN, ROCK_COUNT_MAX) }, () => new Rock(rand(60, W - 60), rand(60, H - 60)));
         this.ship        = new Ship();
         [this.ship.x, this.ship.y] = this._safeShipPos();
         this.deadTimer   = 0;
