@@ -21,11 +21,12 @@ window.addEventListener('resize', fitCanvas);
 const TAU = Math.PI * 2;
 
 const SHIP_SIZE      = 14;
-const SHIP_THRUST    = 260;
-const SHIP_MAX_SPEED = 460;
-const SHIP_ROTATION  = 3.5;
-const SHIP_FRICTION  = 0.985;
-const SHIP_MIN_SPEED = 5;
+const SHIP_THRUST        = 260;
+const SHIP_MAX_SPEED     = 460;
+const SHIP_STRAFE_SPEED  = 180;
+const SHIP_ROTATION      = 3.5;
+const SHIP_FRICTION      = 0.985;
+const SHIP_MIN_SPEED     = 5;
 
 const BULLET_SPEED = 560;
 const BULLET_LIFE  = 1.35;
@@ -135,7 +136,7 @@ if (typeof module !== 'undefined') {
     module.exports = {
         wrap, clamp, dist, rand, randInt,
         TAU, W, H,
-        SHIP_SIZE, SHIP_THRUST, SHIP_MAX_SPEED, SHIP_ROTATION, SHIP_FRICTION, SHIP_MIN_SPEED,
+        SHIP_SIZE, SHIP_THRUST, SHIP_MAX_SPEED, SHIP_STRAFE_SPEED, SHIP_ROTATION, SHIP_FRICTION, SHIP_MIN_SPEED,
         BULLET_SPEED, BULLET_LIFE, MAX_BULLETS, FIRE_RATE,
         INVULNERABLE_TIME,
         ASTEROID_RADIUS, ASTEROID_SPEED, ASTEROID_SCORE,
