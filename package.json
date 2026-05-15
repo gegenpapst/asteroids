@@ -1,0 +1,9 @@
+{
+  "name": "asteroids",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29"
+  }
+}

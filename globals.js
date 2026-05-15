@@ -124,3 +124,19 @@ const Input = {
     fire()  { return this.isHeld('Space') || this.isHeld('KeyZ'); },
     start() { return this.wasPressed('Enter') || this.wasPressed('Space'); },
 };
+
+if (typeof module !== 'undefined') {
+    module.exports = {
+        wrap, clamp, dist, rand, randInt,
+        TAU, W, H,
+        SHIP_SIZE, SHIP_THRUST, SHIP_MAX_SPEED, SHIP_ROTATION, SHIP_FRICTION, SHIP_MIN_SPEED,
+        BULLET_SPEED, BULLET_LIFE, MAX_BULLETS, FIRE_RATE,
+        INVULNERABLE_TIME,
+        ASTEROID_RADIUS, ASTEROID_SPEED, ASTEROID_SCORE,
+        INITIAL_ROCKS, MAX_ROCKS_PER_LEVEL, EXTRA_LIFE_SCORE,
+        PARTICLE_LIFE, PARTICLE_SPEED,
+        UFO_RADIUS, UFO_SPEED, UFO_SCORE,
+        POWERUP_DURATION, POWERUP_SPAWN_CHANCE, POWERUP_TYPES,
+        Input,
+    };
+}

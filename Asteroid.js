@@ -66,3 +66,5 @@ class Asteroid {
         ];
     }
 }
+
+if (typeof module !== 'undefined') module.exports = { Asteroid };
