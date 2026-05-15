@@ -131,6 +131,11 @@ class Game {
             }
         }
 
+        if (Input.teleport() && this.ship.invulnerable <= 0) {
+            this.ship.teleport(rand(50, W - 50), rand(50, H - 50));
+            this.snd.powerUp('shield');
+        }
+
         if (this.bullets.length < MAX_BULLETS && this.ship.canFire()) {
             this.bullets.push(...this.ship.fire());
             this.snd.shoot();
@@ -441,6 +446,7 @@ class Game {
                 ['Space / Z',          'Schießen'],
                 ['Enter / Space',      'Starten / Neustart'],
                 ['H / ESC',            'Hilfe ein/aus'],
+                ['S / Pfeil-unten',    'Teleportieren'],
             ]},
             { head: 'POWER-UPS', rows: [
                 ['SH — Shield',  'Absorbiert einen Treffer'],
