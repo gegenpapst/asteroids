@@ -33,8 +33,9 @@ class Game {
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
 
-        this.config = { bulletRange: 2, powerupFreq: 2 };
-        this._configCursor = 0;
+        this.config = { bulletRange: 2, powerupFreq: 2, rockCount: 2 };
+        this._configCursor   = 0;
+        this._configPrevState = STATE.START;
 
         this._rockCanvas = Object.assign(document.createElement('canvas'), { width: W, height: H });
     }
@@ -50,7 +51,8 @@ class Game {
         this.ufos        = [];
         this.ufoBullets  = [];
         Matter.World.clear(this.engine.world, false);
-        this.rocks       = Array.from({ length: randInt(ROCK_COUNT_MIN, ROCK_COUNT_MAX) }, () => new Rock(rand(60, W - 60), rand(60, H - 60)));
+        const [rMin, rMax] = this._rockCountRange;
+        this.rocks       = Array.from({ length: randInt(rMin, rMax) }, () => new Rock(rand(60, W - 60), rand(60, H - 60)));
         this.ship        = new Ship();
         [this.ship.x, this.ship.y] = this._safeShipPos();
         this.deadTimer   = 0;
@@ -70,6 +72,7 @@ class Game {
 
         if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
             if (Input.start()) this.start();
+            if (Input.config()) { this._configPrevState = this.state; this.state = STATE.CONFIG; }
             Input.flush();
             return;
         }
@@ -87,7 +90,7 @@ class Game {
             const key = params[this._configCursor];
             if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
             if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(3, this.config[key] + 1);
-            if (Input.config() || Input.wasPressed('Escape')) this.state = STATE.PLAYING;
+            if (Input.config() || Input.wasPressed('Escape')) this.state = this._configPrevState;
             Input.flush();
             return;
         }
@@ -99,6 +102,7 @@ class Game {
         }
 
         if (this.state === STATE.PLAYING && Input.config()) {
+            this._configPrevState = STATE.PLAYING;
             this.state = STATE.CONFIG;
             Input.flush();
             return;
@@ -520,8 +524,9 @@ class Game {
         }
     }
 
-    get _bulletLife()    { return [0.35, 0.65, 1.0][this.config.bulletRange  - 1]; }
-    get _powerupChance() { return [0.05, 0.12, 0.25][this.config.powerupFreq - 1]; }
+    get _bulletLife()     { return [0.35, 0.65, 1.0][this.config.bulletRange  - 1]; }
+    get _powerupChance()  { return [0.05, 0.12, 0.25][this.config.powerupFreq - 1]; }
+    get _rockCountRange() { return [[1,5],[5,10],[10,20]][this.config.rockCount - 1]; }
 
     _drawConfig() {
         const cx = W / 2, cy = H / 2;
@@ -538,8 +543,9 @@ class Game {
         ctx.shadowBlur  = 0;
 
         const params = [
-            { key: 'bulletRange',  label: 'Reichweite Schüsse', opts: ['kurz', 'normal', 'weit'] },
-            { key: 'powerupFreq',  label: 'Häufigkeit Powerups', opts: ['selten', 'normal', 'häufig'] },
+            { key: 'bulletRange', label: 'Reichweite Schüsse', opts: ['kurz',   'normal', 'weit']    },
+            { key: 'powerupFreq', label: 'Häufigkeit Powerups', opts: ['selten', 'normal', 'häufig']  },
+            { key: 'rockCount',   label: 'Anzahl Rocks',        opts: ['wenige', 'normal', 'viele']   },
         ];
 
         let y = cy - 60;
@@ -610,6 +616,10 @@ class Game {
             ctx.font      = '22px monospace';
             ctx.fillText('PRESS ENTER OR SPACE TO START', cx, cy + 140);
         }
+
+        ctx.fillStyle = '#555';
+        ctx.font      = '14px monospace';
+        ctx.fillText('C — Konfiguration', cx, cy + 178);
     }
 
     _drawHelp() {
