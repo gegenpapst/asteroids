@@ -1,6 +1,6 @@
 'use strict';
 
-const { wrap, clamp, dist, rand, randInt } = require('../globals.js');
+const { wrap, clamp, dist, rand, randInt } = require('../src/globals.js');
 
 describe('wrap', () => {
     test('value within bounds is unchanged', () => {

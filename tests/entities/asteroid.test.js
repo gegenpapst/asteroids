@@ -1,6 +1,6 @@
 'use strict';
 
-const { Asteroid } = require('../../Asteroid.js');
+const { Asteroid } = require('../../src/entities/Asteroid.js');
 
 describe('Asteroid constructor', () => {
     test('radius matches ASTEROID_RADIUS[size] for each size', () => {
