@@ -29,6 +29,8 @@ class Game {
         this.beatTimer    = 1.0;
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
+
+        this._rockCanvas = Object.assign(document.createElement('canvas'), { width: W, height: H });
     }
 
     start() {
@@ -302,7 +304,7 @@ class Game {
         if (this.state === STATE.START) { this._drawStart(); return; }
         if (this.state === STATE.HELP)  { this._drawHelp();  return; }
 
-        this.rocks.forEach(r => r.draw());
+        this._drawRocks();
         this.asteroids.forEach(a => a.draw());
         this.powerups.forEach(p => p.draw());
         this.ufos.forEach(u => u.draw());
@@ -380,6 +382,42 @@ class Game {
     }
 
     // ── Draw helpers ────────────────────────────────────────────────────────
+
+    _drawRocks() {
+        if (!this.rocks.length) return;
+
+        const off    = this._rockCanvas;
+        const offCtx = off.getContext('2d');
+        offCtx.clearRect(0, 0, W, H);
+
+        const buildPath = (rock, tctx) => {
+            const cos = Math.cos(rock.rot), sin = Math.sin(rock.rot);
+            tctx.beginPath();
+            rock.verts.forEach(({ a, r }, i) => {
+                const lx = Math.cos(a) * r, ly = Math.sin(a) * r;
+                const wx = rock.x + cos * lx - sin * ly;
+                const wy = rock.y + sin * lx + cos * ly;
+                i === 0 ? tctx.moveTo(wx, wy) : tctx.lineTo(wx, wy);
+            });
+            tctx.closePath();
+        };
+
+        // Pass 1: stroke with glow — visible only where not covered by fill
+        offCtx.strokeStyle = '#7a5c3a';
+        offCtx.lineWidth   = 2.5;
+        offCtx.shadowColor = '#4a3820';
+        offCtx.shadowBlur  = 10;
+        for (const rock of this.rocks) { buildPath(rock, offCtx); offCtx.stroke(); }
+        offCtx.shadowBlur  = 0;
+
+        // Pass 2: opaque fill erases internal strokes at overlaps
+        offCtx.fillStyle = 'rgb(72, 54, 36)';
+        for (const rock of this.rocks) { buildPath(rock, offCtx); offCtx.fill(); }
+
+        ctx.globalAlpha = 0.45;
+        ctx.drawImage(off, 0, 0);
+        ctx.globalAlpha = 1;
+    }
 
     _drawHUD() {
         ctx.shadowBlur  = 0;
