@@ -19,6 +19,7 @@ class Game {
         this.powerups    = [];
         this.ufos        = [];
         this.ufoBullets  = [];
+        this.rocks       = [];
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -41,6 +42,7 @@ class Game {
         this.powerups    = [];
         this.ufos        = [];
         this.ufoBullets  = [];
+        this.rocks       = [new Rock(W / 2, H / 2)];
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -204,6 +206,20 @@ class Game {
             }
         }
 
+        // Ship × Rock
+        if (this.ship.invulnerable <= 0) {
+            for (const r of this.rocks) {
+                if (dist(this.ship, r) < r.radius + this.ship.radius) {
+                    if (this.ship.shieldTimer > 0) {
+                        this.ship.shieldTimer = 0;
+                    } else {
+                        this._killShip();
+                    }
+                    break;
+                }
+            }
+        }
+
         // Ship × UFO
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const u of this.ufos) {
@@ -276,6 +292,7 @@ class Game {
         if (this.state === STATE.START) { this._drawStart(); return; }
         if (this.state === STATE.HELP)  { this._drawHelp();  return; }
 
+        this.rocks.forEach(r => r.draw());
         this.asteroids.forEach(a => a.draw());
         this.powerups.forEach(p => p.draw());
         this.ufos.forEach(u => u.draw());
