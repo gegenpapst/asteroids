@@ -123,7 +123,8 @@ const Input = {
     up()    { return this.isHeld('ArrowUp')    || this.isHeld('KeyW'); },
     fire()  { return this.isHeld('Space') || this.isHeld('KeyZ'); },
     start() { return this.wasPressed('Enter') || this.wasPressed('Space'); },
-    help()  { return this.wasPressed('KeyH'); },
+    help()     { return this.wasPressed('KeyH'); },
+    teleport() { return this.wasPressed('KeyS') || this.wasPressed('ArrowDown'); },
 };
 
 if (typeof module !== 'undefined') {

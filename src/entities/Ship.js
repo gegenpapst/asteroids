@@ -18,6 +18,12 @@ class Ship {
 
     get radius() { return SHIP_SIZE * 0.7; }
 
+    teleport(x, y) {
+        this.x = x;
+        this.y = y;
+        this.invulnerable = 1.5;
+    }
+
     update(dt) {
         if (this.invulnerable > 0) this.invulnerable -= dt;
         if (this.fireTimer    > 0) this.fireTimer    -= dt;
