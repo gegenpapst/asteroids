@@ -28,3 +28,5 @@ class Bullet {
         ctx.shadowBlur  = 0;
     }
 }
+
+if (typeof module !== 'undefined') module.exports = { Bullet };
