@@ -10,6 +10,9 @@ class Rock {
             a: (TAU / 16) * i + rand(-0.08, 0.08),
             r: this.radius * rand(0.80, 1.15),
         }));
+        this.body = Matter.Bodies.circle(x, y, this.radius, {
+            isStatic: true, friction: 0, frictionAir: 0, restitution: 1, label: 'rock',
+        });
     }
 
     update() { return true; }
