@@ -27,6 +27,6 @@ global.window = {
 
 // Load globals.js and expose every export as a global so entity classes can
 // reference rand, wrap, W, H, ASTEROID_RADIUS, etc. without require()
-const g = require('../src/globals.js');
+const g = require('../src/Globals.js');
 Object.assign(global, g);
 global.ctx = ctxStub;
