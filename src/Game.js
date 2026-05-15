@@ -191,6 +191,14 @@ class Game {
             }
         }
 
+        // Bullet × Rock
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            if (this.rocks.some(r => dist(b, r) < r.radius + b.radius)) {
+                this.bullets.splice(bi, 1);
+            }
+        }
+
         // Ship × Asteroid
         if (this.ship.invulnerable <= 0) {
             for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
