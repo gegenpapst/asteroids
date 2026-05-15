@@ -33,7 +33,7 @@ class Game {
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
 
-        this.config = { bulletRange: 2, powerupFreq: 2, rockCount: 2 };
+        this.config = { bulletRange: 2, powerupFreq: 2, rockCount: 2, asteroidBounce: 1 };
         this._configCursor   = 0;
         this._configPrevState = STATE.START;
 
@@ -84,12 +84,14 @@ class Game {
         }
 
         if (this.state === STATE.CONFIG) {
-            const params = ['bulletRange', 'powerupFreq', 'rockCount'];
+            const params    = ['bulletRange', 'powerupFreq', 'rockCount', 'asteroidBounce'];
+            const paramMax  = { bulletRange: 3, powerupFreq: 3, rockCount: 3, asteroidBounce: 2 };
             if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
             if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
             const key = params[this._configCursor];
             if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
-            if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(3, this.config[key] + 1);
+            if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
+            if (key === 'asteroidBounce') this._applyAsteroidFilter();
             if (Input.config() || Input.wasPressed('Enter')) this.state = this._configPrevState;
             Input.flush();
             return;
@@ -206,7 +208,11 @@ class Game {
                         this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 2)]));
                     const children = a.split();
                     Matter.World.remove(this.engine.world, a.body);
-                    if (children.length) Matter.World.add(this.engine.world, children.map(c => c.body));
+                    if (children.length) {
+                        Matter.World.add(this.engine.world, children.map(c => c.body));
+                        const f = this._asteroidCollisionFilter;
+                        for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
+                    }
                     this.asteroids.splice(ai, 1, ...children);
                     this.bullets.splice(bi, 1);
                     continue outer;
@@ -248,7 +254,11 @@ class Game {
                         this._boom(a.x, a.y, a.size);
                         const children = a.split();
                         Matter.World.remove(this.engine.world, a.body);
-                        if (children.length) Matter.World.add(this.engine.world, children.map(c => c.body));
+                        if (children.length) {
+                            Matter.World.add(this.engine.world, children.map(c => c.body));
+                            const f = this._asteroidCollisionFilter;
+                            for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
+                        }
                         this.asteroids.splice(ai, 1, ...children);
                     } else {
                         this._killShip();
@@ -393,6 +403,7 @@ class Game {
             this.asteroids.push(a);
             Matter.World.add(this.engine.world, a.body);
         }
+        this._applyAsteroidFilter();
     }
 
     _addScore(pts) {
@@ -524,9 +535,15 @@ class Game {
         }
     }
 
-    get _bulletLife()     { return [0.35, 0.65, 1.0][this.config.bulletRange  - 1]; }
-    get _powerupChance()  { return [0.05, 0.12, 0.25][this.config.powerupFreq - 1]; }
-    get _rockCountRange() { return [[1,5],[5,10],[10,20]][this.config.rockCount - 1]; }
+    get _bulletLife()             { return [0.35, 0.65, 1.0][this.config.bulletRange  - 1]; }
+    get _powerupChance()          { return [0.05, 0.12, 0.25][this.config.powerupFreq - 1]; }
+    get _rockCountRange()         { return [[1,5],[5,10],[10,20]][this.config.rockCount - 1]; }
+    get _asteroidCollisionFilter(){ return this.config.asteroidBounce === 2 ? {} : { group: -1 }; }
+
+    _applyAsteroidFilter() {
+        const f = this._asteroidCollisionFilter;
+        for (const a of this.asteroids) Matter.Body.set(a.body, 'collisionFilter', f);
+    }
 
     _drawConfig() {
         const cx = W / 2, cy = H / 2;
@@ -543,15 +560,16 @@ class Game {
         ctx.shadowBlur  = 0;
 
         const params = [
-            { key: 'bulletRange', label: 'Reichweite Schüsse', opts: ['kurz',   'normal', 'weit']    },
-            { key: 'powerupFreq', label: 'Häufigkeit Powerups', opts: ['selten', 'normal', 'häufig']  },
-            { key: 'rockCount',   label: 'Anzahl Rocks',        opts: ['wenige', 'normal', 'viele']   },
+            { key: 'bulletRange',    label: 'Reichweite Schüsse',    opts: ['kurz',   'normal', 'weit']   },
+            { key: 'powerupFreq',    label: 'Häufigkeit Powerups',    opts: ['selten', 'normal', 'häufig'] },
+            { key: 'rockCount',      label: 'Anzahl Rocks',           opts: ['wenige', 'normal', 'viele']  },
+            { key: 'asteroidBounce', label: 'Asteroiden-Kollisionen', opts: ['aus',    'ein']              },
         ];
 
-        let y = cy - 90;
+        let y = cy - 110;
         params.forEach((p, i) => {
-            const active   = i === this._configCursor;
-            const val      = this.config[p.key];
+            const active = i === this._configCursor;
+            const val    = this.config[p.key];
 
             ctx.textAlign = 'center';
             ctx.font      = active ? 'bold 15px monospace' : '14px monospace';
@@ -559,11 +577,12 @@ class Game {
             ctx.fillText(p.label, cx, y);
             y += 28;
 
-            const slotW = 130, gap = 14;
-            const totalW = 3 * slotW + 2 * gap;
+            const count  = p.opts.length;
+            const slotW  = 130, gap = 14;
+            const totalW = count * slotW + (count - 1) * gap;
             const startX = cx - totalW / 2;
 
-            for (let n = 1; n <= 3; n++) {
+            for (let n = 1; n <= count; n++) {
                 const selected = val === n;
                 const bx = startX + (n - 1) * (slotW + gap);
                 const by = y;
