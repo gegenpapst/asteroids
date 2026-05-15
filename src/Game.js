@@ -538,7 +538,7 @@ class Game {
     get _bulletLife()             { return [0.35, 0.65, 1.0][this.config.bulletRange  - 1]; }
     get _powerupChance()          { return [0.05, 0.12, 0.25][this.config.powerupFreq - 1]; }
     get _rockCountRange()         { return [[1,5],[5,10],[10,20]][this.config.rockCount - 1]; }
-    get _asteroidCollisionFilter(){ return this.config.asteroidBounce === 2 ? {} : { group: -1 }; }
+    get _asteroidCollisionFilter(){ return this.config.asteroidBounce === 2 ? { category: 0x0001, mask: 0xFFFFFFFF, group: 0 } : { group: -1 }; }
 
     _applyAsteroidFilter() {
         const f = this._asteroidCollisionFilter;
