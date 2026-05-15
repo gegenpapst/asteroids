@@ -352,9 +352,7 @@ class Game {
         ctx.textAlign   = 'right';
         ctx.fillText(`HI ${String(this.hiScore).padStart(6, '0')}`, W - 16, 28);
         ctx.textAlign   = 'center';
-        const _d = new Date(document.lastModified);
-        const _date = `${String(_d.getDate()).padStart(2,'0')}.${String(_d.getMonth()+1).padStart(2,'0')}.${String(_d.getFullYear()).slice(-2)}`;
-        ctx.fillText(`LVL ${this.level}  ·  ${_date}`, W / 2, 28);
+        ctx.fillText(`LVL ${this.level}`, W / 2, 28);
 
         // Life icons
         for (let i = 0; i < this.lives; i++) {
@@ -441,6 +439,15 @@ class Game {
         ctx.font        = 'bold 36px monospace';
         ctx.fillText('HILFE', cx, cy - 200);
         ctx.shadowBlur = 0;
+
+        const _lm  = new Date(document.lastModified);
+        const _pad = n => String(n).padStart(2, '0');
+        ctx.fillStyle = '#555';
+        ctx.font      = '12px monospace';
+        ctx.fillText(
+            `Stand: ${_pad(_lm.getDate())}.${_pad(_lm.getMonth()+1)}.${_lm.getFullYear()}  ${_pad(_lm.getHours())}:${_pad(_lm.getMinutes())} Uhr`,
+            cx, cy - 178
+        );
 
         const sections = [
             { head: 'STEUERUNG', rows: [
