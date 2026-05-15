@@ -53,11 +53,11 @@ describe('Asteroid body', () => {
         expect(a.body.position.y).toBe(250);
     });
 
-    test('body velocity is set to initial vx and vy', () => {
+    test('body velocity is set to vx/60 and vy/60 (pixels/frame)', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0.5);
         const a = new Asteroid(0, 0, 0, 0);
-        expect(a.body.velocity.x).toBeCloseTo(a.vx);
-        expect(a.body.velocity.y).toBeCloseTo(a.vy);
+        expect(a.body.velocity.x).toBeCloseTo(a.vx / 60);
+        expect(a.body.velocity.y).toBeCloseTo(a.vy / 60);
     });
 });
 

@@ -348,10 +348,8 @@ class Game {
 
     _syncBodies() {
         for (const a of this.asteroids) {
-            a.x  = a.body.position.x;
-            a.y  = a.body.position.y;
-            a.vx = a.body.velocity.x;
-            a.vy = a.body.velocity.y;
+            a.x = a.body.position.x;
+            a.y = a.body.position.y;
         }
     }
 
