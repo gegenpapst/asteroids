@@ -118,13 +118,17 @@ const Input = {
     wasPressed(code){ return this._pressed.has(code); },
     flush()         { this._pressed.clear(); },
 
-    left()  { return this.isHeld('ArrowLeft')  || this.isHeld('KeyA'); },
-    right() { return this.isHeld('ArrowRight') || this.isHeld('KeyD'); },
-    up()    { return this.isHeld('ArrowUp')    || this.isHeld('KeyW'); },
-    fire()  { return this.isHeld('Space') || this.isHeld('KeyZ'); },
-    start() { return this.wasPressed('Enter') || this.wasPressed('Space'); },
-    help()     { return this.wasPressed('KeyH'); },
-    teleport() { return this.wasPressed('KeyS') || this.wasPressed('ArrowDown'); },
+    _shift() { return this.isHeld('ShiftLeft') || this.isHeld('ShiftRight'); },
+
+    left()       { return !this._shift() && (this.isHeld('ArrowLeft')  || this.isHeld('KeyA')); },
+    right()      { return !this._shift() && (this.isHeld('ArrowRight') || this.isHeld('KeyD')); },
+    up()         { return this.isHeld('ArrowUp')    || this.isHeld('KeyW'); },
+    fire()       { return this.isHeld('Space') || this.isHeld('KeyZ'); },
+    start()      { return this.wasPressed('Enter') || this.wasPressed('Space'); },
+    help()       { return this.wasPressed('KeyH'); },
+    teleport()   { return this.wasPressed('KeyS') || this.wasPressed('ArrowDown'); },
+    strafeLeft()  { return this._shift() && (this.isHeld('ArrowLeft')  || this.isHeld('KeyA')); },
+    strafeRight() { return this._shift() && (this.isHeld('ArrowRight') || this.isHeld('KeyD')); },
 };
 
 if (typeof module !== 'undefined') {
