@@ -54,8 +54,7 @@ const POWERUP_DURATION     = 5.0;
 const POWERUP_SPAWN_CHANCE = 0.12;
 const POWERUP_TYPES = ['shield', 'rapid', 'spread'];
 
-const ROCK_COUNT_MIN = 1;
-const ROCK_COUNT_MAX = 5;
+// Rock count is controlled by the in-game config dialog (3 levels)
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 function rand(a, b)       { return Math.random() * (b - a) + a; }
@@ -148,7 +147,6 @@ if (typeof module !== 'undefined') {
         PARTICLE_LIFE, PARTICLE_SPEED,
         UFO_RADIUS, UFO_SPEED, UFO_SCORE,
         POWERUP_DURATION, POWERUP_SPAWN_CHANCE, POWERUP_TYPES,
-        ROCK_COUNT_MIN, ROCK_COUNT_MAX,
         Input,
     };
 }
