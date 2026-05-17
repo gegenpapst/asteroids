@@ -24,6 +24,7 @@ class Game {
         this.ufoBullets  = [];
         this.rocks       = [];
         this.pumices     = [];
+        this.pumicePolys = [];
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -34,7 +35,7 @@ class Game {
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
 
-        this.config = { bulletRange: 2, powerupFreq: 2, rockCount: 2, asteroidBounce: 1 };
+        this.config = { bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1 };
         this._configCursor   = 0;
         this._configPrevState = STATE.START;
 
@@ -53,8 +54,8 @@ class Game {
         this.ufoBullets  = [];
         Matter.World.clear(this.engine.world, false);
         const [rMin, rMax] = this._rockCountRange;
-        this.rocks       = Array.from({ length: randInt(rMin, rMax) }, () => new Rock(rand(60, W - 60), rand(60, H - 60)));
-        this.ship        = new Ship();
+        this.rocks       = Array.from({ length: randInt(rMin, rMax) }, () => new RockPoly(rand(60, W - 60), rand(60, H - 60)));
+        this.ship        = new ShipPoly();
         [this.ship.x, this.ship.y] = this._safeShipPos();
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
@@ -62,9 +63,22 @@ class Game {
         this.ufoHumTimer = 0;
         this.beatTimer   = 1.0;
         this.beatPhase   = 0;
-        this.pumices     = Array.from({ length: randInt(1, 3) }, () => new Pumice(rand(80, W - 80), rand(80, H - 80)));
+        const [pcMin, pcMax] = this._pumiceCountRange;
+        const pumices = [];
+        for (let i = 0; i < randInt(pcMin, pcMax); i++) {
+            const [px, py] = this._safePumicePos(pumices);
+            pumices.push(new PumiceCluster(px, py));
+        }
+        this.pumices = pumices;
+        const pumicePolys = [];
+        for (let i = 0; i < randInt(pcMin, pcMax); i++) {
+            const [px, py] = this._safePumicePolyPos(pumicePolys);
+            pumicePolys.push(new PumicePoly(px, py));
+        }
+        this.pumicePolys = pumicePolys;
         Matter.World.add(this.engine.world, this.rocks.map(r => r.body));
         Matter.World.add(this.engine.world, this.pumices.flatMap(p => p.cells.map(c => c.body)));
+        Matter.World.add(this.engine.world, this.pumicePolys.map(p => p.body));
         this._nextLevel();
         this.state = STATE.PLAYING;
     }
@@ -74,8 +88,10 @@ class Game {
         this.t += dt;
 
         if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
-            if (Input.start()) this.start();
-            if (Input.config()) { this._configPrevState = this.state; this.state = STATE.CONFIG; }
+            if (Input.start() || Input.config()) {
+                this._configPrevState = this.state;
+                this.state = STATE.CONFIG;
+            }
             Input.flush();
             return;
         }
@@ -87,15 +103,21 @@ class Game {
         }
 
         if (this.state === STATE.CONFIG) {
-            const params    = ['bulletRange', 'powerupFreq', 'rockCount', 'asteroidBounce'];
-            const paramMax  = { bulletRange: 3, powerupFreq: 3, rockCount: 3, asteroidBounce: 2 };
-            if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
-            if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
-            const key = params[this._configCursor];
-            if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
-            if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
-            if (key === 'asteroidBounce') this._applyAsteroidFilter();
-            if (Input.config() || Input.wasPressed('Enter')) this.state = this._configPrevState;
+            const readOnly = this._configPrevState === STATE.PLAYING;
+            if (!readOnly) {
+                const params    = ['bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce'];
+                const paramMax  = { bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2 };
+                if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
+                if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
+                const key = params[this._configCursor];
+                if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
+                if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
+                if (key === 'asteroidBounce') this._applyAsteroidFilter();
+            }
+            if (Input.config() || Input.wasPressed('Enter')) {
+                if (readOnly) this.state = STATE.PLAYING;
+                else          this.start();
+            }
             Input.flush();
             return;
         }
@@ -144,7 +166,7 @@ class Game {
             this._syncBodies();
             if (this.deadTimer <= 0) {
                 if (this.lives > 0) {
-                    this.ship = new Ship();
+                    this.ship = new ShipPoly();
                     [this.ship.x, this.ship.y] = this._safeShipPos();
                     this.state = STATE.PLAYING;
                 } else {
@@ -175,7 +197,8 @@ class Game {
         }
 
         if (Input.teleport() && this.ship.invulnerable <= 0) {
-            this.ship.teleport(rand(50, W - 50), rand(50, H - 50));
+            const [tx, ty] = this._safeShipPos();
+            this.ship.teleport(tx, ty);
             this.snd.powerUp('shield');
         }
 
@@ -266,6 +289,26 @@ class Game {
         }
         this.pumices = this.pumices.filter(p => p.alive);
 
+        // Bullet × PumicePoly
+        outerPP:
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            for (let pi = this.pumicePolys.length - 1; pi >= 0; pi--) {
+                const pp = this.pumicePolys[pi];
+                if (dist(b, pp) < pp.radius + b.radius) {
+                    const { destroyed, oldBody, newBody } = pp.hit(b.x, b.y);
+                    Matter.World.remove(this.engine.world, oldBody);
+                    if (newBody) Matter.World.add(this.engine.world, newBody);
+                    for (let k = 0; k < 5; k++)
+                        this.particles.push(new Particle(b.x, b.y, `hsl(${rand(25,40)},18%,${rand(60,78)}%)`));
+                    if (destroyed) this._boom(pp.x, pp.y, 1);
+                    this.bullets.splice(bi, 1);
+                    continue outerPP;
+                }
+            }
+        }
+        this.pumicePolys = this.pumicePolys.filter(p => p.alive);
+
         // Ship × Asteroid
         if (this.ship.invulnerable <= 0) {
             for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
@@ -315,6 +358,17 @@ class Game {
                         else this._killShip();
                         break outerSP;
                     }
+                }
+            }
+        }
+
+        // Ship × PumicePoly
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (const pp of this.pumicePolys) {
+                if (dist(this.ship, pp) < pp.radius + this.ship.radius) {
+                    if (this.ship.shieldTimer > 0) this.ship.shieldTimer = 0;
+                    else this._killShip();
+                    break;
                 }
             }
         }
@@ -394,6 +448,7 @@ class Game {
 
         this._drawRocks();
         this.pumices.forEach(p => p.draw());
+        this.pumicePolys.forEach(p => p.draw());
         this.asteroids.forEach(a => a.draw());
         this.powerups.forEach(p => p.draw());
         this.ufos.forEach(u => u.draw());
@@ -416,7 +471,41 @@ class Game {
             x = rand(60, W - 60);
             y = rand(60, H - 60);
             tries++;
-        } while (tries < 200 && this.rocks.some(r => dist({ x, y }, r) < r.radius + margin));
+        } while (tries < 200 && (
+            this.rocks.some(r => dist({ x, y }, r) < r.radius + margin) ||
+            this.asteroids.some(a => dist({ x, y }, a) < a.radius + margin) ||
+            this.pumices.some(p => p.cells.some(c => c.alive && dist({ x, y }, c) < c.r + margin)) ||
+            this.pumicePolys.some(pp => dist({ x, y }, pp) < pp.radius + margin)
+        ));
+        return [x, y];
+    }
+
+    _safePumicePos(placed) {
+        const margin = 54 + 10;
+        let x, y, tries = 0;
+        do {
+            x = rand(80, W - 80);
+            y = rand(80, H - 80);
+            tries++;
+        } while (tries < 200 && (
+            this.rocks.some(r => dist({ x, y }, r) < r.radius + margin) ||
+            placed.some(p  => dist({ x, y }, p) < p.radius + margin)
+        ));
+        return [x, y];
+    }
+
+    _safePumicePolyPos(placed) {
+        const margin = 50 + 10;
+        let x, y, tries = 0;
+        do {
+            x = rand(80, W - 80);
+            y = rand(80, H - 80);
+            tries++;
+        } while (tries < 200 && (
+            this.rocks.some(r => dist({ x, y }, r) < r.radius + margin) ||
+            this.pumices.some(p => dist({ x, y }, p) < p.radius + margin) ||
+            placed.some(p  => dist({ x, y }, p) < p.radius + margin)
+        ));
         return [x, y];
     }
 
@@ -437,7 +526,7 @@ class Game {
                 x = rand(0, W);
                 y = rand(0, H);
             } while (dist({ x, y }, { x: cx, y: cy }) < W * 0.22);
-            const a = new Asteroid(x, y, 0);
+            const a = new AsteroidPoly(x, y, 0);
             this.asteroids.push(a);
             Matter.World.add(this.engine.world, a.body);
         }
@@ -576,6 +665,7 @@ class Game {
     get _bulletLife()             { return [0.35, 0.65, 1.0][this.config.bulletRange  - 1]; }
     get _powerupChance()          { return [0.05, 0.12, 0.25][this.config.powerupFreq - 1]; }
     get _rockCountRange()         { return [[1,5],[5,10],[10,20]][this.config.rockCount - 1]; }
+    get _pumiceCountRange()       { return [[0,0],[1,3],[3,6]][this.config.pumiceCount - 1]; }
     get _asteroidCollisionFilter(){ return this.config.asteroidBounce === 2 ? { category: 0x0001, mask: 0xFFFFFFFF, group: 0 } : { group: -1 }; }
 
     _applyAsteroidFilter() {
@@ -584,7 +674,8 @@ class Game {
     }
 
     _drawConfig() {
-        const cx = W / 2, cy = H / 2;
+        const cx = W / 2;
+        const readOnly = this._configPrevState === STATE.PLAYING;
 
         ctx.fillStyle = 'rgba(0,0,0,0.82)';
         ctx.fillRect(0, 0, W, H);
@@ -593,30 +684,37 @@ class Game {
         ctx.shadowColor = '#4af';
         ctx.shadowBlur  = 24;
         ctx.fillStyle   = '#fff';
-        ctx.font        = 'bold 36px monospace';
-        ctx.fillText('KONFIGURATION', cx, cy - 130);
+        ctx.font        = 'bold 30px monospace';
+        ctx.fillText('KONFIGURATION', cx, 44);
         ctx.shadowBlur  = 0;
+
+        if (readOnly) {
+            ctx.fillStyle = '#f84';
+            ctx.font      = 'bold 12px monospace';
+            ctx.fillText('READ ONLY', cx, 62);
+        }
 
         const params = [
             { key: 'bulletRange',    label: 'Reichweite Schüsse',    opts: ['kurz',   'normal', 'weit']   },
             { key: 'powerupFreq',    label: 'Häufigkeit Powerups',    opts: ['selten', 'normal', 'häufig'] },
             { key: 'rockCount',      label: 'Anzahl Rocks',           opts: ['wenige', 'normal', 'viele']  },
+            { key: 'pumiceCount',    label: 'Anzahl Bimsstein',       opts: ['keine',  'wenige', 'viele']  },
             { key: 'asteroidBounce', label: 'Asteroiden-Kollisionen', opts: ['aus',    'ein']              },
         ];
 
-        let y = cy - 110;
+        let y = 80;
         params.forEach((p, i) => {
             const active = i === this._configCursor;
             const val    = this.config[p.key];
 
             ctx.textAlign = 'center';
-            ctx.font      = active ? 'bold 15px monospace' : '14px monospace';
+            ctx.font      = active ? 'bold 14px monospace' : '13px monospace';
             ctx.fillStyle = active ? '#4af' : '#888';
             ctx.fillText(p.label, cx, y);
-            y += 28;
+            y += 22;
 
             const count  = p.opts.length;
-            const slotW  = 130, gap = 14;
+            const slotW  = 120, gap = 12;
             const totalW = count * slotW + (count - 1) * gap;
             const startX = cx - totalW / 2;
 
@@ -629,22 +727,27 @@ class Game {
                 ctx.strokeStyle = selected ? (active ? '#4af' : '#557') : 'rgba(255,255,255,0.2)';
                 ctx.lineWidth   = 1.5;
                 ctx.beginPath();
-                ctx.roundRect(bx, by, slotW, 30, 6);
+                ctx.roundRect(bx, by, slotW, 28, 6);
                 ctx.fill();
                 ctx.stroke();
 
                 ctx.fillStyle = selected ? '#fff' : '#666';
-                ctx.font      = (selected ? 'bold ' : '') + '13px monospace';
+                ctx.font      = (selected ? 'bold ' : '') + '12px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText(`${n}  ${p.opts[n - 1]}`, bx + slotW / 2, by + 20);
+                ctx.fillText(`${n}  ${p.opts[n - 1]}`, bx + slotW / 2, by + 18);
             }
-            y += 52;
+            y += 44;
         });
 
         ctx.fillStyle   = '#555';
         ctx.font        = '13px monospace';
         ctx.textAlign   = 'center';
-        ctx.fillText('↑ ↓  Parameter   ← →  Wert   ENTER / C  Zurück', cx, cy + 160);
+        ctx.fillText(
+            readOnly
+                ? 'ENTER / C  Zurück ins Spiel'
+                : '↑ ↓  Parameter   ← →  Wert   ENTER  Spiel starten',
+            cx, 548
+        );
     }
 
     _drawStart() {
@@ -673,10 +776,6 @@ class Game {
             ctx.font      = '22px monospace';
             ctx.fillText('PRESS ENTER OR SPACE TO START', cx, cy + 140);
         }
-
-        ctx.fillStyle = '#555';
-        ctx.font      = '14px monospace';
-        ctx.fillText('C — Konfiguration', cx, cy + 178);
     }
 
     _drawHelp() {

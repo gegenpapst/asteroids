@@ -1,11 +1,14 @@
 'use strict';
 
-class Pumice {
+class PumiceCluster {
     constructor(x, y) {
-        this.x      = x;
-        this.y      = y;
-        this.radius = rand(22, 54);
-        this.cells  = this._generateCells();
+        this.x         = x;
+        this.y         = y;
+        this.radius    = rand(22, 54);
+        this._cellR    = this.radius * 0.22;
+        this.cells     = this._generateCells();
+        this._offCanvas = Object.assign(document.createElement('canvas'), { width: W, height: H });
+        this._offCtx    = this._offCanvas.getContext('2d');
     }
 
     _generateCells() {
@@ -41,20 +44,26 @@ class Pumice {
     update() { return true; }
 
     draw() {
-        for (const c of this.cells) {
-            if (!c.alive) continue;
-            ctx.beginPath();
-            ctx.arc(c.x, c.y, c.r, 0, TAU);
-            ctx.fillStyle   = 'rgba(160, 155, 148, 0.55)';
-            ctx.strokeStyle = 'rgba(154, 146, 136, 0.7)';
-            ctx.lineWidth   = 1.5;
-            ctx.shadowColor = '#706860';
-            ctx.shadowBlur  = 6;
-            ctx.fill();
-            ctx.stroke();
-            ctx.shadowBlur  = 0;
+        const alive = this.cells.filter(c => c.alive);
+        if (!alive.length) return;
+
+        const offCtx = this._offCtx;
+        offCtx.fillStyle = '#050210';
+        offCtx.fillRect(0, 0, W, H);
+
+        offCtx.filter    = `blur(${Math.round(this._cellR * 0.75)}px)`;
+        offCtx.fillStyle = 'rgb(178, 170, 158)';
+        for (const c of alive) {
+            offCtx.beginPath();
+            offCtx.arc(c.x, c.y, c.r * 1.25, 0, TAU);
+            offCtx.fill();
         }
+        offCtx.filter = 'none';
+
+        ctx.filter = 'contrast(14)';
+        ctx.drawImage(this._offCanvas, 0, 0);
+        ctx.filter = 'none';
     }
 }
 
-if (typeof module !== 'undefined') module.exports = { Pumice };
+if (typeof module !== 'undefined') module.exports = { PumiceCluster };

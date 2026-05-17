@@ -1,6 +1,6 @@
 'use strict';
 
-class Rock {
+class RockPoly {
     constructor(x, y) {
         this.x      = x;
         this.y      = y;
@@ -41,4 +41,4 @@ class Rock {
     }
 }
 
-if (typeof module !== 'undefined') module.exports = { Rock };
+if (typeof module !== 'undefined') module.exports = { RockPoly };

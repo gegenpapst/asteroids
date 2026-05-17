@@ -1,36 +1,36 @@
 'use strict';
 
-const { Asteroid } = require('../../src/entities/Asteroid.js');
+const { AsteroidPoly } = require('../../src/entities/AsteroidPoly.js');
 
 afterEach(() => jest.restoreAllMocks());
 
-describe('Asteroid constructor', () => {
+describe('AsteroidPoly constructor', () => {
     test('radius matches ASTEROID_RADIUS[size] for each size', () => {
-        expect(new Asteroid(0, 0, 0).radius).toBe(ASTEROID_RADIUS[0]);
-        expect(new Asteroid(0, 0, 1).radius).toBe(ASTEROID_RADIUS[1]);
-        expect(new Asteroid(0, 0, 2).radius).toBe(ASTEROID_RADIUS[2]);
+        expect(new AsteroidPoly(0, 0, 0).radius).toBe(ASTEROID_RADIUS[0]);
+        expect(new AsteroidPoly(0, 0, 1).radius).toBe(ASTEROID_RADIUS[1]);
+        expect(new AsteroidPoly(0, 0, 2).radius).toBe(ASTEROID_RADIUS[2]);
     });
 
     test('score matches ASTEROID_SCORE[size] for each size', () => {
-        expect(new Asteroid(0, 0, 0).score).toBe(ASTEROID_SCORE[0]);
-        expect(new Asteroid(0, 0, 1).score).toBe(ASTEROID_SCORE[1]);
-        expect(new Asteroid(0, 0, 2).score).toBe(ASTEROID_SCORE[2]);
+        expect(new AsteroidPoly(0, 0, 0).score).toBe(ASTEROID_SCORE[0]);
+        expect(new AsteroidPoly(0, 0, 1).score).toBe(ASTEROID_SCORE[1]);
+        expect(new AsteroidPoly(0, 0, 2).score).toBe(ASTEROID_SCORE[2]);
     });
 
     test('position is set from constructor arguments', () => {
-        const a = new Asteroid(200, 300, 0);
+        const a = new AsteroidPoly(200, 300, 0);
         expect(a.x).toBe(200);
         expect(a.y).toBe(300);
     });
 
     test('vertices count is between 7 and 13', () => {
-        const a = new Asteroid(0, 0, 0);
+        const a = new AsteroidPoly(0, 0, 0);
         expect(a.verts.length).toBeGreaterThanOrEqual(7);
         expect(a.verts.length).toBeLessThanOrEqual(13);
     });
 
     test('each vertex has angle and radius fields', () => {
-        const a = new Asteroid(0, 0, 0);
+        const a = new AsteroidPoly(0, 0, 0);
         for (const v of a.verts) {
             expect(typeof v.a).toBe('number');
             expect(typeof v.r).toBe('number');
@@ -39,15 +39,15 @@ describe('Asteroid constructor', () => {
 
     test('explicit angle sets movement direction', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0.5);
-        const a = new Asteroid(0, 0, 0, 0);
+        const a = new AsteroidPoly(0, 0, 0, 0);
         expect(a.vy).toBeCloseTo(0, 5);
         expect(a.vx).toBeGreaterThan(0);
     });
 });
 
-describe('Asteroid body', () => {
+describe('AsteroidPoly body', () => {
     test('creates a Matter body at constructor position', () => {
-        const a = new Asteroid(150, 250, 0);
+        const a = new AsteroidPoly(150, 250, 0);
         expect(a.body).toBeDefined();
         expect(a.body.position.x).toBe(150);
         expect(a.body.position.y).toBe(250);
@@ -55,15 +55,15 @@ describe('Asteroid body', () => {
 
     test('body velocity is set to vx/60 and vy/60 (pixels/frame)', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0.5);
-        const a = new Asteroid(0, 0, 0, 0);
+        const a = new AsteroidPoly(0, 0, 0, 0);
         expect(a.body.velocity.x).toBeCloseTo(a.vx / 60);
         expect(a.body.velocity.y).toBeCloseTo(a.vy / 60);
     });
 });
 
-describe('Asteroid.update', () => {
+describe('AsteroidPoly.update', () => {
     test('rotation advances by rotSpeed * dt', () => {
-        const a = new Asteroid(0, 0, 0);
+        const a = new AsteroidPoly(0, 0, 0);
         const rotBefore = a.rot;
         const expected = rotBefore + a.rotSpeed * 0.016;
         a.update(0.016);
@@ -71,28 +71,28 @@ describe('Asteroid.update', () => {
     });
 });
 
-describe('Asteroid.split', () => {
+describe('AsteroidPoly.split', () => {
     test.each([[0, 1], [1, 2]])('size %i splits into 2 asteroids of size %i', (parent, child) => {
-        const children = new Asteroid(100, 100, parent).split();
+        const children = new AsteroidPoly(100, 100, parent).split();
         expect(children).toHaveLength(2);
         expect(children[0].size).toBe(child);
         expect(children[1].size).toBe(child);
     });
 
     test('size 2 does not split', () => {
-        expect(new Asteroid(100, 100, 2).split()).toHaveLength(0);
+        expect(new AsteroidPoly(100, 100, 2).split()).toHaveLength(0);
     });
 
     test('children spawn within parent radius of parent position', () => {
-        const parent = new Asteroid(200, 300, 0);
+        const parent = new AsteroidPoly(200, 300, 0);
         const [c1, c2] = parent.split();
         expect(Math.hypot(c1.x - 200, c1.y - 300)).toBeLessThanOrEqual(parent.radius);
         expect(Math.hypot(c2.x - 200, c2.y - 300)).toBeLessThanOrEqual(parent.radius);
     });
 
-    test('children are valid Asteroid instances', () => {
-        for (const c of new Asteroid(0, 0, 0).split()) {
-            expect(c).toBeInstanceOf(Asteroid);
+    test('children are valid AsteroidPoly instances', () => {
+        for (const c of new AsteroidPoly(0, 0, 0).split()) {
+            expect(c).toBeInstanceOf(AsteroidPoly);
         }
     });
 });

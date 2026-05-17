@@ -2,7 +2,7 @@
 
 const ASTEROID_COLORS = ['#8899aa', '#99aaaa', '#aabbbb'];
 
-class Asteroid {
+class AsteroidPoly {
     constructor(x, y, size = 0, angle = null) {
         this.x    = x;
         this.y    = y;
@@ -68,10 +68,10 @@ class Asteroid {
         const perp   = rand(0, TAU);
         const ox = Math.cos(perp) * offset, oy = Math.sin(perp) * offset;
         return [
-            new Asteroid(this.x + ox, this.y + oy, this.size + 1, rand(0, TAU)),
-            new Asteroid(this.x - ox, this.y - oy, this.size + 1, rand(0, TAU)),
+            new AsteroidPoly(this.x + ox, this.y + oy, this.size + 1, rand(0, TAU)),
+            new AsteroidPoly(this.x - ox, this.y - oy, this.size + 1, rand(0, TAU)),
         ];
     }
 }
 
-if (typeof module !== 'undefined') module.exports = { Asteroid };
+if (typeof module !== 'undefined') module.exports = { AsteroidPoly };

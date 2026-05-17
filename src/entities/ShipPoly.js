@@ -1,6 +1,6 @@
 'use strict';
 
-class Ship {
+class ShipPoly {
     constructor() {
         this.x            = W / 2;
         this.y            = H / 2;
@@ -152,4 +152,4 @@ class Ship {
     }
 }
 
-if (typeof module !== 'undefined') module.exports = { Ship };
+if (typeof module !== 'undefined') module.exports = { ShipPoly };
