@@ -6,8 +6,11 @@ class PumiceCluster {
         this.y         = y;
         this.radius    = rand(22, 54);
         this._cellR    = this.radius * 0.22;
+        this._blur     = Math.round(this._cellR * 0.75);
+        this._pad      = this._blur * 3 + 4;
         this.cells     = this._generateCells();
-        this._offCanvas = Object.assign(document.createElement('canvas'), { width: W, height: H });
+        const size     = Math.ceil((this.radius + this._pad) * 2);
+        this._offCanvas = Object.assign(document.createElement('canvas'), { width: size, height: size });
         this._offCtx    = this._offCanvas.getContext('2d');
     }
 
@@ -48,20 +51,24 @@ class PumiceCluster {
         if (!alive.length) return;
 
         const offCtx = this._offCtx;
-        offCtx.fillStyle = '#050210';
-        offCtx.fillRect(0, 0, W, H);
+        const size   = this._offCanvas.width;
+        const ox     = this.x - size / 2;
+        const oy     = this.y - size / 2;
 
-        offCtx.filter    = `blur(${Math.round(this._cellR * 0.75)}px)`;
+        offCtx.fillStyle = '#050210';
+        offCtx.fillRect(0, 0, size, size);
+
+        offCtx.filter    = `blur(${this._blur}px)`;
         offCtx.fillStyle = 'rgb(178, 170, 158)';
         for (const c of alive) {
             offCtx.beginPath();
-            offCtx.arc(c.x, c.y, c.r * 1.25, 0, TAU);
+            offCtx.arc(c.x - ox, c.y - oy, c.r * 1.25, 0, TAU);
             offCtx.fill();
         }
         offCtx.filter = 'none';
 
         ctx.filter = 'contrast(14)';
-        ctx.drawImage(this._offCanvas, 0, 0);
+        ctx.drawImage(this._offCanvas, ox, oy);
         ctx.filter = 'none';
     }
 }
