@@ -97,6 +97,66 @@ describe('ShipPoly.fire', () => {
     });
 });
 
+describe('ShipPoly strafe (lateral acceleration model)', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    test('forward velocity is preserved (not capped/scaled down)', () => {
+        jest.spyOn(Input, 'strafeLeft').mockReturnValue(true);
+        const s = new ShipPoly();
+        s.angle = 0;             // facing right (+x)
+        s.vx = 200; s.vy = 0;
+        s.update(0.016);
+        const friction = Math.pow(SHIP_FRICTION, 0.016 * 60);
+        const expectedFwd = 200 * friction;
+        // forward component along ship angle
+        const fwd = s.vx * Math.cos(s.angle) + s.vy * Math.sin(s.angle);
+        expect(fwd).toBeCloseTo(expectedFwd, 0);
+    });
+
+    test('lateral builds up gradually (not instant set to full strafe speed)', () => {
+        jest.spyOn(Input, 'strafeLeft').mockReturnValue(true);
+        const s = new ShipPoly();
+        s.angle = 0;
+        s.vx = 200; s.vy = 0;
+        s.update(0.016);
+        // After 1 frame at SHIP_STRAFE_ACCEL=500, lateral magnitude ≈ 500 * 0.016 = 8
+        // (friction-reduced, so a bit less)
+        const lat = -s.vx * Math.sin(s.angle) + s.vy * Math.cos(s.angle);
+        expect(Math.abs(lat)).toBeGreaterThan(0);
+        expect(Math.abs(lat)).toBeLessThan(SHIP_STRAFE_SPEED / 2);  // far from instant
+    });
+
+    test('strafe from rest does not accelerate (lateral capped to forward magnitude = 0)', () => {
+        jest.spyOn(Input, 'strafeLeft').mockReturnValue(true);
+        const s = new ShipPoly();
+        s.vx = 0; s.vy = 0;
+        s.update(0.016);
+        expect(Math.hypot(s.vx, s.vy)).toBeCloseTo(0, 5);
+    });
+
+    test('lateral never exceeds forward magnitude', () => {
+        jest.spyOn(Input, 'strafeLeft').mockReturnValue(true);
+        const s = new ShipPoly();
+        s.angle = 0;
+        s.vx = 30; s.vy = 0;
+        // Run many frames - lateral should saturate at |fwd|, not at SHIP_STRAFE_SPEED
+        for (let i = 0; i < 100; i++) s.update(0.016);
+        const fwd = s.vx * Math.cos(s.angle) + s.vy * Math.sin(s.angle);
+        const lat = -s.vx * Math.sin(s.angle) + s.vy * Math.cos(s.angle);
+        expect(Math.abs(lat)).toBeLessThanOrEqual(Math.abs(fwd) + 0.01);
+    });
+
+    test('lateral saturates at SHIP_STRAFE_SPEED when forward is large', () => {
+        jest.spyOn(Input, 'strafeLeft').mockReturnValue(true);
+        const s = new ShipPoly();
+        s.angle = 0;
+        s.vx = 400; s.vy = 0;
+        for (let i = 0; i < 100; i++) s.update(0.016);
+        const lat = -s.vx * Math.sin(s.angle) + s.vy * Math.cos(s.angle);
+        expect(Math.abs(lat)).toBeLessThanOrEqual(SHIP_STRAFE_SPEED + 0.01);
+    });
+});
+
 describe('ShipPoly.teleport', () => {
     test('sets position to given coordinates', () => {
         const s = new ShipPoly();

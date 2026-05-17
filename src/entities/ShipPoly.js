@@ -37,12 +37,12 @@ class ShipPoly {
         if (Input.strafeLeft() || Input.strafeRight()) {
             const dir = Input.strafeLeft() ? 1 : -1;
             const cos = Math.cos(this.angle), sin = Math.sin(this.angle);
-            const speedBefore = Math.hypot(this.vx, this.vy);
             const fwd = this.vx * cos + this.vy * sin;
-            this.vx = fwd * cos + dir * sin * SHIP_STRAFE_SPEED;
-            this.vy = fwd * sin - dir * cos * SHIP_STRAFE_SPEED;
-            const speedAfter = Math.hypot(this.vx, this.vy);
-            if (speedAfter > speedBefore) { this.vx *= speedBefore / speedAfter; this.vy *= speedBefore / speedAfter; }
+            const lat = -this.vx * sin + this.vy * cos;
+            const maxLat = Math.min(SHIP_STRAFE_SPEED, Math.abs(fwd));
+            const newLat = clamp(lat + dir * SHIP_STRAFE_ACCEL * dt, -maxLat, maxLat);
+            this.vx = fwd * cos - newLat * sin;
+            this.vy = fwd * sin + newLat * cos;
         }
 
         this.thrusting = Input.up();
