@@ -295,7 +295,7 @@ class Game {
             const b = this.bullets[bi];
             for (let pi = this.pumicePolys.length - 1; pi >= 0; pi--) {
                 const pp = this.pumicePolys[pi];
-                if (dist(b, pp) < pp.radius + b.radius) {
+                if (pp.collidesWithCircle(b.x, b.y, b.radius)) {
                     const { destroyed, oldBody, newBody } = pp.hit(b.x, b.y);
                     Matter.World.remove(this.engine.world, oldBody);
                     if (newBody) Matter.World.add(this.engine.world, newBody);
@@ -365,7 +365,7 @@ class Game {
         // Ship × PumicePoly
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const pp of this.pumicePolys) {
-                if (dist(this.ship, pp) < pp.radius + this.ship.radius) {
+                if (pp.collidesWithCircle(this.ship.x, this.ship.y, this.ship.radius)) {
                     if (this.ship.shieldTimer > 0) this.ship.shieldTimer = 0;
                     else this._killShip();
                     break;
@@ -765,8 +765,17 @@ class Game {
         ctx.fillText('ASTEROIDS', cx, cy - 90);
 
         ctx.shadowBlur  = 0;
-        ctx.fillStyle   = '#888';
-        ctx.font        = '18px monospace';
+        const _lm  = new Date(document.lastModified);
+        const _pad = n => String(n).padStart(2, '0');
+        ctx.fillStyle = '#555';
+        ctx.font      = '12px monospace';
+        ctx.fillText(
+            `Stand: ${_pad(_lm.getDate())}.${_pad(_lm.getMonth()+1)}.${_lm.getFullYear()}  ${_pad(_lm.getHours())}:${_pad(_lm.getMinutes())} Uhr`,
+            cx, cy - 40
+        );
+
+        ctx.fillStyle = '#888';
+        ctx.font      = '18px monospace';
         ctx.fillText('ARROWS / WASD  —  rotate & thrust', cx, cy + 10);
         ctx.fillText('SPACE / Z  —  fire', cx, cy + 42);
 

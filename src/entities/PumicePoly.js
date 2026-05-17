@@ -14,7 +14,39 @@ class PumicePoly {
             a: (i / n) * TAU + rand(-0.08, 0.08),
             r: this.radius * rand(0.82, 1.08),
         }));
+        // Sort verts by normalized angle for stable interpolation in radiusAtAngle
+        this.verts.sort((a, b) => this._normAngle(a.a) - this._normAngle(b.a));
         this.body = this._makeBody();
+    }
+
+    _normAngle(a) { return ((a % TAU) + TAU) % TAU; }
+
+    // Polygon's outline radius at the given LOCAL angle (relative to pumice rotation)
+    radiusAtAngle(localAngle) {
+        const target = this._normAngle(localAngle);
+        const n = this.verts.length;
+        for (let i = 0; i < n; i++) {
+            const v1 = this.verts[i];
+            const v2 = this.verts[(i + 1) % n];
+            const a1 = this._normAngle(v1.a);
+            let span = this._normAngle(v2.a) - a1;
+            if (span <= 0) span += TAU;
+            let off = target - a1;
+            if (off < 0) off += TAU;
+            if (off <= span) {
+                const t = off / span;
+                return v1.r * (1 - t) + v2.r * t;
+            }
+        }
+        return this.radius;
+    }
+
+    collidesWithCircle(wx, wy, r) {
+        const dx = wx - this.x, dy = wy - this.y;
+        const d  = Math.hypot(dx, dy);
+        if (d === 0) return true;
+        const polyR = this.radiusAtAngle(Math.atan2(dy, dx) - this.rot);
+        return d < polyR + r;
     }
 
     _makeBody() {

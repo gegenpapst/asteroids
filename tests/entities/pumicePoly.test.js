@@ -88,6 +88,67 @@ describe('PumicePoly.hit', () => {
     });
 });
 
+describe('PumicePoly.radiusAtAngle', () => {
+    test('returns vertex radius when angle matches a vert exactly', () => {
+        const p = new PumicePoly(0, 0);
+        for (const v of p.verts) {
+            expect(p.radiusAtAngle(v.a)).toBeCloseTo(v.r, 5);
+        }
+    });
+
+    test('interpolates between adjacent verts', () => {
+        const p = new PumicePoly(0, 0);
+        const v1 = p.verts[0];
+        const v2 = p.verts[1];
+        const midAngle = (v1.a + v2.a) / 2;
+        const midR     = (v1.r + v2.r) / 2;
+        expect(p.radiusAtAngle(midAngle)).toBeCloseTo(midR, 5);
+    });
+
+    test('handles angle wrap-around (last to first vert)', () => {
+        const p = new PumicePoly(0, 0);
+        // angle just past last vert should interpolate to first vert
+        const last  = p.verts[p.verts.length - 1];
+        const result = p.radiusAtAngle(last.a + 0.01);
+        expect(result).toBeGreaterThan(0);
+        expect(result).toBeLessThan(p.radius * 1.5);
+    });
+});
+
+describe('PumicePoly.collidesWithCircle (precise polygon hit)', () => {
+    test('detects collision at center', () => {
+        const p = new PumicePoly(100, 100);
+        expect(p.collidesWithCircle(100, 100, 1)).toBe(true);
+    });
+
+    test('no collision far away', () => {
+        const p = new PumicePoly(100, 100);
+        expect(p.collidesWithCircle(500, 500, 5)).toBe(false);
+    });
+
+    test('dented direction: ship inside bounding circle but past dent does NOT collide', () => {
+        const p = new PumicePoly(100, 100);
+        p.rot = 0;
+        // Hit at angle 0 several times to create a deep dent
+        for (let i = 0; i < 3; i++) p.hit(200, 100);
+        const polyR0 = p.radiusAtAngle(0);
+        // place "ship" at distance between dent depth and pp.radius — should NOT collide
+        const probeDist = (polyR0 + p.radius) / 2;
+        expect(probeDist).toBeGreaterThan(polyR0);
+        expect(p.collidesWithCircle(100 + probeDist, 100, 1)).toBe(false);
+    });
+
+    test('intact direction: ship just inside the outline DOES collide', () => {
+        const p = new PumicePoly(100, 100);
+        p.rot = 0;
+        // pick an angle NOT hit: opposite side
+        const probeAngle = Math.PI;
+        const polyR = p.radiusAtAngle(probeAngle);
+        const ship  = { x: 100 + Math.cos(probeAngle) * (polyR - 2), y: 100 + Math.sin(probeAngle) * (polyR - 2) };
+        expect(p.collidesWithCircle(ship.x, ship.y, 1)).toBe(true);
+    });
+});
+
 describe('PumicePoly.update', () => {
     test('returns true while alive', () => {
         expect(new PumicePoly(0, 0).update(0.1)).toBe(true);
