@@ -55,8 +55,6 @@ class Game {
         Matter.World.clear(this.engine.world, false);
         const [rMin, rMax] = this._rockCountRange;
         this.rocks       = Array.from({ length: randInt(rMin, rMax) }, () => new RockPoly(rand(60, W - 60), rand(60, H - 60)));
-        this.ship        = new ShipPoly();
-        [this.ship.x, this.ship.y] = this._safeShipPos();
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -76,6 +74,8 @@ class Game {
             pumicePolys.push(new PumicePoly(px, py));
         }
         this.pumicePolys = pumicePolys;
+        this.ship        = new ShipPoly();
+        [this.ship.x, this.ship.y] = this._safeShipPos();
         Matter.World.add(this.engine.world, this.rocks.map(r => r.body));
         Matter.World.add(this.engine.world, this.pumices.flatMap(p => p.cells.map(c => c.body)));
         Matter.World.add(this.engine.world, this.pumicePolys.map(p => p.body));
@@ -465,18 +465,23 @@ class Game {
     // ── Private helpers ─────────────────────────────────────────────────────
 
     _safeShipPos() {
-        const margin = 60;
+        const sR = SHIP_SIZE * 0.7;
         let x, y, tries = 0;
-        do {
-            x = rand(60, W - 60);
-            y = rand(60, H - 60);
-            tries++;
-        } while (tries < 200 && (
-            this.rocks.some(r => dist({ x, y }, r) < r.radius + margin) ||
-            this.asteroids.some(a => dist({ x, y }, a) < a.radius + margin) ||
-            this.pumices.some(p => p.cells.some(c => c.alive && dist({ x, y }, c) < c.r + margin)) ||
-            this.pumicePolys.some(pp => dist({ x, y }, pp) < pp.radius + margin)
-        ));
+        // Generous buffer first; if no spot found, fall back to minimum-safe spacing
+        for (const margin of [sR + 50, sR + 15]) {
+            tries = 0;
+            do {
+                x = rand(60, W - 60);
+                y = rand(60, H - 60);
+                tries++;
+                const collides =
+                    this.rocks.some(r => dist({ x, y }, r) < r.radius + margin) ||
+                    this.asteroids.some(a => dist({ x, y }, a) < a.radius + margin) ||
+                    this.pumices.some(p => p.cells.some(c => c.alive && dist({ x, y }, c) < c.r + margin)) ||
+                    this.pumicePolys.some(pp => dist({ x, y }, pp) < pp.radius + margin);
+                if (!collides) return [x, y];
+            } while (tries < 300);
+        }
         return [x, y];
     }
 
