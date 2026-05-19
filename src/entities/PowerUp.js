@@ -55,7 +55,7 @@ class PowerUp {
                 ctx.lineTo(ox,       r * 0.6);
                 ctx.stroke();
             }
-        } else {
+        } else if (this.type === 'spread') {
             ctx.strokeStyle = '#ff4';
             ctx.shadowColor = '#ff0';
             ctx.shadowBlur  = 16;
@@ -66,6 +66,23 @@ class PowerUp {
                 ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
                 ctx.stroke();
             }
+        } else {
+            // heavy — diamond outline + filled center dot
+            ctx.strokeStyle = '#f64';
+            ctx.shadowColor = '#f40';
+            ctx.shadowBlur  = 18;
+            ctx.lineWidth   = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -r);
+            ctx.lineTo(r * 0.7, 0);
+            ctx.lineTo(0, r);
+            ctx.lineTo(-r * 0.7, 0);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.22, 0, TAU);
+            ctx.fillStyle = '#f64';
+            ctx.fill();
         }
 
         ctx.globalAlpha = 1;

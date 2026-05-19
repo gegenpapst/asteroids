@@ -239,7 +239,7 @@ class Game {
                     this._addScore(a.score);
                     this._boom(a.x, a.y, a.size);
                     if (Math.random() < this._powerupChance)
-                        this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 2)]));
+                        this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]));
                     const children = a.split();
                     Matter.World.remove(this.engine.world, a.body);
                     if (children.length) {
@@ -416,9 +416,10 @@ class Game {
             for (let pi = this.powerups.length - 1; pi >= 0; pi--) {
                 const pu = this.powerups[pi];
                 if (dist(this.ship, pu) < this.ship.radius + pu.radius) {
-                    if (pu.type === 'shield')     this.ship.shieldTimer = POWERUP_DURATION;
-                    else if (pu.type === 'rapid') this.ship.rapidTimer  = POWERUP_DURATION;
-                    else                          this.ship.spreadTimer = POWERUP_DURATION;
+                    if (pu.type === 'shield')       this.ship.shieldTimer = POWERUP_DURATION;
+                    else if (pu.type === 'rapid')  this.ship.rapidTimer  = POWERUP_DURATION;
+                    else if (pu.type === 'spread') this.ship.spreadTimer = POWERUP_DURATION;
+                    else                           this.ship.heavyTimer  = POWERUP_DURATION;
                     this.snd.powerUp(pu.type);
                     this.powerups.splice(pi, 1);
                 }
@@ -655,6 +656,7 @@ class Game {
             if (this.ship.shieldTimer  > 0) indicators.push({ label: 'SH', t: this.ship.shieldTimer,  col: '#4cf' });
             if (this.ship.rapidTimer   > 0) indicators.push({ label: 'RF', t: this.ship.rapidTimer,   col: '#f84' });
             if (this.ship.spreadTimer  > 0) indicators.push({ label: 'SP', t: this.ship.spreadTimer,  col: '#ff4' });
+            if (this.ship.heavyTimer   > 0) indicators.push({ label: 'HV', t: this.ship.heavyTimer,   col: '#f64' });
 
             ctx.font      = '13px monospace';
             ctx.textAlign = 'left';
