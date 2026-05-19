@@ -14,6 +14,7 @@ class ShipPoly {
         this.shieldTimer  = 0;
         this.rapidTimer   = 0;
         this.spreadTimer  = 0;
+        this.heavyTimer   = 0;
     }
 
     get radius() { return SHIP_SIZE * 0.7; }
@@ -30,6 +31,7 @@ class ShipPoly {
         if (this.shieldTimer  > 0) this.shieldTimer  -= dt;
         if (this.rapidTimer   > 0) this.rapidTimer   -= dt;
         if (this.spreadTimer  > 0) this.spreadTimer  -= dt;
+        if (this.heavyTimer   > 0) this.heavyTimer   -= dt;
 
         if (Input.left())  this.angle -= SHIP_ROTATION * dt;
         if (Input.right()) this.angle += SHIP_ROTATION * dt;
@@ -78,19 +80,20 @@ class ShipPoly {
 
     fire(bulletLife = BULLET_LIFE) {
         this.fireTimer = this.rapidTimer > 0 ? FIRE_RATE / 2 : FIRE_RATE;
-        const tx = this.x + Math.cos(this.angle) * SHIP_SIZE;
-        const ty = this.y + Math.sin(this.angle) * SHIP_SIZE;
+        const tx    = this.x + Math.cos(this.angle) * SHIP_SIZE;
+        const ty    = this.y + Math.sin(this.angle) * SHIP_SIZE;
+        const power = this.heavyTimer > 0 ? 2 : 1;
         if (this.spreadTimer > 0) {
             return [
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle - 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle - 0.26) * BULLET_SPEED, bulletLife),
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle)         * BULLET_SPEED, this.vy + Math.sin(this.angle)         * BULLET_SPEED, bulletLife),
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle + 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle + 0.26) * BULLET_SPEED, bulletLife),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle - 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle - 0.26) * BULLET_SPEED, bulletLife, power),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle)         * BULLET_SPEED, this.vy + Math.sin(this.angle)         * BULLET_SPEED, bulletLife, power),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle + 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle + 0.26) * BULLET_SPEED, bulletLife, power),
             ];
         }
         return [new Bullet(tx, ty,
             this.vx + Math.cos(this.angle) * BULLET_SPEED,
             this.vy + Math.sin(this.angle) * BULLET_SPEED,
-            bulletLife,
+            bulletLife, power,
         )];
     }
 

@@ -53,7 +53,7 @@ const UFO_SCORE  = [200, 1000];
 
 const POWERUP_DURATION     = 5.0;
 const POWERUP_SPAWN_CHANCE = 0.12;
-const POWERUP_TYPES = ['shield', 'rapid', 'spread'];
+const POWERUP_TYPES = ['shield', 'rapid', 'spread', 'heavy'];
 
 // Rock count is controlled by the in-game config dialog (3 levels)
 
