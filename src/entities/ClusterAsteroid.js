@@ -79,11 +79,11 @@ class ClusterAsteroid {
     draw() {
         const sz = this._offCanvas.width;
         ctx.save();
+        ctx.globalCompositeOperation = 'screen';
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rot);
         ctx.filter = 'contrast(14)';
         ctx.drawImage(this._offCanvas, -sz / 2, -sz / 2);
-        ctx.filter = 'none';
         ctx.restore();
     }
 

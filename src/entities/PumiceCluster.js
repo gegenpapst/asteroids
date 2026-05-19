@@ -67,9 +67,11 @@ class PumiceCluster {
         }
         offCtx.filter = 'none';
 
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
         ctx.filter = 'contrast(14)';
         ctx.drawImage(this._offCanvas, ox, oy);
-        ctx.filter = 'none';
+        ctx.restore();
     }
 }
 
