@@ -10,8 +10,10 @@ class PumiceCluster {
         this._pad      = this._blur * 3 + 4;
         this.cells     = this._generateCells();
         const size     = Math.ceil((this.radius + this._pad) * 2);
-        this._offCanvas = Object.assign(document.createElement('canvas'), { width: size, height: size });
-        this._offCtx    = this._offCanvas.getContext('2d');
+        this._offCanvas    = Object.assign(document.createElement('canvas'), { width: size, height: size });
+        this._offCtx       = this._offCanvas.getContext('2d');
+        this._contrastCanvas = Object.assign(document.createElement('canvas'), { width: size, height: size });
+        this._contrastCtx    = this._contrastCanvas.getContext('2d');
     }
 
     _generateCells() {
@@ -67,10 +69,16 @@ class PumiceCluster {
         }
         offCtx.filter = 'none';
 
+        // Bake contrast into secondary canvas so main canvas needs no filter
+        const cc = this._contrastCtx;
+        cc.clearRect(0, 0, size, size);
+        cc.filter = 'contrast(14)';
+        cc.drawImage(this._offCanvas, 0, 0);
+        cc.filter = 'none';
+
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
-        ctx.filter = 'contrast(14)';
-        ctx.drawImage(this._offCanvas, ox, oy);
+        ctx.drawImage(this._contrastCanvas, ox, oy);
         ctx.restore();
     }
 }

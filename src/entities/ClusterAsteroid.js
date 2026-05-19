@@ -53,21 +53,27 @@ class ClusterAsteroid {
         const blur = Math.round(this._cellR * 0.75);
         const pad  = blur * 3 + 4;
         const sz   = Math.ceil((this.radius + pad) * 2);
-        const oc   = Object.assign(document.createElement('canvas'), { width: sz, height: sz });
-        const oct  = oc.getContext('2d');
         const half = sz / 2;
 
-        oct.fillStyle = '#050210';
-        oct.fillRect(0, 0, sz, sz);
-
-        oct.filter    = `blur(${blur}px)`;
-        oct.fillStyle = 'rgb(155, 140, 118)';
+        // Pass 1: blur canvas
+        const blur_oc  = Object.assign(document.createElement('canvas'), { width: sz, height: sz });
+        const blur_ctx = blur_oc.getContext('2d');
+        blur_ctx.fillStyle = '#050210';
+        blur_ctx.fillRect(0, 0, sz, sz);
+        blur_ctx.filter    = `blur(${blur}px)`;
+        blur_ctx.fillStyle = 'rgb(155, 140, 118)';
         for (const c of this._cells) {
-            oct.beginPath();
-            oct.arc(half + c.dx, half + c.dy, c.r * 1.25, 0, TAU);
-            oct.fill();
+            blur_ctx.beginPath();
+            blur_ctx.arc(half + c.dx, half + c.dy, c.r * 1.25, 0, TAU);
+            blur_ctx.fill();
         }
-        oct.filter = 'none';
+        blur_ctx.filter = 'none';
+
+        // Pass 2: bake contrast into a second canvas so draw() needs no filter
+        const oc  = Object.assign(document.createElement('canvas'), { width: sz, height: sz });
+        const oct = oc.getContext('2d');
+        oct.filter = 'contrast(14)';
+        oct.drawImage(blur_oc, 0, 0);
         return oc;
     }
 
@@ -82,7 +88,6 @@ class ClusterAsteroid {
         ctx.globalCompositeOperation = 'screen';
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rot);
-        ctx.filter = 'contrast(14)';
         ctx.drawImage(this._offCanvas, -sz / 2, -sz / 2);
         ctx.restore();
     }
