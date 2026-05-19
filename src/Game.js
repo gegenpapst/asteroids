@@ -3,6 +3,13 @@
 // ─── Game ────────────────────────────────────────────────────────────────────
 const STATE = Object.freeze({ START: 0, PLAYING: 1, DEAD: 2, GAMEOVER: 3, HELP: 4, CONFIG: 5 });
 
+// Presets for Beginner / Novice / Expert (index = mode - 1)
+const MODES = [
+    { bulletRange: 3, powerupFreq: 3, rockCount: 1, pumiceCount: 1, asteroidBounce: 1 }, // Beginner
+    { bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1 }, // Novice
+    { bulletRange: 1, powerupFreq: 1, rockCount: 3, pumiceCount: 3, asteroidBounce: 2 }, // Expert
+];
+
 class Game {
     constructor() {
         Matter.use(MatterWrap);
@@ -35,7 +42,7 @@ class Game {
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
 
-        this.config = { bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1 };
+        this.config = { mode: 2, bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1 };
         this._configCursor   = 0;
         this._configPrevState = STATE.START;
 
@@ -105,14 +112,15 @@ class Game {
         if (this.state === STATE.CONFIG) {
             const readOnly = this._configPrevState === STATE.PLAYING;
             if (!readOnly) {
-                const params    = ['bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce'];
-                const paramMax  = { bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2 };
+                const params    = ['mode', 'bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce'];
+                const paramMax  = { mode: 3, bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2 };
                 if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
                 if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
                 const key = params[this._configCursor];
                 if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
                 if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
-                if (key === 'asteroidBounce') this._applyAsteroidFilter();
+                if (key === 'mode') Object.assign(this.config, MODES[this.config.mode - 1]);
+                if (key === 'mode' || key === 'asteroidBounce') this._applyAsteroidFilter();
             }
             if (Input.config() || Input.wasPressed('Enter')) {
                 if (readOnly) this.state = STATE.PLAYING;
@@ -700,11 +708,12 @@ class Game {
         }
 
         const params = [
-            { key: 'bulletRange',    label: 'Reichweite Schüsse',    opts: ['kurz',   'normal', 'weit']   },
-            { key: 'powerupFreq',    label: 'Häufigkeit Powerups',    opts: ['selten', 'normal', 'häufig'] },
-            { key: 'rockCount',      label: 'Anzahl Rocks',           opts: ['wenige', 'normal', 'viele']  },
-            { key: 'pumiceCount',    label: 'Anzahl Bimsstein',       opts: ['keine',  'wenige', 'viele']  },
-            { key: 'asteroidBounce', label: 'Asteroiden-Kollisionen', opts: ['aus',    'ein']              },
+            { key: 'mode',           label: 'Modus',                  opts: ['Beginner', 'Novice', 'Expert'] },
+            { key: 'bulletRange',    label: 'Reichweite Schüsse',     opts: ['kurz',   'normal', 'weit']     },
+            { key: 'powerupFreq',    label: 'Häufigkeit Powerups',    opts: ['selten', 'normal', 'häufig']   },
+            { key: 'rockCount',      label: 'Anzahl Rocks',           opts: ['wenige', 'normal', 'viele']    },
+            { key: 'pumiceCount',    label: 'Anzahl Bimsstein',       opts: ['keine',  'wenige', 'viele']    },
+            { key: 'asteroidBounce', label: 'Asteroiden-Kollisionen', opts: ['aus',    'ein']                },
         ];
 
         let y = 80;
