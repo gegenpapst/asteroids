@@ -7,7 +7,7 @@ class PumicePoly {
         this.radius  = rand(28, 50);
         this.rot     = rand(0, TAU);
         this.hits    = 0;
-        this.maxHits = 5;
+        this.maxHits = Math.round(10 + (this.radius - 28) / 22 * 5); // 10 (small) – 15 (large)
         this._alive  = true;
         const n = randInt(11, 17);
         this.verts = Array.from({ length: n }, (_, i) => ({
@@ -58,20 +58,16 @@ class PumicePoly {
     get alive() { return this._alive; }
 
     hit(wx, wy) {
-        const shrink = 0.86;
-        this.radius *= shrink;
-        for (const v of this.verts) v.r *= shrink;
-
         const worldAngle = Math.atan2(wy - this.y, wx - this.x);
         const localHit   = worldAngle - this.rot;
-        const dentRange  = 0.55;
-        const dentDepth  = this.radius * 0.35;
+        const dentRange  = 1.0;
+        const dentDepth  = this.radius * 0.38;
         for (const v of this.verts) {
             let da = ((v.a - localHit + Math.PI * 3) % TAU) - Math.PI;
             da = Math.abs(da);
             if (da < dentRange) {
                 const factor = 1 - da / dentRange;
-                v.r = Math.max(this.radius * 0.2, v.r - dentDepth * factor);
+                v.r = Math.max(this.radius * 0.08, v.r - dentDepth * factor);
             }
         }
 
