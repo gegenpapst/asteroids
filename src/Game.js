@@ -351,7 +351,6 @@ class Game {
                 const a = this.asteroids[ai];
                 if (dist(this.ship, a) < a.radius + this.ship.radius) {
                     if (this.ship.shieldTimer > 0) {
-                        this.ship.shieldTimer = 0;
                         this._boom(a.x, a.y, a.size);
                         const children = a.split();
                         Matter.World.remove(this.engine.world, a.body);
@@ -361,6 +360,7 @@ class Game {
                             for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
                         }
                         this.asteroids.splice(ai, 1, ...children);
+                        this._bounceShip(a.x, a.y);
                     } else {
                         this._killShip();
                     }
@@ -375,7 +375,6 @@ class Game {
                 const ca = this.clusterAsteroids[ci];
                 if (dist(this.ship, ca) < ca.radius + this.ship.radius) {
                     if (this.ship.shieldTimer > 0) {
-                        this.ship.shieldTimer = 0;
                         this._boom(ca.x, ca.y, ca.size);
                         const children = ca.split();
                         Matter.World.remove(this.engine.world, ca.body);
@@ -385,6 +384,7 @@ class Game {
                             for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
                         }
                         this.clusterAsteroids.splice(ci, 1, ...children);
+                        this._bounceShip(ca.x, ca.y);
                     } else {
                         this._killShip();
                     }
@@ -398,7 +398,7 @@ class Game {
             for (const r of this.rocks) {
                 if (dist(this.ship, r) < r.radius + this.ship.radius) {
                     if (this.ship.shieldTimer > 0) {
-                        this.ship.shieldTimer = 0;
+                        this._bounceShip(r.x, r.y);
                     } else {
                         this._killShip();
                     }
@@ -414,7 +414,7 @@ class Game {
                 for (const c of p.cells) {
                     if (!c.alive) continue;
                     if (dist(this.ship, c) < c.r + this.ship.radius) {
-                        if (this.ship.shieldTimer > 0) this.ship.shieldTimer = 0;
+                        if (this.ship.shieldTimer > 0) this._bounceShip(c.x, c.y);
                         else this._killShip();
                         break outerSP;
                     }
@@ -426,7 +426,7 @@ class Game {
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const pp of this.pumicePolys) {
                 if (pp.collidesWithCircle(this.ship.x, this.ship.y, this.ship.radius)) {
-                    if (this.ship.shieldTimer > 0) this.ship.shieldTimer = 0;
+                    if (this.ship.shieldTimer > 0) this._bounceShip(pp.x, pp.y);
                     else this._killShip();
                     break;
                 }
@@ -438,7 +438,7 @@ class Game {
             for (const u of this.ufos) {
                 if (dist(this.ship, u) < u.radius + this.ship.radius) {
                     if (this.ship.shieldTimer > 0) {
-                        this.ship.shieldTimer = 0;
+                        this._bounceShip(u.x, u.y);
                     } else {
                         this._killShip();
                     }
@@ -453,7 +453,6 @@ class Game {
                 const b = this.ufoBullets[bi];
                 if (dist(b, this.ship) < b.radius + this.ship.radius) {
                     if (this.ship.shieldTimer > 0) {
-                        this.ship.shieldTimer = 0;
                         this.ufoBullets.splice(bi, 1);
                     } else {
                         this._killShip();
@@ -742,6 +741,17 @@ class Game {
     get _rockCountRange()         { return [[1,5],[5,10],[10,20]][this.config.rockCount - 1]; }
     get _pumiceCountRange()       { return [[0,0],[1,3],[3,6]][this.config.pumiceCount - 1]; }
     get _asteroidCollisionFilter(){ return this.config.asteroidBounce === 2 ? { category: 0x0001, mask: 0xFFFFFFFF, group: 0 } : { group: -1 }; }
+
+    _bounceShip(ox, oy) {
+        const dx = this.ship.x - ox, dy = this.ship.y - oy;
+        const d  = Math.hypot(dx, dy) || 1;
+        const nx = dx / d, ny = dy / d;
+        const dot = this.ship.vx * nx + this.ship.vy * ny;
+        this.ship.vx -= 2 * dot * nx;
+        this.ship.vy -= 2 * dot * ny;
+        const spd = Math.hypot(this.ship.vx, this.ship.vy);
+        if (spd < 220) { this.ship.vx = nx * 220; this.ship.vy = ny * 220; }
+    }
 
     _applyAsteroidFilter() {
         const f = this._asteroidCollisionFilter;
