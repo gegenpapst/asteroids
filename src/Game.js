@@ -30,8 +30,9 @@ class Game {
         this.ufos        = [];
         this.ufoBullets  = [];
         this.rocks       = [];
-        this.pumices     = [];
-        this.pumicePolys = [];
+        this.pumices          = [];
+        this.pumicePolys      = [];
+        this.clusterAsteroids = [];
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -58,7 +59,8 @@ class Game {
         this.particles   = [];
         this.powerups    = [];
         this.ufos        = [];
-        this.ufoBullets  = [];
+        this.ufoBullets       = [];
+        this.clusterAsteroids = [];
         Matter.World.clear(this.engine.world, false);
         const [rMin, rMax] = this._rockCountRange;
         this.rocks       = Array.from({ length: randInt(rMin, rMax) }, () => new RockPoly(rand(60, W - 60), rand(60, H - 60)));
@@ -215,8 +217,9 @@ class Game {
             this.snd.shoot();
         }
 
-        this.bullets   = this.bullets.filter(b => b.update(dt));
+        this.bullets          = this.bullets.filter(b => b.update(dt));
         this.asteroids.forEach(a => a.update(dt));
+        this.clusterAsteroids.forEach(ca => ca.update(dt));
         Matter.Engine.update(this.engine, dt * 1000);
         this._syncBodies();
 
@@ -250,6 +253,31 @@ class Game {
                     this.asteroids.splice(ai, 1, ...children);
                     this.bullets.splice(bi, 1);
                     continue outer;
+                }
+            }
+        }
+
+        // Bullet × ClusterAsteroid
+        outerCA:
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
+                const ca = this.clusterAsteroids[ci];
+                if (dist(b, ca) < ca.radius + b.radius) {
+                    this._addScore(ca.score);
+                    this._boom(ca.x, ca.y, ca.size);
+                    if (Math.random() < this._powerupChance)
+                        this.powerups.push(new PowerUp(ca.x, ca.y, POWERUP_TYPES[randInt(0, 3)]));
+                    const children = ca.split();
+                    Matter.World.remove(this.engine.world, ca.body);
+                    if (children.length) {
+                        Matter.World.add(this.engine.world, children.map(c => c.body));
+                        const f = this._asteroidCollisionFilter;
+                        for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
+                    }
+                    this.clusterAsteroids.splice(ci, 1, ...children);
+                    this.bullets.splice(bi, 1);
+                    continue outerCA;
                 }
             }
         }
@@ -341,6 +369,30 @@ class Game {
             }
         }
 
+        // Ship × ClusterAsteroid
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
+                const ca = this.clusterAsteroids[ci];
+                if (dist(this.ship, ca) < ca.radius + this.ship.radius) {
+                    if (this.ship.shieldTimer > 0) {
+                        this.ship.shieldTimer = 0;
+                        this._boom(ca.x, ca.y, ca.size);
+                        const children = ca.split();
+                        Matter.World.remove(this.engine.world, ca.body);
+                        if (children.length) {
+                            Matter.World.add(this.engine.world, children.map(c => c.body));
+                            const f = this._asteroidCollisionFilter;
+                            for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
+                        }
+                        this.clusterAsteroids.splice(ci, 1, ...children);
+                    } else {
+                        this._killShip();
+                    }
+                    break;
+                }
+            }
+        }
+
         // Ship × Rock
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const r of this.rocks) {
@@ -416,10 +468,10 @@ class Game {
             for (let pi = this.powerups.length - 1; pi >= 0; pi--) {
                 const pu = this.powerups[pi];
                 if (dist(this.ship, pu) < this.ship.radius + pu.radius) {
-                    if (pu.type === 'shield')       this.ship.shieldTimer = POWERUP_DURATION;
-                    else if (pu.type === 'rapid')  this.ship.rapidTimer  = POWERUP_DURATION;
-                    else if (pu.type === 'spread') this.ship.spreadTimer = POWERUP_DURATION;
-                    else                           this.ship.heavyTimer  = POWERUP_DURATION;
+                    if (pu.type === 'shield')       this.ship.shieldTimer = this._powerupDuration;
+                    else if (pu.type === 'rapid')  this.ship.rapidTimer  = this._powerupDuration;
+                    else if (pu.type === 'spread') this.ship.spreadTimer = this._powerupDuration;
+                    else                           this.ship.heavyTimer  = this._powerupDuration;
                     this.snd.powerUp(pu.type);
                     this.powerups.splice(pi, 1);
                 }
@@ -459,6 +511,7 @@ class Game {
         this.pumices.forEach(p => p.draw());
         this.pumicePolys.forEach(p => p.draw());
         this.asteroids.forEach(a => a.draw());
+        this.clusterAsteroids.forEach(ca => ca.draw());
         this.powerups.forEach(p => p.draw());
         this.ufos.forEach(u => u.draw());
         this.ufoBullets.forEach(b => b.draw());
@@ -528,6 +581,10 @@ class Game {
             a.x = a.body.position.x;
             a.y = a.body.position.y;
         }
+        for (const ca of this.clusterAsteroids) {
+            ca.x = ca.body.position.x;
+            ca.y = ca.body.position.y;
+        }
     }
 
     _nextLevel() {
@@ -540,8 +597,10 @@ class Game {
                 x = rand(0, W);
                 y = rand(0, H);
             } while (dist({ x, y }, { x: cx, y: cy }) < W * 0.22);
-            const a = new AsteroidPoly(x, y, 0);
-            this.asteroids.push(a);
+            const useCluster = Math.random() < 0.35;
+            const a = useCluster ? new ClusterAsteroid(x, y, 0) : new AsteroidPoly(x, y, 0);
+            if (useCluster) this.clusterAsteroids.push(a);
+            else            this.asteroids.push(a);
             Matter.World.add(this.engine.world, a.body);
         }
         this._applyAsteroidFilter();
@@ -664,7 +723,7 @@ class Game {
             indicators.forEach((ind, i) => {
                 const bx  = W - 16 - (indicators.length - i) * (barW + gap);
                 const by  = H - 52;
-                const pct = ind.t / POWERUP_DURATION;
+                const pct = ind.t / this._powerupDuration;
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.fillRect(bx, by, barW, barH);
                 ctx.globalAlpha = 0.8;
@@ -679,13 +738,15 @@ class Game {
 
     get _bulletLife()             { return [0.35, 0.65, 1.0][this.config.bulletRange  - 1]; }
     get _powerupChance()          { return [0.05, 0.12, 0.25][this.config.powerupFreq - 1]; }
+    get _powerupDuration()        { return [5,    7,    10  ][this.config.powerupFreq - 1]; }
     get _rockCountRange()         { return [[1,5],[5,10],[10,20]][this.config.rockCount - 1]; }
     get _pumiceCountRange()       { return [[0,0],[1,3],[3,6]][this.config.pumiceCount - 1]; }
     get _asteroidCollisionFilter(){ return this.config.asteroidBounce === 2 ? { category: 0x0001, mask: 0xFFFFFFFF, group: 0 } : { group: -1 }; }
 
     _applyAsteroidFilter() {
         const f = this._asteroidCollisionFilter;
-        for (const a of this.asteroids) Matter.Body.set(a.body, 'collisionFilter', f);
+        for (const a  of this.asteroids)        Matter.Body.set(a.body,  'collisionFilter', f);
+        for (const ca of this.clusterAsteroids) Matter.Body.set(ca.body, 'collisionFilter', f);
     }
 
     _drawConfig() {
@@ -712,7 +773,7 @@ class Game {
         const params = [
             { key: 'mode',           label: 'Modus',                  opts: ['Beginner', 'Novice', 'Expert'] },
             { key: 'bulletRange',    label: 'Reichweite Schüsse',     opts: ['kurz',   'normal', 'weit']     },
-            { key: 'powerupFreq',    label: 'Häufigkeit Powerups',    opts: ['selten', 'normal', 'häufig']   },
+            { key: 'powerupFreq',    label: 'Powerups',               opts: ['selten / kurz', 'normal', 'häufig / lang'] },
             { key: 'rockCount',      label: 'Anzahl Rocks',           opts: ['wenige', 'normal', 'viele']    },
             { key: 'pumiceCount',    label: 'Anzahl Bimsstein',       opts: ['keine',  'wenige', 'viele']    },
             { key: 'asteroidBounce', label: 'Asteroiden-Kollisionen', opts: ['aus',    'ein']                },
