@@ -35,11 +35,18 @@ describe('PumicePoly constructor', () => {
 });
 
 describe('PumicePoly.hit', () => {
-    test('shrinks radius', () => {
+    test('shrinks vertex radii near hit point', () => {
         const p = new PumicePoly(100, 100);
-        const before = p.radius;
-        p.hit(150, 100);
-        expect(p.radius).toBeLessThan(before);
+        p.rot = 0;
+        // Vert nahe Winkel 0 suchen (Trefferseite rechts)
+        const hitVert = p.verts.reduce((best, v) => {
+            const da = Math.abs(((v.a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2));
+            const bestDa = Math.abs(((best.a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2));
+            return da < bestDa ? v : best;
+        });
+        const rBefore = hitVert.r;
+        p.hit(150, 100);  // Treffer bei Winkel 0 (rechts)
+        expect(hitVert.r).toBeLessThan(rBefore);
     });
 
     test('increments hit counter', () => {

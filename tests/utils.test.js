@@ -1,6 +1,6 @@
 'use strict';
 
-const { wrap, clamp, dist, rand, randInt } = require('../src/Globals.js');
+const { wrap, clamp, dist, rand, randInt, safeSplitAngle } = require('../src/Globals.js');
 
 afterEach(() => jest.restoreAllMocks());
 
@@ -70,6 +70,41 @@ describe('rand', () => {
     test('returns near b when Math.random() is near 1', () => {
         jest.spyOn(Math, 'random').mockReturnValue(0.9999);
         expect(rand(0, 10)).toBeCloseTo(9.999);
+    });
+});
+
+describe('safeSplitAngle', () => {
+    const TAU = Math.PI * 2;
+    const halfArc = Math.PI / 4;  // Standard: ±45°
+
+    test('gibt null zurück wenn bulletAngle null ist', () => {
+        // null → rand(0, TAU) → muss im Bereich [0, TAU] liegen
+        for (let i = 0; i < 50; i++) {
+            const a = safeSplitAngle(null);
+            expect(a).toBeGreaterThanOrEqual(0);
+            expect(a).toBeLessThanOrEqual(TAU);
+        }
+    });
+
+    test('liegt nie im verbotenen Kegel (±45° hinter Schussrichtung)', () => {
+        const bulletAngle = 0;  // Schuss nach rechts
+        const forbid = bulletAngle + Math.PI;  // verbotene Mitte: links (π)
+        for (let i = 0; i < 200; i++) {
+            const a = safeSplitAngle(bulletAngle);
+            // normalisieren auf [-π, π] relativ zur verbotenen Mitte
+            let diff = ((a - forbid) % TAU + TAU) % TAU;
+            if (diff > Math.PI) diff -= TAU;
+            expect(Math.abs(diff)).toBeGreaterThan(halfArc - 0.001);
+        }
+    });
+
+    test('deckt den erlaubten Bereich ab (kein systematisches Clustering)', () => {
+        const bulletAngle = 0;
+        const angles = Array.from({ length: 500 }, () => safeSplitAngle(bulletAngle));
+        // Der erlaubte Bereich ist TAU - 2*halfArc ≈ 5.5 rad
+        // Mindestens 3 verschiedene Quadranten sollten getroffen werden
+        const quadrants = new Set(angles.map(a => Math.floor(((a % TAU + TAU) % TAU) / (TAU / 4))));
+        expect(quadrants.size).toBeGreaterThanOrEqual(3);
     });
 });
 

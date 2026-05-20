@@ -147,7 +147,7 @@ const Input = {
 
 if (typeof module !== 'undefined') {
     module.exports = {
-        wrap, clamp, dist, rand, randInt,
+        wrap, clamp, dist, rand, randInt, safeSplitAngle,
         TAU, W, H,
         SHIP_SIZE, SHIP_THRUST, SHIP_MAX_SPEED, SHIP_STRAFE_SPEED, SHIP_STRAFE_ACCEL, SHIP_ROTATION, SHIP_FRICTION, SHIP_MIN_SPEED,
         BULLET_SPEED, BULLET_LIFE, MAX_BULLETS, FIRE_RATE,

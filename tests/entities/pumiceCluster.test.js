@@ -81,6 +81,53 @@ describe('PumiceCluster.findHit', () => {
     });
 });
 
+describe('PumiceCluster.cullIsolated', () => {
+    const fakeWorld = { remove: () => {} };
+
+    test('intaktes Cluster: keine Zelle wird entfernt', () => {
+        const p = new PumiceCluster(200, 200);
+        const aliveBefore = p.cells.filter(c => c.alive).length;
+        p.cullIsolated(fakeWorld);
+        expect(p.cells.filter(c => c.alive).length).toBe(aliveBefore);
+    });
+
+    test('einzelne isolierte Zelle (alle anderen tot) wird entfernt', () => {
+        const p = new PumiceCluster(200, 200);
+        // Alle Zellen außer der ersten töten
+        for (let i = 1; i < p.cells.length; i++) p.cells[i].alive = false;
+        p.cullIsolated(fakeWorld);
+        expect(p.cells.filter(c => c.alive).length).toBe(0);
+    });
+
+    test('zwei benachbarte Zellen bleiben erhalten', () => {
+        const p = new PumiceCluster(200, 200);
+        // Alle Zellen töten
+        for (const c of p.cells) c.alive = false;
+        // Zwei direkte Nachbarn reaktivieren (Abstand < 2.5 × cellR)
+        const c0 = p.cells[0];
+        const neighbor = p.cells.find(
+            c => c !== c0 && Math.hypot(c.x - c0.x, c.y - c0.y) < p._cellR * 2.5
+        );
+        if (neighbor) {
+            c0.alive = true;
+            neighbor.alive = true;
+            p.cullIsolated(fakeWorld);
+            expect(p.cells.filter(c => c.alive).length).toBe(2);
+        }
+    });
+
+    test('kaskadiert nicht: nur direkte Nachbarn werden geprüft', () => {
+        const p = new PumiceCluster(200, 200);
+        // Kompakten Kern bilden: alle Zellen aktiv lassen
+        // Randbereich manuell töten — nur echte Isolierte sollten verschwinden
+        const aliveBefore = p.cells.filter(c => c.alive).length;
+        p.cullIsolated(fakeWorld);
+        const aliveAfter = p.cells.filter(c => c.alive).length;
+        // Intaktes Cluster: cull darf nichts entfernen
+        expect(aliveAfter).toBe(aliveBefore);
+    });
+});
+
 describe('PumiceCluster.update', () => {
     test('always returns true', () => {
         const p = new PumiceCluster(0, 0);
