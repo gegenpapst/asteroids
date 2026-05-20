@@ -69,7 +69,7 @@ function dist(a, b) {
 // Zufälliger Winkel der NICHT in den verbotenen Rückwärts-Kegel fällt.
 // forbidCenter = bulletAngle + π (Richtung zurück zum Schiff)
 // halfArc = halbe Tortenbreite des verbotenen Bereichs (Standard: 60° → 120° gesperrt)
-function safeSplitAngle(bulletAngle, halfArc = Math.PI / 3) {
+function safeSplitAngle(bulletAngle, halfArc = Math.PI / 4) {
     if (bulletAngle === null || bulletAngle === undefined) return rand(0, TAU);
     const forbidCenter = bulletAngle + Math.PI;
     const available    = TAU - 2 * halfArc;
