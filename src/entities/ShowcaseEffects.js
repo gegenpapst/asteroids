@@ -257,14 +257,8 @@ function drawMetaballShowcase() {
 // ── Pumice Varianten Showcase ─────────────────────────────────────────────────
 
 const PUMICE_VARIANTS = [
-    { label: 'A', name: 'Standard',      rgb: [148, 148, 150], contrast: 10, cellRF: 0.22, spacingF: 1.65, blurF: 0.75 },
-    { label: 'B', name: 'Fleckig',       rgb: [144, 142, 150], contrast: 10, cellRF: 0.28, spacingF: 2.05, blurF: 0.90 },
-    { label: 'C', name: 'Schärfer',      rgb: [148, 148, 150], contrast: 13, cellRF: 0.22, spacingF: 1.65, blurF: 0.65 },
-    { label: 'D', name: 'Wolkig',        rgb: [150, 148, 155], contrast:  8, cellRF: 0.26, spacingF: 2.20, blurF: 1.10 },
-    { label: 'E', name: 'Dunkel-Grau',   rgb: [128, 127, 135], contrast: 11, cellRF: 0.26, spacingF: 1.85, blurF: 0.80 },
-    { label: 'F', name: 'Weiche Wolke',  rgb: [152, 150, 156], contrast:  6, cellRF: 0.30, spacingF: 2.30, blurF: 1.20 },
-    { label: 'G', name: 'Schiefer',      rgb: [132, 130, 140], contrast: 12, cellRF: 0.30, spacingF: 2.10, blurF: 0.75 },
-    { label: 'H', name: 'Grob-Fleckig',  rgb: [138, 136, 144], contrast: 11, cellRF: 0.34, spacingF: 2.40, blurF: 0.85 },
+    { label: 'A', name: 'Standard', rgb: [148, 148, 150], contrast: 10, cellRF: 0.22, spacingF: 1.65, blurF: 0.75 },
+    { label: 'C', name: 'Schärfer', rgb: [148, 148, 150], contrast: 13, cellRF: 0.22, spacingF: 1.65, blurF: 0.65 },
 ];
 
 function _buildPumiceVariant(cfg, radius) {
@@ -312,14 +306,14 @@ function _buildPumiceVariant(cfg, radius) {
 
 const _pumiceVariants = PUMICE_VARIANTS.map(v => ({
     ...v,
-    oc: _buildPumiceVariant(v, 52),
+    oc: _buildPumiceVariant(v, 72),
 }));
 
 function drawPumiceShowcase() {
-    const COLS   = 4;
-    const startY = 72;
+    const COLS   = 2;
+    const startY = 88;
     const cellW  = W / COLS;
-    const cellH  = (H - startY - 20) / 2;
+    const cellH  = H - startY - 20;
 
     // Title
     ctx.textAlign   = 'center';
