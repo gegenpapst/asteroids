@@ -1,12 +1,5 @@
 'use strict';
 
-function _inTri(px, py, ax, ay, bx, by, cx, cy) {
-    const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
-    const d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
-    const d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
-    return !(((d1 < 0) || (d2 < 0) || (d3 < 0)) && ((d1 > 0) || (d2 > 0) || (d3 > 0)));
-}
-
 class ShipCluster {
     constructor() {
         this.x            = W / 2;
@@ -22,71 +15,9 @@ class ShipCluster {
         this.rapidTimer   = 0;
         this.spreadTimer  = 0;
         this.heavyTimer   = 0;
-
-        this._cellR     = Math.round(SHIP_SIZE * 0.19);
-        this._cells     = this._generateCells();
-        this._offCanvas = this._buildOffCanvas();
     }
 
     get radius() { return SHIP_SIZE * 0.7; }
-
-    _generateCells() {
-        const cellR   = this._cellR;
-        const spacing = cellR * 1.65;
-        const rowH    = spacing * 0.866;
-        const s       = SHIP_SIZE;
-
-        // Elongated ellipse centred slightly toward the tip
-        const rx      = s * 0.78;
-        const ry      = s * 0.44;
-        const xCenter = s * 0.12;
-
-        const span  = Math.ceil(s * 2.2 / rowH) + 2;
-        const cells = [];
-        for (let row = 0; row < span; row++) {
-            const dy   = -s * 1.1 + row * rowH;
-            const xOff = (row % 2) * spacing / 2;
-            for (let col = 0; col < span; col++) {
-                const dx = -s * 1.1 + col * spacing + xOff;
-                if ((dx - xCenter) ** 2 / rx ** 2 + dy ** 2 / ry ** 2 >= 1) continue;
-                cells.push({
-                    dx: dx + rand(-0.8, 0.8),
-                    dy: dy + rand(-0.8, 0.8),
-                    r:  cellR * rand(0.85, 1.15),
-                });
-            }
-        }
-        return cells;
-    }
-
-    _buildOffCanvas() {
-        const cellR = this._cellR;
-        const blur  = Math.max(3, Math.round(cellR * 1.6));
-        const pad   = blur * 3 + 4;
-        const sz    = Math.ceil((SHIP_SIZE + pad) * 2);
-        const half  = sz / 2;
-
-        // Pass 1: blur canvas
-        const blur_oc  = Object.assign(document.createElement('canvas'), { width: sz, height: sz });
-        const blur_ctx = blur_oc.getContext('2d');
-        blur_ctx.fillStyle = '#050210';
-        blur_ctx.fillRect(0, 0, sz, sz);
-        blur_ctx.filter    = `blur(${blur}px)`;
-        blur_ctx.fillStyle = 'rgb(80, 200, 255)';
-        for (const c of this._cells) {
-            blur_ctx.beginPath();
-            blur_ctx.arc(half + c.dx, half + c.dy, c.r * 1.6, 0, TAU);
-            blur_ctx.fill();
-        }
-        blur_ctx.filter = 'none';
-
-        // Pass 2: bake contrast
-        const oc  = Object.assign(document.createElement('canvas'), { width: sz, height: sz });
-        const oct = oc.getContext('2d');
-        oct.filter = 'contrast(14)';
-        oct.drawImage(blur_oc, 0, 0);
-        return oc;
-    }
 
     teleport(x, y) {
         this.x = x;
@@ -169,7 +100,7 @@ class ShipCluster {
     draw() {
         if (this.invulnerable > 0 && Math.floor(this.invulnerable * 8) % 2 === 0) return;
 
-        const sz = this._offCanvas.width;
+        const s = SHIP_SIZE;
 
         // Shield bubble
         if (this.shieldTimer > 0) {
@@ -177,7 +108,7 @@ class ShipCluster {
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.beginPath();
-            ctx.arc(0, 0, SHIP_SIZE * 2.2, 0, TAU);
+            ctx.arc(0, 0, s * 2.2, 0, TAU);
             ctx.strokeStyle = `rgba(50,210,255,${pulse})`;
             ctx.shadowColor = '#0ff';
             ctx.shadowBlur  = 20;
@@ -186,26 +117,78 @@ class ShipCluster {
             ctx.restore();
         }
 
-        // Metaball hull
+        // Hull — gradient fill
         ctx.save();
-        ctx.globalCompositeOperation = 'screen';
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
-        ctx.drawImage(this._offCanvas, -sz / 2, -sz / 2);
+
+        ctx.beginPath();
+        ctx.moveTo(s, 0);
+        ctx.lineTo(-s * 0.7, -s * 0.55);
+        ctx.lineTo(-s * 0.35, 0);
+        ctx.lineTo(-s * 0.7,  s * 0.55);
+        ctx.closePath();
+
+        const hg = ctx.createLinearGradient(-s * 0.7, 0, s, 0);
+        hg.addColorStop(0,    '#050e1c');
+        hg.addColorStop(0.55, '#0b1c38');
+        hg.addColorStop(1,    '#102244');
+        ctx.fillStyle   = hg;
+        ctx.shadowColor = '#28c8ff';
+        ctx.shadowBlur  = 8;
+        ctx.fill();
+
+        ctx.strokeStyle = '#5cf';
+        ctx.lineWidth   = 1;
+        ctx.stroke();
+
+        // Wing panel traces
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = '#8df';
+        ctx.shadowBlur  = 0;
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(s * 0.1, 0);
+        ctx.lineTo(-s * 0.58, -s * 0.44);
+        ctx.moveTo(s * 0.1, 0);
+        ctx.lineTo(-s * 0.58,  s * 0.44);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Cockpit highlight
+        const cg = ctx.createRadialGradient(s * 0.14, -s * 0.04, 0, s * 0.22, 0, s * 0.2);
+        cg.addColorStop(0, 'rgba(200,245,255,0.95)');
+        cg.addColorStop(1, 'rgba(30,100,180,0.2)');
+        ctx.beginPath();
+        ctx.arc(s * 0.22, 0, s * 0.2, 0, TAU);
+        ctx.fillStyle   = cg;
+        ctx.shadowColor = '#9ef';
+        ctx.shadowBlur  = 8;
+        ctx.fill();
+
+        // Engine arc
+        ctx.beginPath();
+        ctx.arc(-s * 0.35, 0, s * 0.18, Math.PI * 0.5, Math.PI * 1.5);
+        ctx.strokeStyle = '#f90';
+        ctx.shadowColor = '#f80';
+        ctx.shadowBlur  = 10;
+        ctx.lineWidth   = 2;
+        ctx.stroke();
+
         ctx.restore();
 
         // Thruster flame
         if (this.thrusting) {
             const flicker  = 0.5 + 0.5 * Math.sin(this.flameT);
-            const flameLen = SHIP_SIZE * (0.45 + flicker * 0.55);
+            const flameLen = s * (0.45 + flicker * 0.55);
             const r = 255, g = (90 + flicker * 120) | 0;
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.rotate(this.angle);
             ctx.beginPath();
-            ctx.moveTo(-SHIP_SIZE * 0.35, -SHIP_SIZE * 0.2);
-            ctx.lineTo(-SHIP_SIZE * 0.35 - flameLen, 0);
-            ctx.lineTo(-SHIP_SIZE * 0.35,  SHIP_SIZE * 0.2);
+            ctx.moveTo(-s * 0.35, -s * 0.2);
+            ctx.lineTo(-s * 0.35 - flameLen, 0);
+            ctx.lineTo(-s * 0.35,  s * 0.2);
             ctx.strokeStyle = `rgba(${r},${g},0,${0.75 + flicker * 0.25})`;
             ctx.shadowColor = '#f80';
             ctx.shadowBlur  = 14;
