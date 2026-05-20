@@ -1,30 +1,15 @@
 'use strict';
 
-class ClusterAsteroid {
+// Metaball-Variante des Asteroiden — erbt Lifecycle von AsteroidBase, ergänzt Cells + Metaball-Render.
+class ClusterAsteroid extends AsteroidBase {
+    static _label   = 'cluster-asteroid';
+    static _rotBase = 1.2;
+
     constructor(x, y, size = 0, angle = null) {
-        this.x    = x;
-        this.y    = y;
-        this.size = size;
-
-        this.radius = ASTEROID_RADIUS[size];
-        this.score  = ASTEROID_SCORE[size];
-
-        const a     = angle ?? rand(0, TAU);
-        const speed = ASTEROID_SPEED[size] * rand(0.7, 1.35);
-        this.vx       = Math.cos(a) * speed;
-        this.vy       = Math.sin(a) * speed;
-        this.rot      = rand(0, TAU);
-        this.rotSpeed = rand(-1.2, 1.2) * (size + 1) * 0.38;
-
+        super(x, y, size, angle);
         this._cellR     = this.radius * 0.24;
         this._cells     = this._generateCells();
         this._offCanvas = this._buildOffCanvas();
-
-        this.body = Matter.Bodies.circle(x, y, this.radius, {
-            friction: 0, frictionAir: 0, restitution: 1, label: 'cluster-asteroid',
-            plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } },
-        });
-        Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
     }
 
     _generateCells() {
@@ -79,11 +64,6 @@ class ClusterAsteroid {
 
     get collisionRadius() { return this.radius * 0.65; }
 
-    update(dt) {
-        this.rot += this.rotSpeed * dt;
-        return true;
-    }
-
     draw() {
         const sz = this._offCanvas.width;
         ctx.save();
@@ -92,17 +72,6 @@ class ClusterAsteroid {
         ctx.rotate(this.rot);
         ctx.drawImage(this._offCanvas, -sz / 2, -sz / 2);
         ctx.restore();
-    }
-
-    split(bulletAngle = null) {
-        if (this.size >= 2) return [];
-        const offset = ASTEROID_RADIUS[this.size + 1];
-        const perp   = rand(0, TAU);
-        const ox = Math.cos(perp) * offset, oy = Math.sin(perp) * offset;
-        return [
-            new ClusterAsteroid(this.x + ox, this.y + oy, this.size + 1, safeSplitAngle(bulletAngle)),
-            new ClusterAsteroid(this.x - ox, this.y - oy, this.size + 1, safeSplitAngle(bulletAngle)),
-        ];
     }
 }
 

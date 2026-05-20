@@ -2,7 +2,9 @@
 
 const { Bullet }  = require('../../src/entities/Bullet.js');
 global.Bullet     = Bullet;   // ShipPoly.fire() references Bullet as a global
-const { ShipPoly }    = require('../../src/entities/ShipPoly.js');
+const { ShipBase } = require('../../src/entities/ShipBase.js');
+global.ShipBase    = ShipBase;
+const { ShipPoly } = require('../../src/entities/ShipPoly.js');
 
 afterEach(() => jest.restoreAllMocks());
 

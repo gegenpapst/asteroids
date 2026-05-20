@@ -1,5 +1,7 @@
 'use strict';
 
+const { AsteroidBase } = require('../../src/entities/AsteroidBase.js');
+global.AsteroidBase    = AsteroidBase;
 const { AsteroidPoly } = require('../../src/entities/AsteroidPoly.js');
 
 afterEach(() => jest.restoreAllMocks());

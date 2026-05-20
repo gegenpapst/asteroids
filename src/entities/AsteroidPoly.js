@@ -2,21 +2,13 @@
 
 const ASTEROID_COLORS = ['#8899aa', '#99aaaa', '#aabbbb'];
 
-class AsteroidPoly {
+// Polygon-Variante des Asteroiden — erbt Lifecycle von AsteroidBase, ergänzt verts + draw().
+class AsteroidPoly extends AsteroidBase {
+    static _label   = 'asteroid';
+    static _rotBase = 1.6;
+
     constructor(x, y, size = 0, angle = null) {
-        this.x    = x;
-        this.y    = y;
-        this.size = size;
-
-        this.radius = ASTEROID_RADIUS[size];
-        this.score  = ASTEROID_SCORE[size];
-
-        const a     = angle ?? rand(0, TAU);
-        const speed = ASTEROID_SPEED[size] * rand(0.7, 1.35);
-        this.vx       = Math.cos(a) * speed;
-        this.vy       = Math.sin(a) * speed;
-        this.rot      = rand(0, TAU);
-        this.rotSpeed = rand(-1.6, 1.6) * (size + 1) * 0.38;
+        super(x, y, size, angle);
 
         const n = randInt(7, 13);
         this.verts = Array.from({ length: n }, (_, i) => {
@@ -27,16 +19,6 @@ class AsteroidPoly {
                 r: this.radius * rand(0.62, 1.28),
             };
         });
-
-        this.body = Matter.Bodies.circle(x, y, this.radius, {
-            friction: 0, frictionAir: 0, restitution: 1, label: 'asteroid',
-            plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } },
-        });
-        Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
-    }
-
-    update(dt) {
-        this.rot += this.rotSpeed * dt;
     }
 
     draw() {
@@ -60,17 +42,6 @@ class AsteroidPoly {
         ctx.shadowBlur  = 7;
         ctx.stroke();
         ctx.restore();
-    }
-
-    split(bulletAngle = null) {
-        if (this.size >= 2) return [];
-        const offset = ASTEROID_RADIUS[this.size + 1];
-        const perp   = rand(0, TAU);
-        const ox = Math.cos(perp) * offset, oy = Math.sin(perp) * offset;
-        return [
-            new AsteroidPoly(this.x + ox, this.y + oy, this.size + 1, safeSplitAngle(bulletAngle)),
-            new AsteroidPoly(this.x - ox, this.y - oy, this.size + 1, safeSplitAngle(bulletAngle)),
-        ];
     }
 }
 
