@@ -20,8 +20,8 @@ class ShipBase {
         this.heavyTimer   = 0;
     }
 
-    get radius()    { return SHIP_SIZE * 0.7; }
-    get hitRadius() { return this.shieldTimer > 0 ? SHIP_SIZE * 2.2 : this.radius; }
+    get radius()    { return SHIP_SIZE * SHIP_HULL_FACTOR; }
+    get hitRadius() { return this.shieldTimer > 0 ? SHIP_SIZE * SHIP_SHIELD_FACTOR : this.radius; }
 
     teleport(x, y) {
         this.x = x;
@@ -88,10 +88,11 @@ class ShipBase {
         const ty    = this.y + Math.sin(this.angle) * SHIP_SIZE;
         const power = this.heavyTimer > 0 ? 2 : 1;
         if (this.spreadTimer > 0) {
+            const sa = BULLET_SPREAD_ANGLE;
             return [
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle - 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle - 0.26) * BULLET_SPEED, bulletLife, power),
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle)         * BULLET_SPEED, this.vy + Math.sin(this.angle)         * BULLET_SPEED, bulletLife, power),
-                new Bullet(tx, ty, this.vx + Math.cos(this.angle + 0.26) * BULLET_SPEED, this.vy + Math.sin(this.angle + 0.26) * BULLET_SPEED, bulletLife, power),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle - sa) * BULLET_SPEED, this.vy + Math.sin(this.angle - sa) * BULLET_SPEED, bulletLife, power),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle)      * BULLET_SPEED, this.vy + Math.sin(this.angle)      * BULLET_SPEED, bulletLife, power),
+                new Bullet(tx, ty, this.vx + Math.cos(this.angle + sa) * BULLET_SPEED, this.vy + Math.sin(this.angle + sa) * BULLET_SPEED, bulletLife, power),
             ];
         }
         return [new Bullet(tx, ty,

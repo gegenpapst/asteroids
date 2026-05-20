@@ -13,7 +13,7 @@ class ShipPoly extends ShipBase {
         if (this.shieldTimer > 0) {
             const pulse = 0.55 + 0.45 * Math.sin(Date.now() / 140);
             ctx.beginPath();
-            ctx.arc(0, 0, SHIP_SIZE * 2.2, 0, TAU);
+            ctx.arc(0, 0, SHIP_SIZE * SHIP_SHIELD_FACTOR, 0, TAU);
             ctx.strokeStyle = `rgba(50,210,255,${pulse})`;
             ctx.shadowColor = '#0ff';
             ctx.shadowBlur  = 20;

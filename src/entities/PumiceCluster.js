@@ -7,9 +7,9 @@ class PumiceCluster {
     constructor(x, y) {
         this.x         = x;
         this.y         = y;
-        this.radius    = rand(22, 54);
-        this._cellR    = this.radius * 0.20;
-        this._blur     = Math.round(this._cellR * 0.68);
+        this.radius    = rand(PUMICE_RADIUS_MIN, PUMICE_RADIUS_MAX);
+        this._cellR    = this.radius * PUMICE_CELL_FACTOR;
+        this._blur     = Math.round(this._cellR * PUMICE_BLUR_FACTOR);
         this.cells     = this._generateCells();
         const size     = Math.ceil((this.radius + this._blur * 3 + 4) * 2);
         this._offCanvas      = Object.assign(document.createElement('canvas'), { width: size, height: size });
@@ -18,8 +18,8 @@ class PumiceCluster {
 
     _generateCells() {
         const cellR   = this._cellR;
-        const spacing = cellR * 1.55;
-        const rowH    = spacing * 0.866;
+        const spacing = cellR * PUMICE_SPACING_FACTOR;
+        const rowH    = spacing * METABALL_HEX_PACKING;
         const span    = Math.ceil(this.radius * 2 / rowH) + 1;
         const cells   = [];
         for (let row = 0; row < span; row++) {
@@ -45,7 +45,7 @@ class PumiceCluster {
     // Entfernt lebende Zellen ohne lebenden Nachbarn (eine Runde, keine Kaskade).
     // Threshold ≈ 1.6× Hex-Abstand — toleriert den ±1.5px Jitter bei der Zell-Platzierung.
     cullIsolated(world) {
-        const threshold = this._cellR * 2.5;
+        const threshold = this._cellR * PUMICE_NEIGHBOR_FACTOR;
         for (const c of this.cells) {
             if (!c.alive) continue;
             const hasNeighbor = this.cells.some(
@@ -58,7 +58,7 @@ class PumiceCluster {
         }
     }
 
-    get collisionRadius() { return this.radius * 0.75; }
+    get collisionRadius() { return this.radius * PUMICE_COLLISION_FACTOR; }
 
     findHit(wx, wy, br) {
         return this.cells.filter(c => c.alive && dist({ x: wx, y: wy }, c) < c.r + br);
@@ -72,7 +72,7 @@ class PumiceCluster {
             ctx, this._offCanvas, this._contrastCanvas,
             alive, this.x, this.y,
             'rgb(146, 146, 150)',  // Kompakt: dicht, grau, kühler Ton
-            this._blur, 13,        // Kontrast 13 → scharfe Kante
+            this._blur, PUMICE_CONTRAST,
         );
     }
 }

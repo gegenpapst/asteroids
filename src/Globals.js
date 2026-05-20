@@ -28,11 +28,14 @@ const SHIP_STRAFE_ACCEL  = 500;
 const SHIP_ROTATION      = 3.5;
 const SHIP_FRICTION      = 0.985;
 const SHIP_MIN_SPEED     = 5;
+const SHIP_HULL_FACTOR   = 0.7;   // radius getter: SHIP_SIZE × FACTOR
+const SHIP_SHIELD_FACTOR = 2.2;   // hitRadius + Shield-Bubble Visual: SHIP_SIZE × FACTOR
 
-const BULLET_SPEED = 560;
-const BULLET_LIFE  = 0.65;
-const MAX_BULLETS  = 8;
-const FIRE_RATE    = 0.22;
+const BULLET_SPEED        = 560;
+const BULLET_LIFE         = 0.65;
+const MAX_BULLETS         = 8;
+const FIRE_RATE           = 0.22;
+const BULLET_SPREAD_ANGLE = 0.26; // 3-Schuss-Spread (rad), seitliche Bullets
 
 const INVULNERABLE_TIME = 3.0;
 
@@ -46,6 +49,39 @@ const EXTRA_LIFE_SCORE    = 10000;
 
 const PARTICLE_LIFE  = 0.85;
 const PARTICLE_SPEED = 170;
+
+// ── Metaball-Rendering ──────────────────────────────────────────────────────
+// Geteilt zwischen ClusterAsteroid, RockCluster (via Metaball.js Utility).
+const METABALL_HEX_PACKING        = Math.sqrt(3) / 2;  // 0.866 — Hex-Reihen-Höhe / spacing
+const METABALL_DEFAULT_CONTRAST   = 14;                // contrast()-Filter-Stärke
+const METABALL_DEFAULT_BLUR_RATIO = 0.75;              // Blur als Faktor von cellR
+const METABALL_DRAW_BLOAT         = 1.25;              // Beim Zeichnen werden Cells etwas größer gemalt
+const METABALL_SPACING_RATIO      = 1.65;              // Default Hex-Zell-Abstand
+const METABALL_CELL_JITTER        = 1.5;               // Positions-Jitter in Pixel
+const METABALL_CELL_SIZE_JITTER   = 0.15;              // ±-Bereich für Zellgrößen-Variation
+const CLUSTER_CELL_FACTOR         = 0.24;              // Cell-Radius = radius × FACTOR (Asteroid/Rock)
+const CLUSTER_COLLISION_FACTOR    = 0.65;              // collisionRadius = radius × FACTOR
+
+// ── Pumice (Bimsstein) ──────────────────────────────────────────────────────
+// Pumice-Cluster: einzelne Zellen mit eigenen Matter-Bodies, dynamisch zerstörbar.
+const PUMICE_RADIUS_MIN           = 22;
+const PUMICE_RADIUS_MAX           = 54;
+const PUMICE_CELL_FACTOR          = 0.20;   // Cell-Radius = radius × FACTOR
+const PUMICE_SPACING_FACTOR       = 1.55;   // Hex-Zell-Abstand (kompakter als Default)
+const PUMICE_BLUR_FACTOR          = 0.68;   // Blur als Faktor von cellR
+const PUMICE_CONTRAST             = 13;     // contrast()-Stärke (schärfere Kante als Default 14)
+const PUMICE_NEIGHBOR_FACTOR      = 2.5;    // cullIsolated-Threshold = cellR × FACTOR
+const PUMICE_COLLISION_FACTOR     = 0.75;   // collisionRadius = radius × FACTOR
+
+// PumicePoly (Polygon-Variante)
+const PUMICE_POLY_RADIUS_MIN      = 28;
+const PUMICE_POLY_RADIUS_MAX      = 50;
+
+// Rocks (statische Polygon- bzw. Cluster-Hindernisse)
+const ROCK_POLY_RADIUS_MIN        = 22;
+const ROCK_POLY_RADIUS_MAX        = 54;
+const ROCK_CLUSTER_RADIUS_MIN     = 25;
+const ROCK_CLUSTER_RADIUS_MAX     = 55;
 
 const UFO_RADIUS = [22, 11];
 const UFO_SPEED  = [90, 130];
@@ -150,11 +186,20 @@ if (typeof module !== 'undefined') {
         wrap, clamp, dist, rand, randInt, safeSplitAngle,
         TAU, W, H,
         SHIP_SIZE, SHIP_THRUST, SHIP_MAX_SPEED, SHIP_STRAFE_SPEED, SHIP_STRAFE_ACCEL, SHIP_ROTATION, SHIP_FRICTION, SHIP_MIN_SPEED,
-        BULLET_SPEED, BULLET_LIFE, MAX_BULLETS, FIRE_RATE,
+        SHIP_HULL_FACTOR, SHIP_SHIELD_FACTOR,
+        BULLET_SPEED, BULLET_LIFE, MAX_BULLETS, FIRE_RATE, BULLET_SPREAD_ANGLE,
         INVULNERABLE_TIME,
         ASTEROID_RADIUS, ASTEROID_SPEED, ASTEROID_SCORE,
         INITIAL_ROCKS, MAX_ROCKS_PER_LEVEL, EXTRA_LIFE_SCORE,
         PARTICLE_LIFE, PARTICLE_SPEED,
+        METABALL_HEX_PACKING, METABALL_DEFAULT_CONTRAST, METABALL_DEFAULT_BLUR_RATIO, METABALL_DRAW_BLOAT,
+        METABALL_SPACING_RATIO, METABALL_CELL_JITTER, METABALL_CELL_SIZE_JITTER,
+        CLUSTER_CELL_FACTOR, CLUSTER_COLLISION_FACTOR,
+        PUMICE_RADIUS_MIN, PUMICE_RADIUS_MAX,
+        PUMICE_CELL_FACTOR, PUMICE_SPACING_FACTOR, PUMICE_BLUR_FACTOR, PUMICE_CONTRAST,
+        PUMICE_NEIGHBOR_FACTOR, PUMICE_COLLISION_FACTOR,
+        PUMICE_POLY_RADIUS_MIN, PUMICE_POLY_RADIUS_MAX,
+        ROCK_POLY_RADIUS_MIN, ROCK_POLY_RADIUS_MAX, ROCK_CLUSTER_RADIUS_MIN, ROCK_CLUSTER_RADIUS_MAX,
         UFO_RADIUS, UFO_SPEED, UFO_SCORE,
         POWERUP_DURATION, POWERUP_SPAWN_CHANCE, POWERUP_TYPES,
         Input,

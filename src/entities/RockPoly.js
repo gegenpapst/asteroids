@@ -4,7 +4,7 @@ class RockPoly {
     constructor(x, y) {
         this.x      = x;
         this.y      = y;
-        this.radius = rand(22, 54);
+        this.radius = rand(ROCK_POLY_RADIUS_MIN, ROCK_POLY_RADIUS_MAX);
         this.rot    = rand(0, TAU);
         this.verts  = Array.from({ length: 16 }, (_, i) => ({
             a: (TAU / 16) * i + rand(-0.08, 0.08),

@@ -5,9 +5,9 @@ class RockCluster {
     constructor(x, y) {
         this.x      = x;
         this.y      = y;
-        this.radius = rand(25, 55);
+        this.radius = rand(ROCK_CLUSTER_RADIUS_MIN, ROCK_CLUSTER_RADIUS_MAX);
 
-        const cellR     = this.radius * 0.24;
+        const cellR     = this.radius * CLUSTER_CELL_FACTOR;
         const cells     = generateHexCells(this.radius, cellR);
         this._offCanvas = buildMetaballCanvas(cells, 'rgb(155, 140, 118)', this.radius, cellR);  // Glut
 
@@ -17,7 +17,7 @@ class RockCluster {
         });
     }
 
-    get collisionRadius() { return this.radius * 0.65; }
+    get collisionRadius() { return this.radius * CLUSTER_COLLISION_FACTOR; }
 
     draw() {
         const sz = this._offCanvas.width;

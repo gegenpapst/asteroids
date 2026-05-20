@@ -4,7 +4,7 @@ class PumicePoly {
     constructor(x, y) {
         this.x       = x;
         this.y       = y;
-        this.radius  = rand(28, 50);
+        this.radius  = rand(PUMICE_POLY_RADIUS_MIN, PUMICE_POLY_RADIUS_MAX);
         this.rot     = rand(0, TAU);
         this.hits    = 0;
         this.maxHits = Math.round(10 + (this.radius - 28) / 22 * 5); // 10 (small) – 15 (large)

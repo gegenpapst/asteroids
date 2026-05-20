@@ -8,9 +8,13 @@
  * Standard für Cluster-Asteroids und RockCluster (statische Position relativ zum Zentrum).
  * @returns {Array<{dx, dy, r}>}
  */
-function generateHexCells(radius, cellR, { spacingFactor = 1.65, jitter = 1.5, sizeJitter = 0.15 } = {}) {
+function generateHexCells(radius, cellR, {
+    spacingFactor = METABALL_SPACING_RATIO,
+    jitter        = METABALL_CELL_JITTER,
+    sizeJitter    = METABALL_CELL_SIZE_JITTER,
+} = {}) {
     const spacing = cellR * spacingFactor;
-    const rowH    = spacing * 0.866;   // sqrt(3)/2 für Hex-Packing
+    const rowH    = spacing * METABALL_HEX_PACKING;   // sqrt(3)/2 für Hex-Packing
     const span    = Math.ceil(radius * 2 / rowH) + 1;
     const cells   = [];
     for (let row = 0; row < span; row++) {
@@ -44,7 +48,10 @@ function generateHexCells(radius, cellR, { spacingFactor = 1.65, jitter = 1.5, s
  * @param {number} [blurFactor=0.75] - Blur als Faktor von cellR
  * @returns {HTMLCanvasElement}
  */
-function buildMetaballCanvas(cells, color, radius, cellR, contrast = 14, blurFactor = 0.75) {
+function buildMetaballCanvas(cells, color, radius, cellR,
+    contrast   = METABALL_DEFAULT_CONTRAST,
+    blurFactor = METABALL_DEFAULT_BLUR_RATIO,
+) {
     const blur = Math.round(cellR * blurFactor);
     const pad  = blur * 3 + 4;
     const sz   = Math.ceil((radius + pad) * 2);
@@ -59,7 +66,7 @@ function buildMetaballCanvas(cells, color, radius, cellR, contrast = 14, blurFac
     blurCtx.fillStyle = color;
     for (const c of cells) {
         blurCtx.beginPath();
-        blurCtx.arc(half + c.dx, half + c.dy, c.r * 1.25, 0, TAU);
+        blurCtx.arc(half + c.dx, half + c.dy, c.r * METABALL_DRAW_BLOAT, 0, TAU);
         blurCtx.fill();
     }
     blurCtx.filter = 'none';
@@ -101,7 +108,7 @@ function renderMetaballFrame(targetCtx, bufferCanvas, contrastCanvas, cells, wor
     bufCtx.fillStyle = color;
     for (const c of cells) {
         bufCtx.beginPath();
-        bufCtx.arc(c.x - ox, c.y - oy, c.r * 1.25, 0, TAU);
+        bufCtx.arc(c.x - ox, c.y - oy, c.r * METABALL_DRAW_BLOAT, 0, TAU);
         bufCtx.fill();
     }
     bufCtx.filter = 'none';

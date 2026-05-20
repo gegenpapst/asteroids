@@ -13,7 +13,7 @@ class ShipCluster extends ShipBase {
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.beginPath();
-            ctx.arc(0, 0, s * 2.2, 0, TAU);
+            ctx.arc(0, 0, s * SHIP_SHIELD_FACTOR, 0, TAU);
             ctx.strokeStyle = `rgba(50,210,255,${pulse})`;
             ctx.shadowColor = '#0ff';
             ctx.shadowBlur  = 20;
