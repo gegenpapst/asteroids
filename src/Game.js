@@ -116,54 +116,7 @@ class Game {
             this._dbgFrameMs += (dt * 1000      - this._dbgFrameMs) * 0.1;
         }
 
-        if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
-            if (Input.start() || Input.config()) {
-                this._configPrevState = this.state;
-                this.state = STATE.CONFIG;
-            }
-            Input.flush();
-            return;
-        }
-
-        if (this.state === STATE.HELP) {
-            if (Input.help() || Input.wasPressed('Escape')) this.state = STATE.PLAYING;
-            Input.flush();
-            return;
-        }
-
-        if (this.state === STATE.CONFIG) {
-            const readOnly = this._configPrevState === STATE.PLAYING;
-            if (!readOnly) {
-                const params    = ['mode', 'bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce', 'visualStyle'];
-                const paramMax  = { mode: 3, bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2, visualStyle: 2 };
-                if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
-                if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
-                const key = params[this._configCursor];
-                if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
-                if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
-                if (key === 'mode') Object.assign(this.config, MODES[this.config.mode - 1]);
-                if (key === 'mode' || key === 'asteroidBounce') this._applyAsteroidFilter();
-            }
-            if (Input.config() || Input.wasPressed('Enter')) {
-                if (readOnly) this.state = STATE.PLAYING;
-                else          this.start();
-            }
-            Input.flush();
-            return;
-        }
-
-        if (this.state === STATE.PLAYING && Input.help()) {
-            this.state = STATE.HELP;
-            Input.flush();
-            return;
-        }
-
-        if (this.state === STATE.PLAYING && Input.config()) {
-            this._configPrevState = STATE.PLAYING;
-            this.state = STATE.CONFIG;
-            Input.flush();
-            return;
-        }
+        if (this._updateStateInput()) return;
 
         // Beat throb
         this.beatTimer -= dt;
@@ -188,355 +141,17 @@ class Game {
         this.powerups   = this.powerups.filter(p => p.update(dt));
         this.ufoBullets = this.ufoBullets.filter(b => b.update(dt));
 
-        if (this.state === STATE.DEAD) {
-            this.deadTimer -= dt;
-            this.asteroids.forEach(a => a.update(dt));
-            this.ufos = this.ufos.filter(u => u.update(dt, null));
-            Matter.Engine.update(this.engine, dt * 1000);
-            this._syncBodies();
-            if (this.deadTimer <= 0) {
-                if (this.lives > 0) {
-                    this.ship = this.config.visualStyle === 2 ? new ShipCluster() : new ShipPoly();
-                    [this.ship.x, this.ship.y] = this._safeShipPos();
-                    this.state = STATE.PLAYING;
-                } else {
-                    this.state = STATE.GAMEOVER;
-                }
-            }
-            Input.flush();
-            return;
-        }
+        if (this.state === STATE.DEAD) { this._updateDeadState(dt); return; }
 
         // ── PLAYING ──
 
         if (Input.wasPressed('F2') || Input.wasPressed('KeyQ')) this._debugCollision = !this._debugCollision;
 
-        this.ship.update(dt);
-
-        // Thrust trail particles
-        if (this.ship.thrusting) {
-            for (let i = 0; i < 2; i++) {
-                const ex = this.ship.x - Math.cos(this.ship.angle) * SHIP_SIZE * 0.35;
-                const ey = this.ship.y - Math.sin(this.ship.angle) * SHIP_SIZE * 0.35;
-                const p  = new Particle(ex, ey, `hsl(${rand(20, 50)},100%,60%)`);
-                p.vx      = -Math.cos(this.ship.angle) * rand(40, 100) + rand(-25, 25);
-                p.vy      = -Math.sin(this.ship.angle) * rand(40, 100) + rand(-25, 25);
-                p.life    = rand(0.1, 0.28);
-                p.maxLife = p.life;
-                p.size    = rand(0.8, 2.0);
-                this.particles.push(p);
-            }
-        }
-
-        if (Input.teleport() && this.ship.invulnerable <= 0) {
-            const [tx, ty] = this._safeShipPos();
-            this.ship.teleport(tx, ty);
-            this.snd.powerUp('shield');
-        }
-
-        if (this.bullets.length < MAX_BULLETS && this.ship.canFire()) {
-            this.bullets.push(...this.ship.fire(this._bulletLife));
-            this.snd.shoot();
-        }
-
-        this.bullets          = this.bullets.filter(b => b.update(dt));
-        this.asteroids.forEach(a => a.update(dt));
-        this.clusterAsteroids.forEach(ca => ca.update(dt));
-        Matter.Engine.update(this.engine, dt * 1000);
-        this._syncBodies();
-
-        // UFO spawn
-        this.ufoTimer -= dt;
-        if (this.ufoTimer <= 0) {
-            const size    = (this.score >= 5000 && Math.random() < 0.4) ? 1 : 0;
-            const UfoClass = this.config.visualStyle === 2 ? UfoCluster : Ufo;
-            this.ufos.push(new UfoClass(size, b => this.ufoBullets.push(b)));
-            this.ufoTimer = 25 + rand(0, 15);
-        }
-        this.ufos = this.ufos.filter(u => u.update(dt, this.ship));
-
-        // Bullet × Asteroid
-        outer:
-        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
-            const b = this.bullets[bi];
-            for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
-                const a = this.asteroids[ai];
-                if (dist(b, a) < a.radius + b.radius) {
-                    this._addScore(a.score);
-                    this._boom(a.x, a.y, a.size);
-                    if (Math.random() < this._powerupChance)
-                        this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]));
-                    const children = a.split(Math.atan2(b.vy, b.vx));
-                    Matter.World.remove(this.engine.world, a.body);
-                    if (children.length) {
-                        Matter.World.add(this.engine.world, children.map(c => c.body));
-                        const f = this._asteroidCollisionFilter;
-                        for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
-                    }
-                    this.asteroids.splice(ai, 1, ...children);
-                    this.bullets.splice(bi, 1);
-                    continue outer;
-                }
-            }
-        }
-
-        // Bullet × ClusterAsteroid
-        outerCA:
-        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
-            const b = this.bullets[bi];
-            for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
-                const ca = this.clusterAsteroids[ci];
-                if (dist(b, ca) < ca.collisionRadius + b.radius) {
-                    this._addScore(ca.score);
-                    this._boom(ca.x, ca.y, ca.size);
-                    if (Math.random() < this._powerupChance)
-                        this.powerups.push(new PowerUp(ca.x, ca.y, POWERUP_TYPES[randInt(0, 3)]));
-                    const children = ca.split(Math.atan2(b.vy, b.vx));
-                    Matter.World.remove(this.engine.world, ca.body);
-                    if (children.length) {
-                        Matter.World.add(this.engine.world, children.map(c => c.body));
-                        const f = this._asteroidCollisionFilter;
-                        for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
-                    }
-                    this.clusterAsteroids.splice(ci, 1, ...children);
-                    this.bullets.splice(bi, 1);
-                    continue outerCA;
-                }
-            }
-        }
-
-        // Bullet × UFO
-        outerUfo:
-        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
-            const b = this.bullets[bi];
-            for (let ui = this.ufos.length - 1; ui >= 0; ui--) {
-                const u = this.ufos[ui];
-                if (dist(b, u) < u.radius + b.radius) {
-                    this._addScore(u.score);
-                    this._boom(u.x, u.y, 1);
-                    this.ufos.splice(ui, 1);
-                    this.bullets.splice(bi, 1);
-                    continue outerUfo;
-                }
-            }
-        }
-
-        // Bullet × Rock
-        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
-            const b = this.bullets[bi];
-            if (this.rocks.some(r => dist(b, r) < r.radius + b.radius)) {
-                this.bullets.splice(bi, 1);
-            }
-        }
-
-        // Bullet × RockCluster
-        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
-            const b = this.bullets[bi];
-            if (this.rockClusters.some(rc => dist(b, rc) < rc.collisionRadius + b.radius)) {
-                this.bullets.splice(bi, 1);
-            }
-        }
-
-        // Bullet × Pumice
-        outerPumice:
-        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
-            const b = this.bullets[bi];
-            for (const p of this.pumices) {
-                const hits = p.findHit(b.x, b.y, b.radius);
-                if (hits.length === 0) continue;
-                for (const c of hits) {
-                    c.alive = false;
-                    Matter.World.remove(this.engine.world, c.body);
-                    for (let k = 0; k < 3; k++)
-                        this.particles.push(new Particle(c.x, c.y, `hsl(${rand(25,40)},18%,${rand(55,72)}%)`));
-                }
-                p.cullIsolated(this.engine.world);
-                this.bullets.splice(bi, 1);
-                continue outerPumice;
-            }
-        }
-        this.pumices = this.pumices.filter(p => p.alive);
-
-        // Bullet × PumicePoly
-        outerPP:
-        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
-            const b = this.bullets[bi];
-            for (let pi = this.pumicePolys.length - 1; pi >= 0; pi--) {
-                const pp = this.pumicePolys[pi];
-                if (pp.collidesWithCircle(b.x, b.y, b.radius)) {
-                    const { destroyed, oldBody, newBody } = pp.hit(b.x, b.y);
-                    Matter.World.remove(this.engine.world, oldBody);
-                    if (newBody) Matter.World.add(this.engine.world, newBody);
-                    for (let k = 0; k < 5; k++)
-                        this.particles.push(new Particle(b.x, b.y, `hsl(${rand(25,40)},18%,${rand(60,78)}%)`));
-                    if (destroyed) this._boom(pp.x, pp.y, 1);
-                    this.bullets.splice(bi, 1);
-                    continue outerPP;
-                }
-            }
-        }
-        this.pumicePolys = this.pumicePolys.filter(p => p.alive);
-
-        // Ship × Asteroid
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
-                const a = this.asteroids[ai];
-                if (dist(this.ship, a) < a.radius + this.ship.hitRadius) {
-                    if (this.ship.shieldTimer > 0) {
-                        this._boom(a.x, a.y, a.size);
-                        const children = a.split();
-                        Matter.World.remove(this.engine.world, a.body);
-                        if (children.length) {
-                            Matter.World.add(this.engine.world, children.map(c => c.body));
-                            const f = this._asteroidCollisionFilter;
-                            for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
-                        }
-                        this.asteroids.splice(ai, 1, ...children);
-                        this._bounceShip(a.x, a.y);
-                    } else {
-                        this._killShip();
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Ship × ClusterAsteroid
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
-                const ca = this.clusterAsteroids[ci];
-                if (dist(this.ship, ca) < ca.collisionRadius + this.ship.hitRadius) {
-                    if (this.ship.shieldTimer > 0) {
-                        this._boom(ca.x, ca.y, ca.size);
-                        const children = ca.split();
-                        Matter.World.remove(this.engine.world, ca.body);
-                        if (children.length) {
-                            Matter.World.add(this.engine.world, children.map(c => c.body));
-                            const f = this._asteroidCollisionFilter;
-                            for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
-                        }
-                        this.clusterAsteroids.splice(ci, 1, ...children);
-                        this._bounceShip(ca.x, ca.y);
-                    } else {
-                        this._killShip();
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Ship × Rock
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (const r of this.rocks) {
-                if (dist(this.ship, r) < r.radius + this.ship.hitRadius) {
-                    if (this.ship.shieldTimer > 0) {
-                        this._bounceShip(r.x, r.y);
-                    } else {
-                        this._killShip();
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Ship × RockCluster
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (const rc of this.rockClusters) {
-                if (dist(this.ship, rc) < rc.collisionRadius + this.ship.hitRadius) {
-                    if (this.ship.shieldTimer > 0) this._bounceShip(rc.x, rc.y);
-                    else this._killShip();
-                    break;
-                }
-            }
-        }
-
-        // Ship × Pumice (per-cell — gleiche Methode wie Bullets, kein unsichtbarer Bounding-Circle)
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (const p of this.pumices) {
-                if (!p.alive) continue;
-                const hits = p.findHit(this.ship.x, this.ship.y, this.ship.hitRadius);
-                if (hits.length > 0) {
-                    if (this.ship.shieldTimer > 0) this._bounceShip(p.x, p.y);
-                    else this._killShip();
-                    break;
-                }
-            }
-        }
-
-        // Ship × PumicePoly
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (const pp of this.pumicePolys) {
-                if (pp.collidesWithCircle(this.ship.x, this.ship.y, this.ship.hitRadius)) {
-                    if (this.ship.shieldTimer > 0) this._bounceShip(pp.x, pp.y);
-                    else this._killShip();
-                    break;
-                }
-            }
-        }
-
-        // Ship × UFO
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (const u of this.ufos) {
-                if (dist(this.ship, u) < u.radius + this.ship.hitRadius) {
-                    if (this.ship.shieldTimer > 0) {
-                        this._bounceShip(u.x, u.y);
-                    } else {
-                        this._killShip();
-                    }
-                    break;
-                }
-            }
-        }
-
-        // UFO bullet × ship
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (let bi = this.ufoBullets.length - 1; bi >= 0; bi--) {
-                const b = this.ufoBullets[bi];
-                if (dist(b, this.ship) < b.radius + this.ship.hitRadius) {
-                    if (this.ship.shieldTimer > 0) {
-                        this.ufoBullets.splice(bi, 1);
-                    } else {
-                        this._killShip();
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Ship × PowerUp
-        if (this.ship) {
-            for (let pi = this.powerups.length - 1; pi >= 0; pi--) {
-                const pu = this.powerups[pi];
-                if (dist(this.ship, pu) < this.ship.radius + pu.radius) {
-                    if (pu.type === 'shield')       this.ship.shieldTimer = this._powerupDuration;
-                    else if (pu.type === 'rapid')  this.ship.rapidTimer  = this._powerupDuration;
-                    else if (pu.type === 'spread') this.ship.spreadTimer = this._powerupDuration;
-                    else                           this.ship.heavyTimer  = this._powerupDuration;
-                    this.snd.powerUp(pu.type);
-                    this.powerups.splice(pi, 1);
-                }
-            }
-        }
-
-        // Kollisionsprüfungen zählen (max. theoretisch: Bullets × alle + Ship × alle)
-        if (this._debugCollision) {
-            const pumiceCells = this.pumices.reduce((s, p) => s + p.cells.filter(c => c.alive).length, 0);
-            const perBullet   = this.asteroids.length + this.clusterAsteroids.length
-                              + this.ufos.length + this.rocks.length + this.rockClusters.length
-                              + pumiceCells + this.pumicePolys.length;
-            const shipChecks  = this.ship ? (this.asteroids.length + this.clusterAsteroids.length
-                              + this.rocks.length + this.rockClusters.length
-                              + pumiceCells + this.pumicePolys.length
-                              + this.ufos.length + this.ufoBullets.length + this.powerups.length) : 0;
-            this._dbgCC = this.bullets.length * perBullet + shipChecks;
-            if (this._dbgCC > this._dbgPeakCC) {
-                this._dbgPeakCC  = this._dbgCC;
-                this._dbgPeakTTL = 120;          // Peak gilt 120 Frames (~2 s)
-            } else if (--this._dbgPeakTTL <= 0) {
-                this._dbgPeakCC  = this._dbgCC;  // Fenster abgelaufen → zurücksetzen
-                this._dbgPeakTTL = 120;
-            }
-        }
+        this._updateShipAndBullets(dt);
+        this._updateUFOs(dt);
+        this._updateBulletCollisions();
+        this._updateShipCollisions();
+        this._updateDebugStats();
 
         // Level clear (UFOs persist between levels)
         if (this.asteroids.length === 0 && this.clusterAsteroids.length === 0) {
@@ -754,6 +369,424 @@ class Game {
         this.deadTimer  = 2.2;
         this.bullets    = [];
         this.ufoBullets = [];
+    }
+
+    // Behandelt alle State-Übergänge basierend auf Input (START, HELP, CONFIG, PLAYING-Tasten).
+    // Returns `true` falls update() abbrechen soll (State braucht keine weitere Verarbeitung).
+    _updateStateInput() {
+        if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
+            if (Input.start() || Input.config()) {
+                this._configPrevState = this.state;
+                this.state = STATE.CONFIG;
+            }
+            Input.flush();
+            return true;
+        }
+
+        if (this.state === STATE.HELP) {
+            if (Input.help() || Input.wasPressed('Escape')) this.state = STATE.PLAYING;
+            Input.flush();
+            return true;
+        }
+
+        if (this.state === STATE.CONFIG) {
+            const readOnly = this._configPrevState === STATE.PLAYING;
+            if (!readOnly) {
+                const params   = ['mode', 'bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce', 'visualStyle'];
+                const paramMax = { mode: 3, bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2, visualStyle: 2 };
+                if (Input.wasPressed('ArrowUp'))    this._configCursor = (this._configCursor + params.length - 1) % params.length;
+                if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
+                const key = params[this._configCursor];
+                if (Input.wasPressed('ArrowLeft'))  this.config[key] = Math.max(1, this.config[key] - 1);
+                if (Input.wasPressed('ArrowRight')) this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
+                if (key === 'mode') Object.assign(this.config, MODES[this.config.mode - 1]);
+                if (key === 'mode' || key === 'asteroidBounce') this._applyAsteroidFilter();
+            }
+            if (Input.config() || Input.wasPressed('Enter')) {
+                if (readOnly) this.state = STATE.PLAYING;
+                else          this.start();
+            }
+            Input.flush();
+            return true;
+        }
+
+        if (this.state === STATE.PLAYING && Input.help()) {
+            this.state = STATE.HELP;
+            Input.flush();
+            return true;
+        }
+
+        if (this.state === STATE.PLAYING && Input.config()) {
+            this._configPrevState = STATE.PLAYING;
+            this.state = STATE.CONFIG;
+            Input.flush();
+            return true;
+        }
+
+        return false;
+    }
+
+    // STATE.DEAD: deadTimer runterzählen, Asteroids/UFOs weiter laufen lassen,
+    // danach Respawn (PLAYING) oder GameOver.
+    _updateDeadState(dt) {
+        this.deadTimer -= dt;
+        this.asteroids.forEach(a => a.update(dt));
+        this.ufos = this.ufos.filter(u => u.update(dt, null));
+        Matter.Engine.update(this.engine, dt * 1000);
+        this._syncBodies();
+        if (this.deadTimer <= 0) {
+            if (this.lives > 0) {
+                this.ship = this.config.visualStyle === 2 ? new ShipCluster() : new ShipPoly();
+                [this.ship.x, this.ship.y] = this._safeShipPos();
+                this.state = STATE.PLAYING;
+            } else {
+                this.state = STATE.GAMEOVER;
+            }
+        }
+        Input.flush();
+    }
+
+    // Ship-Update + Thrust-Partikel + Teleport + Schießen + Bullets/Asteroids/Physics-Tick.
+    _updateShipAndBullets(dt) {
+        this.ship.update(dt);
+
+        // Thrust trail particles
+        if (this.ship.thrusting) {
+            for (let i = 0; i < 2; i++) {
+                const ex = this.ship.x - Math.cos(this.ship.angle) * SHIP_SIZE * 0.35;
+                const ey = this.ship.y - Math.sin(this.ship.angle) * SHIP_SIZE * 0.35;
+                const p  = new Particle(ex, ey, `hsl(${rand(20, 50)},100%,60%)`);
+                p.vx      = -Math.cos(this.ship.angle) * rand(40, 100) + rand(-25, 25);
+                p.vy      = -Math.sin(this.ship.angle) * rand(40, 100) + rand(-25, 25);
+                p.life    = rand(0.1, 0.28);
+                p.maxLife = p.life;
+                p.size    = rand(0.8, 2.0);
+                this.particles.push(p);
+            }
+        }
+
+        if (Input.teleport() && this.ship.invulnerable <= 0) {
+            const [tx, ty] = this._safeShipPos();
+            this.ship.teleport(tx, ty);
+            this.snd.powerUp('shield');
+        }
+
+        if (this.bullets.length < MAX_BULLETS && this.ship.canFire()) {
+            this.bullets.push(...this.ship.fire(this._bulletLife));
+            this.snd.shoot();
+        }
+
+        this.bullets = this.bullets.filter(b => b.update(dt));
+        this.asteroids.forEach(a => a.update(dt));
+        this.clusterAsteroids.forEach(ca => ca.update(dt));
+        Matter.Engine.update(this.engine, dt * 1000);
+        this._syncBodies();
+    }
+
+    // UFO-Spawn-Timer + UFO-Update (sinusoidale Bewegung, ggf. Schießen).
+    // UFOs persistieren über Level-Übergänge hinweg.
+    _updateUFOs(dt) {
+        this.ufoTimer -= dt;
+        if (this.ufoTimer <= 0) {
+            const size     = (this.score >= 5000 && Math.random() < 0.4) ? 1 : 0;
+            const UfoClass = this.config.visualStyle === 2 ? UfoCluster : Ufo;
+            this.ufos.push(new UfoClass(size, b => this.ufoBullets.push(b)));
+            this.ufoTimer  = 25 + rand(0, 15);
+        }
+        this.ufos = this.ufos.filter(u => u.update(dt, this.ship));
+    }
+
+    // Alle Bullet × Entity Kollisionen: Asteroid, ClusterAsteroid, UFO, Rock, RockCluster, Pumice, PumicePoly.
+    // Mutiert die jeweiligen Arrays (splice/filter) und feuert Score/Boom/PowerUp-Effekte.
+    _updateBulletCollisions() {
+        // Bullet × Asteroid
+        outer:
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
+                const a = this.asteroids[ai];
+                if (dist(b, a) < a.radius + b.radius) {
+                    this._addScore(a.score);
+                    this._boom(a.x, a.y, a.size);
+                    if (Math.random() < this._powerupChance)
+                        this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]));
+                    const children = a.split(Math.atan2(b.vy, b.vx));
+                    Matter.World.remove(this.engine.world, a.body);
+                    if (children.length) {
+                        Matter.World.add(this.engine.world, children.map(c => c.body));
+                        const f = this._asteroidCollisionFilter;
+                        for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
+                    }
+                    this.asteroids.splice(ai, 1, ...children);
+                    this.bullets.splice(bi, 1);
+                    continue outer;
+                }
+            }
+        }
+
+        // Bullet × ClusterAsteroid
+        outerCA:
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
+                const ca = this.clusterAsteroids[ci];
+                if (dist(b, ca) < ca.collisionRadius + b.radius) {
+                    this._addScore(ca.score);
+                    this._boom(ca.x, ca.y, ca.size);
+                    if (Math.random() < this._powerupChance)
+                        this.powerups.push(new PowerUp(ca.x, ca.y, POWERUP_TYPES[randInt(0, 3)]));
+                    const children = ca.split(Math.atan2(b.vy, b.vx));
+                    Matter.World.remove(this.engine.world, ca.body);
+                    if (children.length) {
+                        Matter.World.add(this.engine.world, children.map(c => c.body));
+                        const f = this._asteroidCollisionFilter;
+                        for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
+                    }
+                    this.clusterAsteroids.splice(ci, 1, ...children);
+                    this.bullets.splice(bi, 1);
+                    continue outerCA;
+                }
+            }
+        }
+
+        // Bullet × UFO
+        outerUfo:
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            for (let ui = this.ufos.length - 1; ui >= 0; ui--) {
+                const u = this.ufos[ui];
+                if (dist(b, u) < u.radius + b.radius) {
+                    this._addScore(u.score);
+                    this._boom(u.x, u.y, 1);
+                    this.ufos.splice(ui, 1);
+                    this.bullets.splice(bi, 1);
+                    continue outerUfo;
+                }
+            }
+        }
+
+        // Bullet × Rock
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            if (this.rocks.some(r => dist(b, r) < r.radius + b.radius)) {
+                this.bullets.splice(bi, 1);
+            }
+        }
+
+        // Bullet × RockCluster
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            if (this.rockClusters.some(rc => dist(b, rc) < rc.collisionRadius + b.radius)) {
+                this.bullets.splice(bi, 1);
+            }
+        }
+
+        // Bullet × Pumice
+        outerPumice:
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            for (const p of this.pumices) {
+                const hits = p.findHit(b.x, b.y, b.radius);
+                if (hits.length === 0) continue;
+                for (const c of hits) {
+                    c.alive = false;
+                    Matter.World.remove(this.engine.world, c.body);
+                    for (let k = 0; k < 3; k++)
+                        this.particles.push(new Particle(c.x, c.y, `hsl(${rand(25,40)},18%,${rand(55,72)}%)`));
+                }
+                p.cullIsolated(this.engine.world);
+                this.bullets.splice(bi, 1);
+                continue outerPumice;
+            }
+        }
+        this.pumices = this.pumices.filter(p => p.alive);
+
+        // Bullet × PumicePoly
+        outerPP:
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            for (let pi = this.pumicePolys.length - 1; pi >= 0; pi--) {
+                const pp = this.pumicePolys[pi];
+                if (pp.collidesWithCircle(b.x, b.y, b.radius)) {
+                    const { destroyed, oldBody, newBody } = pp.hit(b.x, b.y);
+                    Matter.World.remove(this.engine.world, oldBody);
+                    if (newBody) Matter.World.add(this.engine.world, newBody);
+                    for (let k = 0; k < 5; k++)
+                        this.particles.push(new Particle(b.x, b.y, `hsl(${rand(25,40)},18%,${rand(60,78)}%)`));
+                    if (destroyed) this._boom(pp.x, pp.y, 1);
+                    this.bullets.splice(bi, 1);
+                    continue outerPP;
+                }
+            }
+        }
+        this.pumicePolys = this.pumicePolys.filter(p => p.alive);
+    }
+
+    // Alle Ship × Entity Kollisionen + Power-up-Pickup.
+    // Mit Shield: Bounce + ggf. Asteroid zerlegen. Ohne Shield: _killShip().
+    _updateShipCollisions() {
+        // Ship × Asteroid
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
+                const a = this.asteroids[ai];
+                if (dist(this.ship, a) < a.radius + this.ship.hitRadius) {
+                    if (this.ship.shieldTimer > 0) {
+                        this._boom(a.x, a.y, a.size);
+                        const children = a.split();
+                        Matter.World.remove(this.engine.world, a.body);
+                        if (children.length) {
+                            Matter.World.add(this.engine.world, children.map(c => c.body));
+                            const f = this._asteroidCollisionFilter;
+                            for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
+                        }
+                        this.asteroids.splice(ai, 1, ...children);
+                        this._bounceShip(a.x, a.y);
+                    } else {
+                        this._killShip();
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Ship × ClusterAsteroid
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
+                const ca = this.clusterAsteroids[ci];
+                if (dist(this.ship, ca) < ca.collisionRadius + this.ship.hitRadius) {
+                    if (this.ship.shieldTimer > 0) {
+                        this._boom(ca.x, ca.y, ca.size);
+                        const children = ca.split();
+                        Matter.World.remove(this.engine.world, ca.body);
+                        if (children.length) {
+                            Matter.World.add(this.engine.world, children.map(c => c.body));
+                            const f = this._asteroidCollisionFilter;
+                            for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
+                        }
+                        this.clusterAsteroids.splice(ci, 1, ...children);
+                        this._bounceShip(ca.x, ca.y);
+                    } else {
+                        this._killShip();
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Ship × Rock
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (const r of this.rocks) {
+                if (dist(this.ship, r) < r.radius + this.ship.hitRadius) {
+                    if (this.ship.shieldTimer > 0) {
+                        this._bounceShip(r.x, r.y);
+                    } else {
+                        this._killShip();
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Ship × RockCluster
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (const rc of this.rockClusters) {
+                if (dist(this.ship, rc) < rc.collisionRadius + this.ship.hitRadius) {
+                    if (this.ship.shieldTimer > 0) this._bounceShip(rc.x, rc.y);
+                    else this._killShip();
+                    break;
+                }
+            }
+        }
+
+        // Ship × Pumice (per-cell — gleiche Methode wie Bullets, kein unsichtbarer Bounding-Circle)
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (const p of this.pumices) {
+                if (!p.alive) continue;
+                const hits = p.findHit(this.ship.x, this.ship.y, this.ship.hitRadius);
+                if (hits.length > 0) {
+                    if (this.ship.shieldTimer > 0) this._bounceShip(p.x, p.y);
+                    else this._killShip();
+                    break;
+                }
+            }
+        }
+
+        // Ship × PumicePoly
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (const pp of this.pumicePolys) {
+                if (pp.collidesWithCircle(this.ship.x, this.ship.y, this.ship.hitRadius)) {
+                    if (this.ship.shieldTimer > 0) this._bounceShip(pp.x, pp.y);
+                    else this._killShip();
+                    break;
+                }
+            }
+        }
+
+        // Ship × UFO
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (const u of this.ufos) {
+                if (dist(this.ship, u) < u.radius + this.ship.hitRadius) {
+                    if (this.ship.shieldTimer > 0) {
+                        this._bounceShip(u.x, u.y);
+                    } else {
+                        this._killShip();
+                    }
+                    break;
+                }
+            }
+        }
+
+        // UFO bullet × ship
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (let bi = this.ufoBullets.length - 1; bi >= 0; bi--) {
+                const b = this.ufoBullets[bi];
+                if (dist(b, this.ship) < b.radius + this.ship.hitRadius) {
+                    if (this.ship.shieldTimer > 0) {
+                        this.ufoBullets.splice(bi, 1);
+                    } else {
+                        this._killShip();
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Ship × PowerUp
+        if (this.ship) {
+            for (let pi = this.powerups.length - 1; pi >= 0; pi--) {
+                const pu = this.powerups[pi];
+                if (dist(this.ship, pu) < this.ship.radius + pu.radius) {
+                    if (pu.type === 'shield')       this.ship.shieldTimer = this._powerupDuration;
+                    else if (pu.type === 'rapid')  this.ship.rapidTimer  = this._powerupDuration;
+                    else if (pu.type === 'spread') this.ship.spreadTimer = this._powerupDuration;
+                    else                           this.ship.heavyTimer  = this._powerupDuration;
+                    this.snd.powerUp(pu.type);
+                    this.powerups.splice(pi, 1);
+                }
+            }
+        }
+    }
+
+    // Theoretische Max-Kollisionsprüfungen pro Frame: Bullets × Entities + Ship × Entities.
+    // Peak gilt 120 Frames (~2 s), danach wird auf den aktuellen Wert zurückgesetzt.
+    _updateDebugStats() {
+        if (!this._debugCollision) return;
+        const pumiceCells = this.pumices.reduce((s, p) => s + p.cells.filter(c => c.alive).length, 0);
+        const perBullet   = this.asteroids.length + this.clusterAsteroids.length
+                          + this.ufos.length + this.rocks.length + this.rockClusters.length
+                          + pumiceCells + this.pumicePolys.length;
+        const shipChecks  = this.ship ? (this.asteroids.length + this.clusterAsteroids.length
+                          + this.rocks.length + this.rockClusters.length
+                          + pumiceCells + this.pumicePolys.length
+                          + this.ufos.length + this.ufoBullets.length + this.powerups.length) : 0;
+        this._dbgCC = this.bullets.length * perBullet + shipChecks;
+        if (this._dbgCC > this._dbgPeakCC) {
+            this._dbgPeakCC  = this._dbgCC;
+            this._dbgPeakTTL = 120;
+        } else if (--this._dbgPeakTTL <= 0) {
+            this._dbgPeakCC  = this._dbgCC;
+            this._dbgPeakTTL = 120;
+        }
     }
 
     // ── Draw helpers ────────────────────────────────────────────────────────
