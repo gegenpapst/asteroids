@@ -378,7 +378,7 @@ class Game {
         this.pumicePolys = this.pumicePolys.filter(p => p.alive);
 
         // Ship × Asteroid
-        if (this.ship.invulnerable <= 0) {
+        if (this.ship && this.ship.invulnerable <= 0) {
             for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
                 const a = this.asteroids[ai];
                 if (dist(this.ship, a) < a.radius + this.ship.hitRadius) {

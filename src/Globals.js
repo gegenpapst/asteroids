@@ -73,7 +73,7 @@ function safeSplitAngle(bulletAngle, halfArc = Math.PI / 4) {
     if (bulletAngle === null || bulletAngle === undefined) return rand(0, TAU);
     const forbidCenter = bulletAngle + Math.PI;
     const available    = TAU - 2 * halfArc;
-    return forbidCenter + halfArc + Math.random() * available;
+    return wrap(forbidCenter + halfArc + Math.random() * available, TAU);
 }
 
 // ─── Static star field ───────────────────────────────────────────────────────
