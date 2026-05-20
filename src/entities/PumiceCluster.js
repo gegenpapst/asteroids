@@ -42,6 +42,22 @@ class PumiceCluster {
 
     get alive() { return this.cells.some(c => c.alive); }
 
+    // Entfernt lebende Zellen ohne lebenden Nachbarn (eine Runde, keine Kaskade).
+    // Threshold ≈ 1.6× Hex-Abstand — toleriert den ±1.5px Jitter bei der Zell-Platzierung.
+    cullIsolated(world) {
+        const threshold = this._cellR * 2.5;
+        for (const c of this.cells) {
+            if (!c.alive) continue;
+            const hasNeighbor = this.cells.some(
+                n => n !== c && n.alive && Math.hypot(n.x - c.x, n.y - c.y) < threshold
+            );
+            if (!hasNeighbor) {
+                c.alive = false;
+                Matter.World.remove(world, c.body);
+            }
+        }
+    }
+
     get collisionRadius() { return this.radius * 0.75; }
 
     findHit(wx, wy, br) {

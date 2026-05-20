@@ -341,6 +341,7 @@ class Game {
                     for (let k = 0; k < 3; k++)
                         this.particles.push(new Particle(c.x, c.y, `hsl(${rand(25,40)},18%,${rand(55,72)}%)`));
                 }
+                p.cullIsolated(this.engine.world);
                 this.bullets.splice(bi, 1);
                 continue outerPumice;
             }
