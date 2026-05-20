@@ -532,7 +532,7 @@ class Game {
         }
 
         // Level clear (UFOs persist between levels)
-        if (this.asteroids.length === 0) {
+        if (this.asteroids.length === 0 && this.clusterAsteroids.length === 0) {
             this.snd.levelUp();
             this._nextLevel();
             if (this.ship) this.ship.invulnerable = INVULNERABLE_TIME;
@@ -842,7 +842,7 @@ class Game {
             { key: 'rockCount',      label: 'Anzahl Rocks',           opts: ['wenige', 'normal', 'viele']    },
             { key: 'pumiceCount',    label: 'Anzahl Bimsstein',       opts: ['keine',  'wenige', 'viele']    },
             { key: 'asteroidBounce', label: 'Asteroiden-Kollisionen', opts: ['aus',    'ein']                },
-            { key: 'visualStyle',    label: 'Optik',                  opts: ['Polygon', 'Metaball']            },
+            { key: 'visualStyle',    label: 'Visueller Stil',          opts: ['Polygon', 'Metaball']            },
         ];
 
         let y = 80;
