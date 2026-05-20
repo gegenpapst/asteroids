@@ -598,8 +598,6 @@ class Game {
             ctx.globalAlpha = 0.8;
             ctx.font        = '11px monospace';
             ctx.textAlign   = 'right';
-            ctx.fillStyle   = '#fff';
-            ctx.fillText('DEBUG [Q]', W - 6, H - 6);
             ctx.fillStyle = this._dbgCC > 200 ? '#f84' : this._dbgCC > 80 ? '#ff4' : '#4f8';
             ctx.fillText(`Kollisionsprüfungen/Frame: ${this._dbgCC} (max)`, W - 6, H - 20);
             const fps = Math.round(this._dbgFPS);
