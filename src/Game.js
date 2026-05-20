@@ -900,7 +900,8 @@ class Game {
         ctx.fillStyle   = '#888';
         ctx.font        = '18px monospace';
         ctx.fillText('ARROWS / WASD  —  rotate & thrust', cx, cy + 10);
-        ctx.fillText('SPACE / Z  —  fire', cx, cy + 42);
+        ctx.fillText('SHIFT + ← →  —  strafe', cx, cy + 36);
+        ctx.fillText('SPACE / Z  —  fire', cx, cy + 62);
 
         if (this.hiScore > 0) {
             ctx.fillStyle = '#fc0';
