@@ -63,7 +63,7 @@ class PumiceCluster {
         offCtx.fillRect(0, 0, size, size);
 
         offCtx.filter    = `blur(${this._blur}px)`;
-        offCtx.fillStyle = 'rgb(148, 148, 150)';  // Steingrau: neutral grau, kein Lila-Stich
+        offCtx.fillStyle = 'rgb(118, 116, 122)';  // Steingrau: unter 50%-Schwelle → scharfe Kante wie Asteroid
         for (const c of alive) {
             offCtx.beginPath();
             offCtx.arc(c.x - ox, c.y - oy, c.r * 1.25, 0, TAU);
@@ -74,7 +74,7 @@ class PumiceCluster {
         // Bake contrast into secondary canvas so main canvas needs no filter
         const cc = this._contrastCtx;
         cc.clearRect(0, 0, size, size);
-        cc.filter = 'contrast(10)';  // Steingrau: schärfere Kontur, kein Watte-Effekt
+        cc.filter = 'contrast(14)';  // wie Asteroid: scharfe Kante durch gleichen Schwellwert
         cc.drawImage(this._offCanvas, 0, 0);
         cc.filter = 'none';
 
