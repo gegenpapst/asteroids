@@ -44,7 +44,7 @@ class Game {
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
 
-        this.config = { mode: 2, bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1 };
+        this.config = { mode: 2, bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1, shipStyle: 1 };
         this._configCursor   = 0;
         this._configPrevState = STATE.START;
 
@@ -87,7 +87,7 @@ class Game {
             pumicePolys.push(new PumicePoly(px, py));
         }
         this.pumicePolys = pumicePolys;
-        this.ship        = new ShipPoly();
+        this.ship        = this.config.shipStyle === 2 ? new ShipCluster() : new ShipPoly();
         [this.ship.x, this.ship.y] = this._safeShipPos();
         Matter.World.add(this.engine.world, this.rocks.map(r => r.body));
         Matter.World.add(this.engine.world, this.rockClusters.map(rc => rc.body));
@@ -119,8 +119,8 @@ class Game {
         if (this.state === STATE.CONFIG) {
             const readOnly = this._configPrevState === STATE.PLAYING;
             if (!readOnly) {
-                const params    = ['mode', 'bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce'];
-                const paramMax  = { mode: 3, bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2 };
+                const params    = ['mode', 'bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce', 'shipStyle'];
+                const paramMax  = { mode: 3, bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2, shipStyle: 2 };
                 if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
                 if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
                 const key = params[this._configCursor];
@@ -231,8 +231,9 @@ class Game {
         // UFO spawn
         this.ufoTimer -= dt;
         if (this.ufoTimer <= 0) {
-            const size = (this.score >= 5000 && Math.random() < 0.4) ? 1 : 0;
-            this.ufos.push(new Ufo(size, b => this.ufoBullets.push(b)));
+            const size    = (this.score >= 5000 && Math.random() < 0.4) ? 1 : 0;
+            const UfoClass = Math.random() < 0.5 ? UfoCluster : Ufo;
+            this.ufos.push(new UfoClass(size, b => this.ufoBullets.push(b)));
             this.ufoTimer = 25 + rand(0, 15);
         }
         this.ufos = this.ufos.filter(u => u.update(dt, this.ship));
@@ -836,6 +837,7 @@ class Game {
             { key: 'rockCount',      label: 'Anzahl Rocks',           opts: ['wenige', 'normal', 'viele']    },
             { key: 'pumiceCount',    label: 'Anzahl Bimsstein',       opts: ['keine',  'wenige', 'viele']    },
             { key: 'asteroidBounce', label: 'Asteroiden-Kollisionen', opts: ['aus',    'ein']                },
+            { key: 'shipStyle',      label: 'Schiff Stil',            opts: ['Poly',   'Cluster']             },
         ];
 
         let y = 80;
