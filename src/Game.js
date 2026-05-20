@@ -274,7 +274,7 @@ class Game {
             const b = this.bullets[bi];
             for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
                 const ca = this.clusterAsteroids[ci];
-                if (dist(b, ca) < ca.radius + b.radius) {
+                if (dist(b, ca) < ca.collisionRadius + b.radius) {
                     this._addScore(ca.score);
                     this._boom(ca.x, ca.y, ca.size);
                     if (Math.random() < this._powerupChance)
@@ -320,7 +320,7 @@ class Game {
         // Bullet × RockCluster
         for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
             const b = this.bullets[bi];
-            if (this.rockClusters.some(rc => dist(b, rc) < rc.radius + b.radius)) {
+            if (this.rockClusters.some(rc => dist(b, rc) < rc.collisionRadius + b.radius)) {
                 this.bullets.splice(bi, 1);
             }
         }
@@ -392,7 +392,7 @@ class Game {
         if (this.ship && this.ship.invulnerable <= 0) {
             for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
                 const ca = this.clusterAsteroids[ci];
-                if (dist(this.ship, ca) < ca.radius + this.ship.radius) {
+                if (dist(this.ship, ca) < ca.collisionRadius + this.ship.radius) {
                     if (this.ship.shieldTimer > 0) {
                         this._boom(ca.x, ca.y, ca.size);
                         const children = ca.split();
@@ -404,30 +404,6 @@ class Game {
                         }
                         this.clusterAsteroids.splice(ci, 1, ...children);
                         this._bounceShip(ca.x, ca.y);
-                    } else {
-                        this._killShip();
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Ship × ClusterAsteroid
-        if (this.ship && this.ship.invulnerable <= 0) {
-            for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
-                const ca = this.clusterAsteroids[ci];
-                if (dist(this.ship, ca) < ca.radius + this.ship.radius) {
-                    if (this.ship.shieldTimer > 0) {
-                        this.ship.shieldTimer = 0;
-                        this._boom(ca.x, ca.y, ca.size);
-                        const children = ca.split();
-                        Matter.World.remove(this.engine.world, ca.body);
-                        if (children.length) {
-                            Matter.World.add(this.engine.world, children.map(c => c.body));
-                            const f = this._asteroidCollisionFilter;
-                            for (const c of children) Matter.Body.set(c.body, 'collisionFilter', f);
-                        }
-                        this.clusterAsteroids.splice(ci, 1, ...children);
                     } else {
                         this._killShip();
                     }
@@ -453,7 +429,7 @@ class Game {
         // Ship × RockCluster
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const rc of this.rockClusters) {
-                if (dist(this.ship, rc) < rc.radius + this.ship.radius) {
+                if (dist(this.ship, rc) < rc.collisionRadius + this.ship.radius) {
                     if (this.ship.shieldTimer > 0) this._bounceShip(rc.x, rc.y);
                     else this._killShip();
                     break;
@@ -896,40 +872,99 @@ class Game {
     }
 
     _drawStart() {
-        const cx = W / 2, cy = H / 2;
-        ctx.textAlign   = 'center';
-        ctx.shadowColor = '#4af';
-        ctx.shadowBlur  = 30;
-        ctx.fillStyle   = '#fff';
-        ctx.font        = 'bold 72px monospace';
-        ctx.fillText('ASTEROIDS', cx, cy - 90);
-
-        ctx.shadowBlur  = 0;
+        const cx   = W / 2;
+        const cols = [W * 0.22, W * 0.5, W * 0.78];
         const _lm  = new Date(document.lastModified);
         const _pad = n => String(n).padStart(2, '0');
-        ctx.fillStyle = '#555';
-        ctx.font      = '12px monospace';
+
+        ctx.textAlign = 'center';
+
+        // Title
+        ctx.shadowColor = '#4af';
+        ctx.shadowBlur  = 28;
+        ctx.fillStyle   = '#fff';
+        ctx.font        = 'bold 54px monospace';
+        ctx.fillText('ASTEROIDS', cx, 62);
+
+        ctx.shadowBlur  = 0;
+        ctx.fillStyle   = '#555';
+        ctx.font        = '11px monospace';
         ctx.fillText(
             `Stand: ${_pad(_lm.getDate())}.${_pad(_lm.getMonth()+1)}.${_lm.getFullYear()}  ${_pad(_lm.getHours())}:${_pad(_lm.getMinutes())} Uhr`,
-            cx, cy - 40
+            cx, 84
         );
-
-        ctx.fillStyle = '#888';
-        ctx.font      = '18px monospace';
-        ctx.fillText('ARROWS / WASD  —  rotate & thrust', cx, cy + 10);
-        ctx.fillText('SPACE / Z  —  fire', cx, cy + 42);
 
         if (this.hiScore > 0) {
             ctx.fillStyle = '#fc0';
-            ctx.font      = '16px monospace';
-            ctx.fillText(`HI-SCORE  ${this.hiScore}`, cx, cy + 88);
+            ctx.font      = '13px monospace';
+            ctx.fillText(`HI-SCORE  ${this.hiScore}`, cx, 104);
         }
 
         if (Math.floor(Date.now() / 520) % 2) {
-            ctx.fillStyle = '#fff';
-            ctx.font      = '22px monospace';
-            ctx.fillText('PRESS ENTER OR SPACE TO START', cx, cy + 140);
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur  = 8;
+            ctx.fillStyle   = '#fff';
+            ctx.font        = '17px monospace';
+            ctx.fillText('PRESS ENTER OR SPACE TO START', cx, 130);
+            ctx.shadowBlur  = 0;
         }
+
+        // Separator
+        ctx.fillStyle = 'rgba(80,160,255,0.18)';
+        ctx.fillRect(30, 144, W - 60, 1);
+
+        // ── Schiff ───────────────────────────────────────────────────────────
+        ctx.fillStyle = '#557';
+        ctx.font      = '11px monospace';
+        ctx.fillText('── Schiff ──────────────────────────────────────────', cx, 160);
+
+        const styleLabels = [
+            ['A', 'Neon Wireframe'],
+            ['B', 'Filled + Glow'],
+            ['C', 'Gradient Sprite'],
+        ];
+        for (let i = 0; i < 3; i++) {
+            ctx.fillStyle = '#4af';
+            ctx.font      = 'bold 13px monospace';
+            ctx.fillText(styleLabels[i][0], cols[i], 176);
+            ctx.fillStyle = '#446';
+            ctx.font      = '10px monospace';
+            ctx.fillText(styleLabels[i][1], cols[i], 190);
+        }
+
+        const angle = this.t * 0.45;
+        _drawShipA(cols[0], 252, angle);
+        _drawShipB(cols[1], 252, angle);
+        _drawShipC(cols[2], 252, angle);
+
+        // Separator
+        ctx.fillStyle = 'rgba(80,160,255,0.18)';
+        ctx.fillRect(30, 300, W - 60, 1);
+
+        // ── UFO ──────────────────────────────────────────────────────────────
+        ctx.fillStyle = '#557';
+        ctx.font      = '11px monospace';
+        ctx.fillText('── UFO ─────────────────────────────────────────────', cx, 316);
+
+        for (let i = 0; i < 3; i++) {
+            ctx.fillStyle = '#4f8';
+            ctx.font      = 'bold 13px monospace';
+            ctx.fillText(styleLabels[i][0], cols[i], 332);
+            ctx.fillStyle = '#246';
+            ctx.font      = '10px monospace';
+            ctx.fillText(styleLabels[i][1], cols[i], 346);
+        }
+
+        _drawUfoA(cols[0], 400);
+        _drawUfoB(cols[1], 400);
+        _drawUfoC(cols[2], 400);
+
+        // Bottom hint
+        ctx.fillStyle = 'rgba(80,160,255,0.18)';
+        ctx.fillRect(30, 448, W - 60, 1);
+        ctx.fillStyle = '#445';
+        ctx.font      = '11px monospace';
+        ctx.fillText('ARROWS / WASD  —  rotate & thrust  |  SPACE / Z  —  fire  |  C  —  Konfiguration', cx, 464);
     }
 
     _drawHelp() {
