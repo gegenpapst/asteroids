@@ -63,7 +63,7 @@ class PumiceCluster {
         offCtx.fillRect(0, 0, size, size);
 
         offCtx.filter    = `blur(${this._blur}px)`;
-        offCtx.fillStyle = 'rgb(0, 204, 68)';      // Schema 1: Grün #00CC44
+        offCtx.fillStyle = 'rgb(178, 170, 158)';
         for (const c of alive) {
             offCtx.beginPath();
             offCtx.arc(c.x - ox, c.y - oy, c.r * 1.25, 0, TAU);
