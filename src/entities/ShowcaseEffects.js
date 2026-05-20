@@ -11,19 +11,26 @@ const METABALL_EFFECTS = [
     // ── Neue Vorschläge ────────────────────────────────────────────────────────
     { name: 'Braun',     rgb: [190, 130,  70], desc: 'Rost → Ocker'             },
     { name: 'Steingrau', rgb: [148, 155, 172], desc: 'Kühles Blaugrau'          },
-    { name: 'Mondstaub', rgb: [170, 165, 155], desc: 'Warmes Neutralgrau'       },
-    { name: 'Krater',    rgb: [215, 180, 110], desc: 'Leuchtender Kraterrand', ring: true },
+    { name: 'Violett',   rgb: [130,  80, 185], desc: 'Violett → Purpur → Weiß'  },
+    { name: 'Krater',    rgb: [190, 130,  70], desc: '3 Braunkrater',  multiCrater: true },
 ];
 
 function _buildEffectCanvas(effect, radius) {
-    const { rgb, ring } = effect;
+    const { rgb, ring, multiCrater } = effect;
     const cellR   = radius * 0.24;
     const spacing = cellR * 1.65;
     const rowH    = spacing * 0.866;
     const span    = Math.ceil(radius * 2 / rowH) + 1;
-    const innerR  = radius * 0.46;   // hollow core for crater
-    const cells   = [];
+    const innerR  = radius * 0.46;   // hollow core for single-ring crater
 
+    // Multiple crater bowls: cells inside these circles are removed
+    const craters = multiCrater ? [
+        { dx: -radius * 0.28, dy: -radius * 0.24, r: radius * 0.30 },
+        { dx:  radius * 0.26, dy:  radius * 0.26, r: radius * 0.26 },
+        { dx:  radius * 0.02, dy: -radius * 0.06, r: radius * 0.22 },
+    ] : [];
+
+    const cells = [];
     for (let row = 0; row < span; row++) {
         const dy0  = -radius + row * rowH;
         const xOff = (row % 2) * spacing / 2;
@@ -31,7 +38,8 @@ function _buildEffectCanvas(effect, radius) {
             const dx0 = -radius + col * spacing + xOff;
             const d   = Math.hypot(dx0, dy0);
             if (d >= radius - cellR * 0.3) continue;
-            if (ring && d < innerR) continue;   // skip interior → crater shape
+            if (ring && d < innerR) continue;
+            if (craters.some(c => Math.hypot(dx0 - c.dx, dy0 - c.dy) < c.r * 0.58)) continue;
             cells.push({ dx: dx0, dy: dy0, r: cellR });
         }
     }
