@@ -592,7 +592,9 @@ class Game {
                 tries++;
                 const collides =
                     this.rocks.some(r => dist({ x, y }, r) < r.radius + margin) ||
+                    this.rockClusters.some(rc => dist({ x, y }, rc) < rc.radius + margin) ||
                     this.asteroids.some(a => dist({ x, y }, a) < a.radius + margin) ||
+                    this.clusterAsteroids.some(ca => dist({ x, y }, ca) < ca.radius + margin) ||
                     this.pumices.some(p => p.cells.some(c => c.alive && dist({ x, y }, c) < c.r + margin)) ||
                     this.pumicePolys.some(pp => dist({ x, y }, pp) < pp.radius + margin);
                 if (!collides) return [x, y];
