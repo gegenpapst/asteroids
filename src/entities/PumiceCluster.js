@@ -42,6 +42,8 @@ class PumiceCluster {
 
     get alive() { return this.cells.some(c => c.alive); }
 
+    get collisionRadius() { return this.radius * 0.75; }
+
     findHit(wx, wy, br) {
         return this.cells.filter(c => c.alive && dist({ x: wx, y: wy }, c) < c.r + br);
     }

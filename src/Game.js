@@ -437,17 +437,14 @@ class Game {
             }
         }
 
-        // Ship × Pumice
+        // Ship × Pumice (bounding-circle — per-cell kills invisible boundary cells)
         if (this.ship && this.ship.invulnerable <= 0) {
-            outerSP:
             for (const p of this.pumices) {
-                for (const c of p.cells) {
-                    if (!c.alive) continue;
-                    if (dist(this.ship, c) < c.r + this.ship.radius) {
-                        if (this.ship.shieldTimer > 0) this._bounceShip(c.x, c.y);
-                        else this._killShip();
-                        break outerSP;
-                    }
+                if (!p.alive) continue;
+                if (dist(this.ship, p) < p.collisionRadius + this.ship.radius) {
+                    if (this.ship.shieldTimer > 0) this._bounceShip(p.x, p.y);
+                    else this._killShip();
+                    break;
                 }
             }
         }

@@ -66,7 +66,7 @@ class RockCluster {
         return oc;
     }
 
-    get collisionRadius() { return this.radius * 0.75; }
+    get collisionRadius() { return this.radius * 0.65; }
 
     draw() {
         const sz = this._offCanvas.width;
