@@ -199,6 +199,8 @@ class Game {
 
         // ── PLAYING ──
 
+        if (Input.wasPressed('KeyD')) this._debugCollision = !this._debugCollision;
+
         this.ship.update(dt);
 
         // Thrust trail particles
@@ -545,6 +547,22 @@ class Game {
         this.bullets.forEach(b => b.draw());
         this.particles.forEach(p => p.draw());
         if (this.ship) this.ship.draw();
+
+        // ── Collision debug overlay (press D to toggle) ──────────────────────
+        if (this._debugCollision) {
+            ctx.save();
+            ctx.globalAlpha = 0.45;
+            ctx.lineWidth   = 1.5;
+            const drawC = (x, y, r, col) => {
+                ctx.beginPath(); ctx.arc(x, y, r, 0, TAU);
+                ctx.strokeStyle = col; ctx.stroke();
+            };
+            this.rockClusters.forEach(rc  => drawC(rc.x,  rc.y,  rc.collisionRadius,  '#f44'));
+            this.clusterAsteroids.forEach(ca => drawC(ca.x, ca.y, ca.collisionRadius, '#f84'));
+            this.pumices.forEach(p => { if (p.alive) drawC(p.x, p.y, p.collisionRadius, '#f4f'); });
+            if (this.ship) drawC(this.ship.x, this.ship.y, this.ship.radius, '#4ff');
+            ctx.restore();
+        }
 
         this._drawHUD();
 
