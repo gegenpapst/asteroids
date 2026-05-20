@@ -888,40 +888,7 @@ class Game {
     }
 
     _drawStart() {
-        const cx = W / 2, cy = H / 2;
-        ctx.textAlign   = 'center';
-        ctx.shadowColor = '#4af';
-        ctx.shadowBlur  = 30;
-        ctx.fillStyle   = '#fff';
-        ctx.font        = 'bold 72px monospace';
-        ctx.fillText('ASTEROIDS', cx, cy - 90);
-
-        ctx.shadowBlur  = 0;
-        const _lm  = new Date(document.lastModified);
-        const _pad = n => String(n).padStart(2, '0');
-        ctx.fillStyle = '#555';
-        ctx.font      = '12px monospace';
-        ctx.fillText(
-            `Stand: ${_pad(_lm.getDate())}.${_pad(_lm.getMonth()+1)}.${_lm.getFullYear()}  ${_pad(_lm.getHours())}:${_pad(_lm.getMinutes())} Uhr`,
-            cx, cy - 40
-        );
-
-        ctx.fillStyle = '#888';
-        ctx.font      = '18px monospace';
-        ctx.fillText('ARROWS / WASD  —  rotate & thrust', cx, cy + 10);
-        ctx.fillText('SPACE / Z  —  fire', cx, cy + 42);
-
-        if (this.hiScore > 0) {
-            ctx.fillStyle = '#fc0';
-            ctx.font      = '16px monospace';
-            ctx.fillText(`HI-SCORE  ${this.hiScore}`, cx, cy + 88);
-        }
-
-        if (Math.floor(Date.now() / 520) % 2) {
-            ctx.fillStyle = '#fff';
-            ctx.font      = '22px monospace';
-            ctx.fillText('PRESS ENTER OR SPACE TO START', cx, cy + 140);
-        }
+        drawMetaballShowcase();
     }
 
     _drawHelp() {
