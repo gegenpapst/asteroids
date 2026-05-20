@@ -592,14 +592,14 @@ class Game {
                 if (this.ship.hitRadius > this.ship.radius)
                     drawC(this.ship.x, this.ship.y, this.ship.hitRadius, '#0cf');  // shield bubble
             }
-            // Q-Label + Kollisionszähler
+            // Q-Label + Kollisionszähler (bottom-right)
             ctx.globalAlpha = 0.8;
             ctx.font        = '11px monospace';
-            ctx.textAlign   = 'left';
+            ctx.textAlign   = 'right';
             ctx.fillStyle   = '#fff';
-            ctx.fillText('DEBUG [Q]', 6, H - 6);
+            ctx.fillText('DEBUG [Q]', W - 6, H - 6);
             ctx.fillStyle = this._dbgCC > 200 ? '#f84' : this._dbgCC > 80 ? '#ff4' : '#4f8';
-            ctx.fillText(`Kollisionsprüfungen/Frame: ${this._dbgCC} (max)`, 6, H - 20);
+            ctx.fillText(`Kollisionsprüfungen/Frame: ${this._dbgCC} (max)`, W - 6, H - 20);
             ctx.restore();
         }
 
@@ -778,10 +778,10 @@ class Game {
         ctx.textAlign   = 'center';
         ctx.fillText(`LVL ${this.level}`, W / 2, 28);
 
-        // Life icons
+        // Life icons (bottom-left, unterhalb der Power-up-Bars)
         for (let i = 0; i < this.lives; i++) {
             ctx.save();
-            ctx.translate(14 + i * 21, H - 16);
+            ctx.translate(14 + i * 21, H - 10);
             ctx.rotate(-Math.PI / 2);
             ctx.beginPath();
             const s = 7;
@@ -796,7 +796,7 @@ class Game {
             ctx.restore();
         }
 
-        // Power-up status bars (bottom-right)
+        // Power-up status bars (bottom-left, oberhalb der Life-Icons)
         if (this.ship) {
             const indicators = [];
             if (this.ship.shieldTimer  > 0) indicators.push({ label: 'SH', t: this.ship.shieldTimer,  col: '#4cf' });
@@ -808,8 +808,8 @@ class Game {
             ctx.textAlign = 'left';
             const barW = 48, barH = 16, gap = 6;
             indicators.forEach((ind, i) => {
-                const bx  = W - 16 - (indicators.length - i) * (barW + gap);
-                const by  = H - 52;
+                const bx  = 8 + i * (barW + gap);
+                const by  = H - 40;   // oberhalb der Life-Icons (H-10 ± 7px)
                 const pct = ind.t / this._powerupDuration;
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.fillRect(bx, by, barW, barH);
