@@ -1,7 +1,7 @@
 'use strict';
 
 class ClusterAsteroid {
-    constructor(x, y, size = 0) {
+    constructor(x, y, size = 0, angle = null) {
         this.x    = x;
         this.y    = y;
         this.size = size;
@@ -9,7 +9,7 @@ class ClusterAsteroid {
         this.radius = ASTEROID_RADIUS[size];
         this.score  = ASTEROID_SCORE[size];
 
-        const a     = rand(0, TAU);
+        const a     = angle ?? rand(0, TAU);
         const speed = ASTEROID_SPEED[size] * rand(0.7, 1.35);
         this.vx       = Math.cos(a) * speed;
         this.vy       = Math.sin(a) * speed;
@@ -94,14 +94,14 @@ class ClusterAsteroid {
         ctx.restore();
     }
 
-    split() {
+    split(bulletAngle = null) {
         if (this.size >= 2) return [];
         const offset = ASTEROID_RADIUS[this.size + 1];
         const perp   = rand(0, TAU);
         const ox = Math.cos(perp) * offset, oy = Math.sin(perp) * offset;
         return [
-            new ClusterAsteroid(this.x + ox, this.y + oy, this.size + 1),
-            new ClusterAsteroid(this.x - ox, this.y - oy, this.size + 1),
+            new ClusterAsteroid(this.x + ox, this.y + oy, this.size + 1, safeSplitAngle(bulletAngle)),
+            new ClusterAsteroid(this.x - ox, this.y - oy, this.size + 1, safeSplitAngle(bulletAngle)),
         ];
     }
 }

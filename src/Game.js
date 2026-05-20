@@ -257,7 +257,7 @@ class Game {
                     this._boom(a.x, a.y, a.size);
                     if (Math.random() < this._powerupChance)
                         this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]));
-                    const children = a.split();
+                    const children = a.split(Math.atan2(b.vy, b.vx));
                     Matter.World.remove(this.engine.world, a.body);
                     if (children.length) {
                         Matter.World.add(this.engine.world, children.map(c => c.body));
@@ -282,7 +282,7 @@ class Game {
                     this._boom(ca.x, ca.y, ca.size);
                     if (Math.random() < this._powerupChance)
                         this.powerups.push(new PowerUp(ca.x, ca.y, POWERUP_TYPES[randInt(0, 3)]));
-                    const children = ca.split();
+                    const children = ca.split(Math.atan2(b.vy, b.vx));
                     Matter.World.remove(this.engine.world, ca.body);
                     if (children.length) {
                         Matter.World.add(this.engine.world, children.map(c => c.body));

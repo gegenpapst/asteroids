@@ -62,14 +62,14 @@ class AsteroidPoly {
         ctx.restore();
     }
 
-    split() {
+    split(bulletAngle = null) {
         if (this.size >= 2) return [];
         const offset = ASTEROID_RADIUS[this.size + 1];
         const perp   = rand(0, TAU);
         const ox = Math.cos(perp) * offset, oy = Math.sin(perp) * offset;
         return [
-            new AsteroidPoly(this.x + ox, this.y + oy, this.size + 1, rand(0, TAU)),
-            new AsteroidPoly(this.x - ox, this.y - oy, this.size + 1, rand(0, TAU)),
+            new AsteroidPoly(this.x + ox, this.y + oy, this.size + 1, safeSplitAngle(bulletAngle)),
+            new AsteroidPoly(this.x - ox, this.y - oy, this.size + 1, safeSplitAngle(bulletAngle)),
         ];
     }
 }

@@ -66,6 +66,15 @@ function dist(a, b) {
     const dx = a.x - b.x, dy = a.y - b.y;
     return Math.sqrt(dx * dx + dy * dy);
 }
+// Zufälliger Winkel der NICHT in den verbotenen Rückwärts-Kegel fällt.
+// forbidCenter = bulletAngle + π (Richtung zurück zum Schiff)
+// halfArc = halbe Tortenbreite des verbotenen Bereichs (Standard: 60° → 120° gesperrt)
+function safeSplitAngle(bulletAngle, halfArc = Math.PI / 3) {
+    if (bulletAngle === null || bulletAngle === undefined) return rand(0, TAU);
+    const forbidCenter = bulletAngle + Math.PI;
+    const available    = TAU - 2 * halfArc;
+    return forbidCenter + halfArc + Math.random() * available;
+}
 
 // ─── Static star field ───────────────────────────────────────────────────────
 const STARS = Array.from({ length: 90 }, () => ({
