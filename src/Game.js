@@ -625,8 +625,9 @@ class Game {
             y = rand(80, H - 80);
             tries++;
         } while (tries < 200 && (
-            this.rocks.some(r => dist({ x, y }, r) < r.radius + margin) ||
-            placed.some(p  => dist({ x, y }, p) < p.radius + margin)
+            this.rocks.some(r        => dist({ x, y }, r)  < r.radius  + margin) ||
+            this.rockClusters.some(rc => dist({ x, y }, rc) < rc.radius + margin) ||
+            placed.some(p            => dist({ x, y }, p)  < p.radius  + margin)
         ));
         return [x, y];
     }
@@ -639,9 +640,9 @@ class Game {
             y = rand(80, H - 80);
             tries++;
         } while (tries < 200 && (
-            this.rocks.some(r => dist({ x, y }, r) < r.radius + margin) ||
-            this.pumices.some(p => dist({ x, y }, p) < p.radius + margin) ||
-            placed.some(p  => dist({ x, y }, p) < p.radius + margin)
+            this.rocks.some(r        => dist({ x, y }, r)  < r.radius  + margin) ||
+            this.rockClusters.some(rc => dist({ x, y }, rc) < rc.radius + margin) ||
+            placed.some(p            => dist({ x, y }, p)  < p.radius  + margin)
         ));
         return [x, y];
     }
