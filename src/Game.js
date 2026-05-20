@@ -108,7 +108,7 @@ class Game {
     update(dt) {
         dt = Math.min(dt, 1 / 20);
         this.t += dt;
-        this._dbgFPS += (1 / dt - this._dbgFPS) * 0.1;  // exponentieller Glättungsfaktor
+        if (dt > 0) this._dbgFPS += (1 / dt - this._dbgFPS) * 0.1;  // exponentieller Glättungsfaktor
 
         if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
             if (Input.start() || Input.config()) {
