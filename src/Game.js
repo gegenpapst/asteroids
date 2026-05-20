@@ -888,7 +888,6 @@ class Game {
     }
 
     _drawStart() {
-        drawPumiceShowcase(); return;
         const cx = W / 2, cy = H / 2;
         ctx.textAlign   = 'center';
         ctx.shadowColor = '#4af';

@@ -5,8 +5,8 @@ class PumiceCluster {
         this.x         = x;
         this.y         = y;
         this.radius    = rand(22, 54);
-        this._cellR    = this.radius * 0.22;
-        this._blur     = Math.round(this._cellR * 0.75);
+        this._cellR    = this.radius * 0.20;
+        this._blur     = Math.round(this._cellR * 0.68);
         this._pad      = this._blur * 3 + 4;
         this.cells     = this._generateCells();
         const size     = Math.ceil((this.radius + this._pad) * 2);
@@ -17,8 +17,8 @@ class PumiceCluster {
     }
 
     _generateCells() {
-        const cellR   = this.radius * 0.22;
-        const spacing = cellR * 1.65;
+        const cellR   = this.radius * 0.20;
+        const spacing = cellR * 1.55;
         const rowH    = spacing * 0.866;  // sqrt(3)/2 für Hex-Packing
         const span    = Math.ceil(this.radius * 2 / rowH) + 1;
         const cells   = [];
@@ -63,7 +63,7 @@ class PumiceCluster {
         offCtx.fillRect(0, 0, size, size);
 
         offCtx.filter    = `blur(${this._blur}px)`;
-        offCtx.fillStyle = 'rgb(148, 148, 150)';  // Steingrau: neutral grau, kein Lila-Stich
+        offCtx.fillStyle = 'rgb(146, 146, 150)';  // Kompakt: dicht, grau, kühler Ton
         for (const c of alive) {
             offCtx.beginPath();
             offCtx.arc(c.x - ox, c.y - oy, c.r * 1.25, 0, TAU);
@@ -74,7 +74,7 @@ class PumiceCluster {
         // Bake contrast into secondary canvas so main canvas needs no filter
         const cc = this._contrastCtx;
         cc.clearRect(0, 0, size, size);
-        cc.filter = 'contrast(10)';  // Steingrau: schärfere Kontur, kein Watte-Effekt
+        cc.filter = 'contrast(13)';  // Kompakt: scharfe Kante, gut sichtbar
         cc.drawImage(this._offCanvas, 0, 0);
         cc.filter = 'none';
 
