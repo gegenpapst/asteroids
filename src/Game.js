@@ -19,7 +19,8 @@ class Game {
         this.hiScore = parseInt(localStorage.getItem('ast_hi') || '0');
         this.state   = STATE.START;
         this._debugCollision = false;
-        this._dbgCC = 0;
+        this._dbgCC  = 0;
+        this._dbgFPS = 0;
 
         this.score       = 0;
         this.lives       = 3;
@@ -107,6 +108,7 @@ class Game {
     update(dt) {
         dt = Math.min(dt, 1 / 20);
         this.t += dt;
+        this._dbgFPS += (1 / dt - this._dbgFPS) * 0.1;  // exponentieller Glättungsfaktor
 
         if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
             if (Input.start() || Input.config()) {
@@ -592,7 +594,7 @@ class Game {
                 if (this.ship.hitRadius > this.ship.radius)
                     drawC(this.ship.x, this.ship.y, this.ship.hitRadius, '#0cf');  // shield bubble
             }
-            // Q-Label + Kollisionszähler (bottom-right)
+            // Q-Label + Kollisionszähler + FPS (bottom-right)
             ctx.globalAlpha = 0.8;
             ctx.font        = '11px monospace';
             ctx.textAlign   = 'right';
@@ -600,6 +602,9 @@ class Game {
             ctx.fillText('DEBUG [Q]', W - 6, H - 6);
             ctx.fillStyle = this._dbgCC > 200 ? '#f84' : this._dbgCC > 80 ? '#ff4' : '#4f8';
             ctx.fillText(`Kollisionsprüfungen/Frame: ${this._dbgCC} (max)`, W - 6, H - 20);
+            const fps = Math.round(this._dbgFPS);
+            ctx.fillStyle = fps < 50 ? '#f84' : fps < 58 ? '#ff4' : '#4f8';
+            ctx.fillText(`FPS: ${fps}`, W - 6, H - 34);
             ctx.restore();
         }
 
