@@ -50,7 +50,7 @@ class RockCluster {
         blur_ctx.fillStyle = '#050210';
         blur_ctx.fillRect(0, 0, sz, sz);
         blur_ctx.filter    = `blur(${blur}px)`;
-        blur_ctx.fillStyle = 'rgb(210, 195, 165)';  // needs >67% luminance for contrast(14) threshold
+        blur_ctx.fillStyle = 'rgb(155, 140, 118)';  // Glut
         for (const c of this._cells) {
             blur_ctx.beginPath();
             blur_ctx.arc(half + c.dx, half + c.dy, c.r * 1.25, 0, TAU);

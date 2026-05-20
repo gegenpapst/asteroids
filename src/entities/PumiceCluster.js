@@ -63,7 +63,7 @@ class PumiceCluster {
         offCtx.fillRect(0, 0, size, size);
 
         offCtx.filter    = `blur(${this._blur}px)`;
-        offCtx.fillStyle = 'rgb(178, 170, 158)';
+        offCtx.fillStyle = 'rgb(145, 145, 158)';  // Steingrau
         for (const c of alive) {
             offCtx.beginPath();
             offCtx.arc(c.x - ox, c.y - oy, c.r * 1.25, 0, TAU);
@@ -74,7 +74,7 @@ class PumiceCluster {
         // Bake contrast into secondary canvas so main canvas needs no filter
         const cc = this._contrastCtx;
         cc.clearRect(0, 0, size, size);
-        cc.filter = 'contrast(14)';
+        cc.filter = 'contrast(6)';   // Steingrau: weicherer Schwellwert
         cc.drawImage(this._offCanvas, 0, 0);
         cc.filter = 'none';
 
