@@ -77,6 +77,8 @@ class ClusterAsteroid {
         return oc;
     }
 
+    get collisionRadius() { return this.radius * 0.75; }
+
     update(dt) {
         this.rot += this.rotSpeed * dt;
         return true;
