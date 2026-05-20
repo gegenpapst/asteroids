@@ -1,5 +1,9 @@
 'use strict';
 
+const { generateHexCells, buildMetaballCanvas, renderMetaballFrame } = require('../../src/entities/Metaball.js');
+global.generateHexCells    = generateHexCells;
+global.buildMetaballCanvas = buildMetaballCanvas;
+global.renderMetaballFrame = renderMetaballFrame;
 const { PumiceCluster } = require('../../src/entities/PumiceCluster.js');
 
 describe('PumiceCluster constructor', () => {

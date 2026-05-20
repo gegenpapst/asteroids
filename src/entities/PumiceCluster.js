@@ -1,5 +1,8 @@
 'use strict';
 
+// Pumice-Cluster: statisches Hindernis aus einzelnen Matter-Bodies pro Zelle.
+// Zellen können einzeln zerstört werden; das Metaball-Rendering wird pro Frame
+// auf Basis der lebenden Zellen neu aufgebaut.
 class PumiceCluster {
     constructor(x, y) {
         this.x         = x;
@@ -7,19 +10,16 @@ class PumiceCluster {
         this.radius    = rand(22, 54);
         this._cellR    = this.radius * 0.20;
         this._blur     = Math.round(this._cellR * 0.68);
-        this._pad      = this._blur * 3 + 4;
         this.cells     = this._generateCells();
-        const size     = Math.ceil((this.radius + this._pad) * 2);
-        this._offCanvas    = Object.assign(document.createElement('canvas'), { width: size, height: size });
-        this._offCtx       = this._offCanvas.getContext('2d');
+        const size     = Math.ceil((this.radius + this._blur * 3 + 4) * 2);
+        this._offCanvas      = Object.assign(document.createElement('canvas'), { width: size, height: size });
         this._contrastCanvas = Object.assign(document.createElement('canvas'), { width: size, height: size });
-        this._contrastCtx    = this._contrastCanvas.getContext('2d');
     }
 
     _generateCells() {
-        const cellR   = this.radius * 0.20;
+        const cellR   = this._cellR;
         const spacing = cellR * 1.55;
-        const rowH    = spacing * 0.866;  // sqrt(3)/2 für Hex-Packing
+        const rowH    = spacing * 0.866;
         const span    = Math.ceil(this.radius * 2 / rowH) + 1;
         const cells   = [];
         for (let row = 0; row < span; row++) {
@@ -68,36 +68,12 @@ class PumiceCluster {
 
     draw() {
         const alive = this.cells.filter(c => c.alive);
-        if (!alive.length) return;
-
-        const offCtx = this._offCtx;
-        const size   = this._offCanvas.width;
-        const ox     = this.x - size / 2;
-        const oy     = this.y - size / 2;
-
-        offCtx.fillStyle = '#050210';
-        offCtx.fillRect(0, 0, size, size);
-
-        offCtx.filter    = `blur(${this._blur}px)`;
-        offCtx.fillStyle = 'rgb(146, 146, 150)';  // Kompakt: dicht, grau, kühler Ton
-        for (const c of alive) {
-            offCtx.beginPath();
-            offCtx.arc(c.x - ox, c.y - oy, c.r * 1.25, 0, TAU);
-            offCtx.fill();
-        }
-        offCtx.filter = 'none';
-
-        // Bake contrast into secondary canvas so main canvas needs no filter
-        const cc = this._contrastCtx;
-        cc.clearRect(0, 0, size, size);
-        cc.filter = 'contrast(13)';  // Kompakt: scharfe Kante, gut sichtbar
-        cc.drawImage(this._offCanvas, 0, 0);
-        cc.filter = 'none';
-
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.drawImage(this._contrastCanvas, ox, oy);
-        ctx.restore();
+        renderMetaballFrame(
+            ctx, this._offCanvas, this._contrastCanvas,
+            alive, this.x, this.y,
+            'rgb(146, 146, 150)',  // Kompakt: dicht, grau, kühler Ton
+            this._blur, 13,        // Kontrast 13 → scharfe Kante
+        );
     }
 }
 
