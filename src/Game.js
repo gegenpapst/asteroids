@@ -44,7 +44,7 @@ class Game {
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
 
-        this.config = { mode: 2, bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1, shipStyle: 1 };
+        this.config = { mode: 2, bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1, visualStyle: 1 };
         this._configCursor   = 0;
         this._configPrevState = STATE.START;
 
@@ -64,10 +64,11 @@ class Game {
         this.clusterAsteroids = [];
         this.rockClusters     = [];
         Matter.World.clear(this.engine.world, false);
+        const isMetaball  = this.config.visualStyle === 2;
         const [rMin, rMax] = this._rockCountRange;
-        this.rocks       = Array.from({ length: randInt(rMin, rMax) }, () => new RockPoly(rand(60, W - 60), rand(60, H - 60)));
-        this.rockClusters = Array.from({ length: randInt(1, this.config.rockCount) }, () =>
-            new RockCluster(rand(60, W - 60), rand(60, H - 60)));
+        this.rocks        = isMetaball ? [] : Array.from({ length: randInt(rMin, rMax) }, () => new RockPoly(rand(60, W - 60), rand(60, H - 60)));
+        this.rockClusters = isMetaball ? Array.from({ length: randInt(1, this.config.rockCount) }, () =>
+            new RockCluster(rand(60, W - 60), rand(60, H - 60))) : [];
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -76,18 +77,22 @@ class Game {
         this.beatPhase   = 0;
         const [pcMin, pcMax] = this._pumiceCountRange;
         const pumices = [];
-        for (let i = 0; i < randInt(pcMin, pcMax); i++) {
-            const [px, py] = this._safePumicePos(pumices);
-            pumices.push(new PumiceCluster(px, py));
+        if (isMetaball) {
+            for (let i = 0; i < randInt(pcMin, pcMax); i++) {
+                const [px, py] = this._safePumicePos(pumices);
+                pumices.push(new PumiceCluster(px, py));
+            }
         }
         this.pumices = pumices;
         const pumicePolys = [];
-        for (let i = 0; i < randInt(pcMin, pcMax); i++) {
-            const [px, py] = this._safePumicePolyPos(pumicePolys);
-            pumicePolys.push(new PumicePoly(px, py));
+        if (!isMetaball) {
+            for (let i = 0; i < randInt(pcMin, pcMax); i++) {
+                const [px, py] = this._safePumicePolyPos(pumicePolys);
+                pumicePolys.push(new PumicePoly(px, py));
+            }
         }
         this.pumicePolys = pumicePolys;
-        this.ship        = this.config.shipStyle === 2 ? new ShipCluster() : new ShipPoly();
+        this.ship        = this.config.visualStyle === 2 ? new ShipCluster() : new ShipPoly();
         [this.ship.x, this.ship.y] = this._safeShipPos();
         Matter.World.add(this.engine.world, this.rocks.map(r => r.body));
         Matter.World.add(this.engine.world, this.rockClusters.map(rc => rc.body));
@@ -119,8 +124,8 @@ class Game {
         if (this.state === STATE.CONFIG) {
             const readOnly = this._configPrevState === STATE.PLAYING;
             if (!readOnly) {
-                const params    = ['mode', 'bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce', 'shipStyle'];
-                const paramMax  = { mode: 3, bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2, shipStyle: 2 };
+                const params    = ['mode', 'bulletRange', 'powerupFreq', 'rockCount', 'pumiceCount', 'asteroidBounce', 'visualStyle'];
+                const paramMax  = { mode: 3, bulletRange: 3, powerupFreq: 3, rockCount: 3, pumiceCount: 3, asteroidBounce: 2, visualStyle: 2 };
                 if (Input.wasPressed('ArrowUp'))   this._configCursor = (this._configCursor + params.length - 1) % params.length;
                 if (Input.wasPressed('ArrowDown'))  this._configCursor = (this._configCursor + 1) % params.length;
                 const key = params[this._configCursor];
@@ -181,7 +186,7 @@ class Game {
             this._syncBodies();
             if (this.deadTimer <= 0) {
                 if (this.lives > 0) {
-                    this.ship = new ShipPoly();
+                    this.ship = this.config.visualStyle === 2 ? new ShipCluster() : new ShipPoly();
                     [this.ship.x, this.ship.y] = this._safeShipPos();
                     this.state = STATE.PLAYING;
                 } else {
@@ -232,7 +237,7 @@ class Game {
         this.ufoTimer -= dt;
         if (this.ufoTimer <= 0) {
             const size    = (this.score >= 5000 && Math.random() < 0.4) ? 1 : 0;
-            const UfoClass = Math.random() < 0.5 ? UfoCluster : Ufo;
+            const UfoClass = this.config.visualStyle === 2 ? UfoCluster : Ufo;
             this.ufos.push(new UfoClass(size, b => this.ufoBullets.push(b)));
             this.ufoTimer = 25 + rand(0, 15);
         }
@@ -646,7 +651,7 @@ class Game {
                 x = rand(0, W);
                 y = rand(0, H);
             } while (dist({ x, y }, { x: cx, y: cy }) < W * 0.22);
-            const useCluster = Math.random() < 0.35;
+            const useCluster = this.config.visualStyle === 2;
             const a = useCluster ? new ClusterAsteroid(x, y, 0) : new AsteroidPoly(x, y, 0);
             if (useCluster) this.clusterAsteroids.push(a);
             else            this.asteroids.push(a);
@@ -837,7 +842,7 @@ class Game {
             { key: 'rockCount',      label: 'Anzahl Rocks',           opts: ['wenige', 'normal', 'viele']    },
             { key: 'pumiceCount',    label: 'Anzahl Bimsstein',       opts: ['keine',  'wenige', 'viele']    },
             { key: 'asteroidBounce', label: 'Asteroiden-Kollisionen', opts: ['aus',    'ein']                },
-            { key: 'shipStyle',      label: 'Schiff Stil',            opts: ['Poly',   'Cluster']             },
+            { key: 'visualStyle',    label: 'Optik',                  opts: ['Polygon', 'Metaball']            },
         ];
 
         let y = 80;
