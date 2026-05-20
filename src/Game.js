@@ -199,7 +199,7 @@ class Game {
 
         // ── PLAYING ──
 
-        if (Input.wasPressed('KeyD')) this._debugCollision = !this._debugCollision;
+        if (Input.wasPressed('F2')) this._debugCollision = !this._debugCollision;
 
         this.ship.update(dt);
 
