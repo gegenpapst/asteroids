@@ -53,9 +53,9 @@ class UfoCluster {
 
     draw() {
         const r   = this.radius;
-        // size 0 = large green UFO, size 1 = small red UFO
-        const col = this.size === 0 ? { h: '#5fa', s: '#4f8', d: '#0d2018', dd: '#06100d' }
-                                    : { h: '#f88', s: '#f55', d: '#200808', dd: '#100404' };
+        // Schema 1: groß = Magenta #FF00CC, klein = Orange #FF6600
+        const col = this.size === 0 ? { h: '#ff44dd', s: '#ff00cc', d: '#1a0016', dd: '#0d000b' }
+                                    : { h: '#ff8833', s: '#ff6600', d: '#1a0800', dd: '#0d0400' };
 
         ctx.save();
         ctx.translate(this.x, this.y);
@@ -89,8 +89,8 @@ class UfoCluster {
 
         // Dome — radial gradient
         const dcg = ctx.createRadialGradient(-r * 0.1, -r * 0.12, 0, 0, 0, r * 0.52);
-        dcg.addColorStop(0,   this.size === 0 ? 'rgba(100,255,160,0.6)' : 'rgba(255,120,120,0.6)');
-        dcg.addColorStop(0.5, this.size === 0 ? 'rgba(20,100,50,0.3)'  : 'rgba(120,20,20,0.3)');
+        dcg.addColorStop(0,   this.size === 0 ? 'rgba(255,80,220,0.6)'  : 'rgba(255,120,40,0.6)');
+        dcg.addColorStop(0.5, this.size === 0 ? 'rgba(120,0,100,0.3)'  : 'rgba(140,60,0,0.3)');
         dcg.addColorStop(1,   'rgba(5,5,5,0.05)');
         ctx.beginPath();
         ctx.ellipse(0, 0, r * 0.5, r * 0.38, 0, Math.PI, TAU);

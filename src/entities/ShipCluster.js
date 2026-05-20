@@ -130,21 +130,21 @@ class ShipCluster {
         ctx.closePath();
 
         const hg = ctx.createLinearGradient(-s * 0.7, 0, s, 0);
-        hg.addColorStop(0,    '#050e1c');
-        hg.addColorStop(0.55, '#0b1c38');
-        hg.addColorStop(1,    '#102244');
+        hg.addColorStop(0,    '#000d33');
+        hg.addColorStop(0.55, '#002299');
+        hg.addColorStop(1,    '#0044ee');
         ctx.fillStyle   = hg;
-        ctx.shadowColor = '#28c8ff';
-        ctx.shadowBlur  = 8;
+        ctx.shadowColor = '#0055ff';
+        ctx.shadowBlur  = 14;
         ctx.fill();
 
-        ctx.strokeStyle = '#5cf';
-        ctx.lineWidth   = 1;
+        ctx.strokeStyle = '#3377ff';
+        ctx.lineWidth   = 1.2;
         ctx.stroke();
 
         // Wing panel traces
         ctx.globalAlpha = 0.3;
-        ctx.strokeStyle = '#8df';
+        ctx.strokeStyle = '#6699ff';
         ctx.shadowBlur  = 0;
         ctx.lineWidth   = 1.5;
         ctx.beginPath();
