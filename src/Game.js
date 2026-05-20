@@ -19,6 +19,7 @@ class Game {
         this.hiScore = parseInt(localStorage.getItem('ast_hi') || '0');
         this.state   = STATE.START;
         this._debugCollision = false;
+        this._dbgCC = 0;
 
         this.score       = 0;
         this.lives       = 3;
@@ -509,6 +510,19 @@ class Game {
             }
         }
 
+        // Kollisionsprüfungen zählen (max. theoretisch: Bullets × alle + Ship × alle)
+        if (this._debugCollision) {
+            const pumiceCells = this.pumices.reduce((s, p) => s + p.cells.filter(c => c.alive).length, 0);
+            const perBullet   = this.asteroids.length + this.clusterAsteroids.length
+                              + this.ufos.length + this.rocks.length + this.rockClusters.length
+                              + pumiceCells + this.pumicePolys.length;
+            const shipChecks  = this.ship ? (this.asteroids.length + this.clusterAsteroids.length
+                              + this.rocks.length + this.rockClusters.length
+                              + pumiceCells + this.pumicePolys.length
+                              + this.ufos.length + this.ufoBullets.length + this.powerups.length) : 0;
+            this._dbgCC = this.bullets.length * perBullet + shipChecks;
+        }
+
         // Level clear (UFOs persist between levels)
         if (this.asteroids.length === 0 && this.clusterAsteroids.length === 0) {
             this.snd.levelUp();
@@ -578,12 +592,14 @@ class Game {
                 if (this.ship.hitRadius > this.ship.radius)
                     drawC(this.ship.x, this.ship.y, this.ship.hitRadius, '#0cf');  // shield bubble
             }
-            // Q-Label
-            ctx.globalAlpha = 0.7;
-            ctx.fillStyle   = '#fff';
+            // Q-Label + Kollisionszähler
+            ctx.globalAlpha = 0.8;
             ctx.font        = '11px monospace';
             ctx.textAlign   = 'left';
+            ctx.fillStyle   = '#fff';
             ctx.fillText('DEBUG [Q]', 6, H - 6);
+            ctx.fillStyle = this._dbgCC > 200 ? '#f84' : this._dbgCC > 80 ? '#ff4' : '#4f8';
+            ctx.fillText(`Kollisionsprüfungen/Frame: ${this._dbgCC} (max)`, 6, H - 20);
             ctx.restore();
         }
 
