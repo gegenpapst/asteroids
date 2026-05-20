@@ -33,6 +33,7 @@ class Game {
         this.pumices          = [];
         this.pumicePolys      = [];
         this.clusterAsteroids = [];
+        this.rockClusters     = [];
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -61,9 +62,12 @@ class Game {
         this.ufos        = [];
         this.ufoBullets       = [];
         this.clusterAsteroids = [];
+        this.rockClusters     = [];
         Matter.World.clear(this.engine.world, false);
         const [rMin, rMax] = this._rockCountRange;
         this.rocks       = Array.from({ length: randInt(rMin, rMax) }, () => new RockPoly(rand(60, W - 60), rand(60, H - 60)));
+        this.rockClusters = Array.from({ length: randInt(1, this.config.rockCount) }, () =>
+            new RockCluster(rand(60, W - 60), rand(60, H - 60)));
         this.deadTimer   = 0;
         this.nextExtra   = EXTRA_LIFE_SCORE;
         this.ufoTimer    = 20;
@@ -86,6 +90,7 @@ class Game {
         this.ship        = new ShipPoly();
         [this.ship.x, this.ship.y] = this._safeShipPos();
         Matter.World.add(this.engine.world, this.rocks.map(r => r.body));
+        Matter.World.add(this.engine.world, this.rockClusters.map(rc => rc.body));
         Matter.World.add(this.engine.world, this.pumices.flatMap(p => p.cells.map(c => c.body)));
         Matter.World.add(this.engine.world, this.pumicePolys.map(p => p.body));
         this._nextLevel();
@@ -306,6 +311,14 @@ class Game {
             }
         }
 
+        // Bullet × RockCluster
+        for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+            const b = this.bullets[bi];
+            if (this.rockClusters.some(rc => dist(b, rc) < rc.radius + b.radius)) {
+                this.bullets.splice(bi, 1);
+            }
+        }
+
         // Bullet × Pumice
         outerPumice:
         for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
@@ -431,6 +444,17 @@ class Game {
             }
         }
 
+        // Ship × RockCluster
+        if (this.ship && this.ship.invulnerable <= 0) {
+            for (const rc of this.rockClusters) {
+                if (dist(this.ship, rc) < rc.radius + this.ship.radius) {
+                    if (this.ship.shieldTimer > 0) this._bounceShip(rc.x, rc.y);
+                    else this._killShip();
+                    break;
+                }
+            }
+        }
+
         // Ship × Pumice
         if (this.ship && this.ship.invulnerable <= 0) {
             outerSP:
@@ -531,6 +555,7 @@ class Game {
         if (this.state === STATE.CONFIG) { this._drawConfig(); return; }
 
         this._drawRocks();
+        this.rockClusters.forEach(rc => rc.draw());
         this.pumices.forEach(p => p.draw());
         this.pumicePolys.forEach(p => p.draw());
         this.asteroids.forEach(a => a.draw());
