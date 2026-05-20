@@ -200,7 +200,7 @@ class Game {
 
         // ── PLAYING ──
 
-        if (Input.wasPressed('F2')) this._debugCollision = !this._debugCollision;
+        if (Input.wasPressed('F2') || Input.wasPressed('KeyQ')) this._debugCollision = !this._debugCollision;
 
         this.ship.update(dt);
 
@@ -549,19 +549,39 @@ class Game {
         this.particles.forEach(p => p.draw());
         if (this.ship) this.ship.draw();
 
-        // ── Collision debug overlay (press D to toggle) ──────────────────────
+        // ── Collision debug overlay (Q / F2 to toggle) ──────────────────────
         if (this._debugCollision) {
             ctx.save();
-            ctx.globalAlpha = 0.45;
+            ctx.globalAlpha = 0.55;
             ctx.lineWidth   = 1.5;
             const drawC = (x, y, r, col) => {
                 ctx.beginPath(); ctx.arc(x, y, r, 0, TAU);
                 ctx.strokeStyle = col; ctx.stroke();
             };
-            this.rockClusters.forEach(rc  => drawC(rc.x,  rc.y,  rc.collisionRadius,  '#f44'));
-            this.clusterAsteroids.forEach(ca => drawC(ca.x, ca.y, ca.collisionRadius, '#f84'));
-            this.pumices.forEach(p => { if (p.alive) drawC(p.x, p.y, p.collisionRadius, '#f4f'); });
-            if (this.ship) drawC(this.ship.x, this.ship.y, this.ship.radius, '#4ff');
+            // Obstacles
+            this.rocks.forEach(r           => drawC(r.x,  r.y,  r.radius,           '#f44'));
+            this.rockClusters.forEach(rc   => drawC(rc.x, rc.y, rc.collisionRadius,  '#f44'));
+            this.asteroids.forEach(a       => drawC(a.x,  a.y,  a.radius,            '#f84'));
+            this.clusterAsteroids.forEach(ca => drawC(ca.x, ca.y, ca.collisionRadius,'#f84'));
+            this.pumices.forEach(p         => { if (p.alive) drawC(p.x, p.y, p.collisionRadius, '#f4f'); });
+            this.pumicePolys.forEach(pp    => drawC(pp.x, pp.y, pp.radius,           '#f4f'));
+            // Enemies
+            this.ufos.forEach(u            => drawC(u.x,  u.y,  u.radius,            '#f00'));
+            this.ufoBullets.forEach(b      => drawC(b.x,  b.y,  b.radius,            '#f60'));
+            // Player
+            this.bullets.forEach(b         => drawC(b.x,  b.y,  b.radius,            '#0f4'));
+            this.powerups.forEach(p        => drawC(p.x,  p.y,  p.radius,            '#ff0'));
+            if (this.ship) {
+                drawC(this.ship.x, this.ship.y, this.ship.radius,    '#4ff');  // hull
+                if (this.ship.hitRadius > this.ship.radius)
+                    drawC(this.ship.x, this.ship.y, this.ship.hitRadius, '#0cf');  // shield bubble
+            }
+            // Q-Label
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle   = '#fff';
+            ctx.font        = '11px monospace';
+            ctx.textAlign   = 'left';
+            ctx.fillText('DEBUG [Q]', 6, H - 6);
             ctx.restore();
         }
 
