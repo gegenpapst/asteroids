@@ -18,6 +18,7 @@ class Game {
         this.snd     = new Sound();
         this.hiScore = parseInt(localStorage.getItem('ast_hi') || '0');
         this.state   = STATE.START;
+        this._debugCollision = true;   // DEBUG: show collision circles — remove when calibrated
 
         this.score       = 0;
         this.lives       = 3;
