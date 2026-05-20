@@ -19,8 +19,11 @@ class Game {
         this.hiScore = parseInt(localStorage.getItem('ast_hi') || '0');
         this.state   = STATE.START;
         this._debugCollision = false;
-        this._dbgCC  = 0;
-        this._dbgFPS = 0;
+        this._dbgCC      = 0;
+        this._dbgFPS     = 0;
+        this._dbgFrameMs = 0;
+        this._dbgPeakCC  = 0;
+        this._dbgPeakTTL = 0;  // Frames bis Peak-Reset
 
         this.score       = 0;
         this.lives       = 3;
@@ -108,7 +111,10 @@ class Game {
     update(dt) {
         dt = Math.min(dt, 1 / 20);
         this.t += dt;
-        if (dt > 0) this._dbgFPS += (1 / dt - this._dbgFPS) * 0.1;  // exponentieller Glättungsfaktor
+        if (dt > 0) {
+            this._dbgFPS     += (1 / dt        - this._dbgFPS)     * 0.1;
+            this._dbgFrameMs += (dt * 1000      - this._dbgFrameMs) * 0.1;
+        }
 
         if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
             if (Input.start() || Input.config()) {
@@ -523,6 +529,13 @@ class Game {
                               + pumiceCells + this.pumicePolys.length
                               + this.ufos.length + this.ufoBullets.length + this.powerups.length) : 0;
             this._dbgCC = this.bullets.length * perBullet + shipChecks;
+            if (this._dbgCC > this._dbgPeakCC) {
+                this._dbgPeakCC  = this._dbgCC;
+                this._dbgPeakTTL = 120;          // Peak gilt 120 Frames (~2 s)
+            } else if (--this._dbgPeakTTL <= 0) {
+                this._dbgPeakCC  = this._dbgCC;  // Fenster abgelaufen → zurücksetzen
+                this._dbgPeakTTL = 120;
+            }
         }
 
         // Level clear (UFOs persist between levels)
@@ -594,15 +607,26 @@ class Game {
                 if (this.ship.hitRadius > this.ship.radius)
                     drawC(this.ship.x, this.ship.y, this.ship.hitRadius, '#0cf');  // shield bubble
             }
-            // Q-Label + Kollisionszähler + FPS (bottom-right)
-            ctx.globalAlpha = 0.8;
+            // Debug-Overlay (bottom-right)
+            ctx.globalAlpha = 0.85;
             ctx.font        = '11px monospace';
             ctx.textAlign   = 'right';
-            ctx.fillStyle = this._dbgCC > 200 ? '#f84' : this._dbgCC > 80 ? '#ff4' : '#4f8';
-            ctx.fillText(`Kollisionsprüfungen/Frame: ${this._dbgCC} (max)`, W - 6, H - 20);
+
             const fps = Math.round(this._dbgFPS);
-            ctx.fillStyle = fps < 50 ? '#f84' : fps < 58 ? '#ff4' : '#4f8';
-            ctx.fillText(`FPS: ${fps}`, W - 6, H - 34);
+            const ms  = this._dbgFrameMs.toFixed(1);
+            const entities = this.asteroids.length + this.clusterAsteroids.length
+                           + this.rocks.length + this.rockClusters.length
+                           + this.pumices.length + this.pumicePolys.length
+                           + this.ufos.length + this.ufoBullets.length
+                           + this.bullets.length + this.powerups.length
+                           + (this.ship ? 1 : 0);
+
+            const line = (text, col, y) => { ctx.fillStyle = col; ctx.fillText(text, W - 6, y); };
+            line(`Partikel:  ${this.particles.length}`,                                                             '#888',  H - 76);
+            line(`Entities:  ${entities}`,                                                                          '#aaa',  H - 62);
+            line(`Kollision: ${this._dbgCC} / Peak: ${this._dbgPeakCC}`, this._dbgPeakCC > 200 ? '#f84' : this._dbgPeakCC > 80 ? '#ff4' : '#4f8', H - 48);
+            line(`Frame:     ${ms} ms`,                                   parseFloat(ms) > 20 ? '#f84' : parseFloat(ms) > 17 ? '#ff4' : '#4f8',    H - 34);
+            line(`FPS:       ${fps}`,                                      fps < 50 ? '#f84' : fps < 58 ? '#ff4' : '#4f8',                          H - 20);
             ctx.restore();
         }
 
