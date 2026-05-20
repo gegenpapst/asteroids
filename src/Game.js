@@ -371,7 +371,7 @@ class Game {
         if (this.ship.invulnerable <= 0) {
             for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
                 const a = this.asteroids[ai];
-                if (dist(this.ship, a) < a.radius + this.ship.radius) {
+                if (dist(this.ship, a) < a.radius + this.ship.hitRadius) {
                     if (this.ship.shieldTimer > 0) {
                         this._boom(a.x, a.y, a.size);
                         const children = a.split();
@@ -395,7 +395,7 @@ class Game {
         if (this.ship && this.ship.invulnerable <= 0) {
             for (let ci = this.clusterAsteroids.length - 1; ci >= 0; ci--) {
                 const ca = this.clusterAsteroids[ci];
-                if (dist(this.ship, ca) < ca.collisionRadius + this.ship.radius) {
+                if (dist(this.ship, ca) < ca.collisionRadius + this.ship.hitRadius) {
                     if (this.ship.shieldTimer > 0) {
                         this._boom(ca.x, ca.y, ca.size);
                         const children = ca.split();
@@ -418,7 +418,7 @@ class Game {
         // Ship × Rock
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const r of this.rocks) {
-                if (dist(this.ship, r) < r.radius + this.ship.radius) {
+                if (dist(this.ship, r) < r.radius + this.ship.hitRadius) {
                     if (this.ship.shieldTimer > 0) {
                         this._bounceShip(r.x, r.y);
                     } else {
@@ -432,7 +432,7 @@ class Game {
         // Ship × RockCluster
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const rc of this.rockClusters) {
-                if (dist(this.ship, rc) < rc.collisionRadius + this.ship.radius) {
+                if (dist(this.ship, rc) < rc.collisionRadius + this.ship.hitRadius) {
                     if (this.ship.shieldTimer > 0) this._bounceShip(rc.x, rc.y);
                     else this._killShip();
                     break;
@@ -444,7 +444,7 @@ class Game {
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const p of this.pumices) {
                 if (!p.alive) continue;
-                if (dist(this.ship, p) < p.collisionRadius + this.ship.radius) {
+                if (dist(this.ship, p) < p.collisionRadius + this.ship.hitRadius) {
                     if (this.ship.shieldTimer > 0) this._bounceShip(p.x, p.y);
                     else this._killShip();
                     break;
@@ -455,7 +455,7 @@ class Game {
         // Ship × PumicePoly
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const pp of this.pumicePolys) {
-                if (pp.collidesWithCircle(this.ship.x, this.ship.y, this.ship.radius)) {
+                if (pp.collidesWithCircle(this.ship.x, this.ship.y, this.ship.hitRadius)) {
                     if (this.ship.shieldTimer > 0) this._bounceShip(pp.x, pp.y);
                     else this._killShip();
                     break;
@@ -466,7 +466,7 @@ class Game {
         // Ship × UFO
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const u of this.ufos) {
-                if (dist(this.ship, u) < u.radius + this.ship.radius) {
+                if (dist(this.ship, u) < u.radius + this.ship.hitRadius) {
                     if (this.ship.shieldTimer > 0) {
                         this._bounceShip(u.x, u.y);
                     } else {
@@ -481,7 +481,7 @@ class Game {
         if (this.ship && this.ship.invulnerable <= 0) {
             for (let bi = this.ufoBullets.length - 1; bi >= 0; bi--) {
                 const b = this.ufoBullets[bi];
-                if (dist(b, this.ship) < b.radius + this.ship.radius) {
+                if (dist(b, this.ship) < b.radius + this.ship.hitRadius) {
                     if (this.ship.shieldTimer > 0) {
                         this.ufoBullets.splice(bi, 1);
                     } else {

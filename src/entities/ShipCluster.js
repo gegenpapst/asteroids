@@ -17,7 +17,8 @@ class ShipCluster {
         this.heavyTimer   = 0;
     }
 
-    get radius() { return SHIP_SIZE * 0.7; }
+    get radius()    { return SHIP_SIZE * 0.7; }
+    get hitRadius() { return this.shieldTimer > 0 ? SHIP_SIZE * 2.2 : this.radius; }
 
     teleport(x, y) {
         this.x = x;
