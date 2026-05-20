@@ -440,11 +440,12 @@ class Game {
             }
         }
 
-        // Ship × Pumice (bounding-circle — per-cell kills invisible boundary cells)
+        // Ship × Pumice (per-cell — gleiche Methode wie Bullets, kein unsichtbarer Bounding-Circle)
         if (this.ship && this.ship.invulnerable <= 0) {
             for (const p of this.pumices) {
                 if (!p.alive) continue;
-                if (dist(this.ship, p) < p.collisionRadius + this.ship.hitRadius) {
+                const hits = p.findHit(this.ship.x, this.ship.y, this.ship.hitRadius);
+                if (hits.length > 0) {
                     if (this.ship.shieldTimer > 0) this._bounceShip(p.x, p.y);
                     else this._killShip();
                     break;
@@ -563,7 +564,7 @@ class Game {
             this.rockClusters.forEach(rc   => drawC(rc.x, rc.y, rc.collisionRadius,  '#f44'));
             this.asteroids.forEach(a       => drawC(a.x,  a.y,  a.radius,            '#f84'));
             this.clusterAsteroids.forEach(ca => drawC(ca.x, ca.y, ca.collisionRadius,'#f84'));
-            this.pumices.forEach(p         => { if (p.alive) drawC(p.x, p.y, p.collisionRadius, '#f4f'); });
+            this.pumices.forEach(p         => p.cells.filter(c => c.alive).forEach(c => drawC(c.x, c.y, c.r, '#f4f')));
             this.pumicePolys.forEach(pp    => drawC(pp.x, pp.y, pp.radius,           '#f4f'));
             // Enemies
             this.ufos.forEach(u            => drawC(u.x,  u.y,  u.radius,            '#f00'));
