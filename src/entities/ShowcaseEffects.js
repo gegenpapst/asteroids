@@ -9,14 +9,14 @@ const METABALL_EFFECTS = [
     { name: 'Gold',      rgb: [185, 165,  50], desc: 'Orange → Gelb'            },
     { name: 'Spektrum',  rgb: [235, 165, 100], desc: 'Rot → Orange → Weiß'     },
     // ── Neue Vorschläge ────────────────────────────────────────────────────────
-    { name: 'Braun',     rgb: [190, 130,  70], desc: 'Rost → Ocker'             },
-    { name: 'Steingrau', rgb: [148, 155, 172], desc: 'Kühles Blaugrau'          },
+    { name: 'Braun',     rgb: [155, 125,  65], desc: 'Ocker → Hellbraun'        },
+    { name: 'Steingrau', rgb: [145, 145, 158], desc: 'Kühles Grau',  contrast: 6 },
     { name: 'Violett',   rgb: [130,  80, 185], desc: 'Violett → Purpur → Weiß'  },
-    { name: 'Krater',    rgb: [190, 130,  70], desc: '3 Braunkrater',  multiCrater: true },
+    { name: 'Krater',    rgb: [200, 168, 108], desc: '5 Hellbraunkrater', multiCrater: true },
 ];
 
 function _buildEffectCanvas(effect, radius) {
-    const { rgb, ring, multiCrater } = effect;
+    const { rgb, ring, multiCrater, contrast: effectContrast = 14 } = effect;
     const cellR   = radius * 0.24;
     const spacing = cellR * 1.65;
     const rowH    = spacing * 0.866;
@@ -25,9 +25,11 @@ function _buildEffectCanvas(effect, radius) {
 
     // Multiple crater bowls: cells inside these circles are removed
     const craters = multiCrater ? [
-        { dx: -radius * 0.28, dy: -radius * 0.24, r: radius * 0.30 },
-        { dx:  radius * 0.26, dy:  radius * 0.26, r: radius * 0.26 },
-        { dx:  radius * 0.02, dy: -radius * 0.06, r: radius * 0.22 },
+        { dx: -radius * 0.30, dy: -radius * 0.26, r: radius * 0.26 },
+        { dx:  radius * 0.28, dy:  radius * 0.22, r: radius * 0.22 },
+        { dx: -radius * 0.08, dy:  radius * 0.32, r: radius * 0.20 },
+        { dx:  radius * 0.10, dy: -radius * 0.10, r: radius * 0.18 },
+        { dx: -radius * 0.30, dy:  radius * 0.10, r: radius * 0.16 },
     ] : [];
 
     const cells = [];
@@ -64,7 +66,7 @@ function _buildEffectCanvas(effect, radius) {
 
     const oc  = Object.assign(document.createElement('canvas'), { width: sz, height: sz });
     const oct = oc.getContext('2d');
-    oct.filter = 'contrast(14)';
+    oct.filter = `contrast(${effectContrast})`;
     oct.drawImage(blur_oc, 0, 0);
     return oc;
 }
