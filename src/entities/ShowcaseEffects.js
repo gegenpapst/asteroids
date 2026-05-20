@@ -257,8 +257,14 @@ function drawMetaballShowcase() {
 // ── Pumice Varianten Showcase ─────────────────────────────────────────────────
 
 const PUMICE_VARIANTS = [
-    { label: 'A', name: 'Standard', rgb: [148, 148, 150], contrast: 10, cellRF: 0.22, spacingF: 1.65, blurF: 0.75 },
-    { label: 'C', name: 'Schärfer', rgb: [148, 148, 150], contrast: 13, cellRF: 0.22, spacingF: 1.65, blurF: 0.65 },
+    { label: 'A', name: 'Standard',   rgb: [148, 148, 150], contrast: 10, cellRF: 0.22, spacingF: 1.65, blurF: 0.75 },
+    { label: 'C', name: 'Schärfer',   rgb: [148, 148, 150], contrast: 13, cellRF: 0.22, spacingF: 1.65, blurF: 0.65 },
+    { label: 'D', name: 'Feinkörnig', rgb: [152, 152, 154], contrast: 15, cellRF: 0.18, spacingF: 1.50, blurF: 0.55 },
+    { label: 'E', name: 'Großporig',  rgb: [150, 150, 152], contrast: 12, cellRF: 0.30, spacingF: 2.10, blurF: 0.75 },
+    { label: 'F', name: 'Wolkenrand', rgb: [156, 155, 160], contrast: 11, cellRF: 0.28, spacingF: 1.85, blurF: 0.92 },
+    { label: 'G', name: 'Grob',       rgb: [150, 149, 153], contrast: 16, cellRF: 0.34, spacingF: 2.30, blurF: 0.65 },
+    { label: 'H', name: 'Kompakt',    rgb: [146, 146, 150], contrast: 13, cellRF: 0.20, spacingF: 1.55, blurF: 0.68 },
+    { label: 'I', name: 'Gestein',    rgb: [150, 149, 155], contrast: 14, cellRF: 0.26, spacingF: 1.78, blurF: 0.72 },
 ];
 
 function _buildPumiceVariant(cfg, radius) {
@@ -306,14 +312,14 @@ function _buildPumiceVariant(cfg, radius) {
 
 const _pumiceVariants = PUMICE_VARIANTS.map(v => ({
     ...v,
-    oc: _buildPumiceVariant(v, 72),
+    oc: _buildPumiceVariant(v, 52),
 }));
 
 function drawPumiceShowcase() {
-    const COLS   = 2;
-    const startY = 88;
+    const COLS   = 4;
+    const startY = 72;
     const cellW  = W / COLS;
-    const cellH  = H - startY - 20;
+    const cellH  = (H - startY - 20) / 2;
 
     // Title
     ctx.textAlign   = 'center';
