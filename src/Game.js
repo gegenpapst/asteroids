@@ -44,7 +44,7 @@ class Game {
         this.beatInterval = 1.0;
         this.beatPhase    = 0;
 
-        this.config = { mode: 2, bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1, visualStyle: 1 };
+        this.config = { mode: 2, bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1, visualStyle: 2 };
         this._configCursor   = 0;
         this._configPrevState = STATE.START;
 
