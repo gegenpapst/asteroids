@@ -128,6 +128,8 @@ class Game {
     this.pumices = pumices;
     this.ship = this.mode.createShip();
     [this.ship.x, this.ship.y] = this._safeShipPos();
+    Matter.Body.setPosition(this.ship.body, { x: this.ship.x, y: this.ship.y });
+    Matter.World.add(this.engine.world, this.ship.body);
     Matter.World.add(
       this.engine.world,
       this.rocks.map((r) => r.body),
@@ -422,6 +424,7 @@ class Game {
       this.particles.push(new Particle(this.ship.x, this.ship.y, "#8ef"));
     this.snd.shipDie();
     this.lives--;
+    Matter.World.remove(this.engine.world, this.ship.body);
     this.ship = null;
     this.state = STATE.DEAD;
     this.deadTimer = 2.2;
@@ -521,6 +524,11 @@ class Game {
       if (this.lives > 0) {
         this.ship = this.mode.createShip();
         [this.ship.x, this.ship.y] = this._safeShipPos();
+        Matter.Body.setPosition(this.ship.body, {
+          x: this.ship.x,
+          y: this.ship.y,
+        });
+        Matter.World.add(this.engine.world, this.ship.body);
         this.state = STATE.PLAYING;
       } else {
         this.state = STATE.GAMEOVER;
@@ -561,8 +569,26 @@ class Game {
 
     this.bullets = this.bullets.filter((b) => b.update(dt));
     this.asteroids.forEach((a) => a.update(dt));
+
+    // Sync ship position/velocity into Matter body before physics tick
+    Matter.Body.setPosition(this.ship.body, { x: this.ship.x, y: this.ship.y });
+    Matter.Body.setVelocity(this.ship.body, {
+      x: this.ship.vx / 60,
+      y: this.ship.vy / 60,
+    });
+
     Matter.Engine.update(this.engine, dt * 1000);
     this._syncBodies();
+
+    // When shield is active, read Matter's collision-resolved velocity/position back.
+    // hull radius (9.8) < shield hitRadius (30.8), so the game-logic dist() check
+    // still fires after Matter pushes the ship to the hull-surface distance.
+    if (this.ship.shieldTimer > 0 && this.ship.invulnerable <= 0) {
+      this.ship.vx = this.ship.body.velocity.x * 60;
+      this.ship.vy = this.ship.body.velocity.y * 60;
+      this.ship.x = wrap(this.ship.body.position.x, W);
+      this.ship.y = wrap(this.ship.body.position.y, H);
+    }
   }
 
   // UFO-Spawn-Timer + UFO-Update (sinusoidale Bewegung, ggf. Schießen).
@@ -686,7 +712,7 @@ class Game {
                 Matter.Body.set(c.body, "collisionFilter", f);
             }
             this.asteroids.splice(ai, 1, ...children);
-            this._bounceShip(a.x, a.y);
+            // Matter body handles the physical bounce automatically
           } else {
             this._killShip();
           }
@@ -699,8 +725,8 @@ class Game {
     if (this.ship && this.ship.invulnerable <= 0) {
       for (const r of this.rocks) {
         if (dist(this.ship, r) < r.collisionRadius + this.ship.hitRadius) {
-          if (this.ship.shieldTimer > 0) this._bounceShip(r.x, r.y);
-          else this._killShip();
+          if (this.ship.shieldTimer <= 0) this._killShip();
+          // Shield: Matter body handles the physical bounce automatically
           break;
         }
       }
@@ -711,8 +737,8 @@ class Game {
       for (const p of this.pumices) {
         if (!p.alive) continue;
         if (p.handleShipHit(this.ship)) {
-          if (this.ship.shieldTimer > 0) this._bounceShip(p.x, p.y);
-          else this._killShip();
+          if (this.ship.shieldTimer <= 0) this._killShip();
+          // Shield: Matter body handles the physical bounce automatically
           break;
         }
       }
