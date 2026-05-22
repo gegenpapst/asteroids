@@ -32,6 +32,9 @@ class AsteroidBase {
         Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
     }
 
+    // Default: collisionRadius = radius. Subklassen können überschreiben.
+    get collisionRadius() { return this.radius; }
+
     update(dt) {
         this.rot += this.rotSpeed * dt;
         return true;

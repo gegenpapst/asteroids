@@ -15,6 +15,8 @@ class RockPoly {
         });
     }
 
+    get collisionRadius() { return this.radius; }
+
     update() { return true; }
 
     draw() {

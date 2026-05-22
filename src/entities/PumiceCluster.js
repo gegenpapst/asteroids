@@ -66,6 +66,30 @@ class PumiceCluster {
 
     update() { return true; }
 
+    // Prüfung für Safe-Spawning: wäre Punkt (x, y) innerhalb von margin nahe lebenden Zellen?
+    pointInsideMargin(x, y, margin) {
+        return this.cells.some(c => c.alive && Math.hypot(x - c.x, y - c.y) < c.r + margin);
+    }
+
+    // Vereinheitlichte Bullet-Kollision: returns true wenn Treffer (Side-Effects intern).
+    handleBulletHit(b, world, game) {
+        const hits = this.findHit(b.x, b.y, b.radius);
+        if (hits.length === 0) return false;
+        for (const c of hits) {
+            c.alive = false;
+            Matter.World.remove(world, c.body);
+            for (let k = 0; k < 3; k++)
+                game.particles.push(new Particle(c.x, c.y, `hsl(${rand(25,40)},18%,${rand(55,72)}%)`));
+        }
+        this.cullIsolated(world);
+        return true;
+    }
+
+    // Vereinheitlichte Ship-Kollision: returns true wenn Treffer.
+    handleShipHit(ship) {
+        return this.findHit(ship.x, ship.y, ship.hitRadius).length > 0;
+    }
+
     draw() {
         const alive = this.cells.filter(c => c.alive);
         renderMetaballFrame(

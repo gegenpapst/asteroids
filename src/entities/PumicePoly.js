@@ -84,6 +84,28 @@ class PumicePoly {
 
     update() { return this._alive; }
 
+    // Prüfung für Safe-Spawning: wäre Punkt (x, y) innerhalb von margin?
+    pointInsideMargin(x, y, margin) {
+        return Math.hypot(x - this.x, y - this.y) < this.radius + margin;
+    }
+
+    // Vereinheitlichte Bullet-Kollision: returns true wenn Treffer (Side-Effects intern).
+    handleBulletHit(b, world, game) {
+        if (!this.collidesWithCircle(b.x, b.y, b.radius)) return false;
+        const { destroyed, oldBody, newBody } = this.hit(b.x, b.y);
+        Matter.World.remove(world, oldBody);
+        if (newBody) Matter.World.add(world, newBody);
+        for (let k = 0; k < 5; k++)
+            game.particles.push(new Particle(b.x, b.y, `hsl(${rand(25,40)},18%,${rand(60,78)}%)`));
+        if (destroyed) game._boom(this.x, this.y, 1);
+        return true;
+    }
+
+    // Vereinheitlichte Ship-Kollision: returns true wenn Treffer.
+    handleShipHit(ship) {
+        return this.collidesWithCircle(ship.x, ship.y, ship.hitRadius);
+    }
+
     draw() {
         if (!this._alive) return;
         ctx.save();
