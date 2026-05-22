@@ -259,7 +259,21 @@ class Game {
       };
       // Obstacles
       this.rocks.forEach((r) => drawC(r.x, r.y, r.collisionRadius, "#f44"));
-      this.asteroids.forEach((a) => drawC(a.x, a.y, a.collisionRadius, "#f84"));
+      this.asteroids.forEach((a) => {
+        const pts = a.body.parts;
+        if (pts && pts.length > 1) {
+          // Compound body: draw each sub-circle (parts[0] is the parent hull, skip it)
+          for (let i = 1; i < pts.length; i++)
+            drawC(
+              pts[i].position.x,
+              pts[i].position.y,
+              pts[i].circleRadius,
+              "#f84",
+            );
+        } else {
+          drawC(a.x, a.y, a.collisionRadius, "#f84");
+        }
+      });
       this.pumices.forEach((p) => {
         if (p.cells)
           p.cells
