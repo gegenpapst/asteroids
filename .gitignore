@@ -1,2 +1,12 @@
 node_modules/
 coverage/
+
+# IDE/Editor
+.idea/
+.vscode/
+*.iml
+untitled/
+
+# Claude Code session-local artifacts
+.claude/worktrees/
+.claude/settings.local.json
