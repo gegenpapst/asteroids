@@ -24,15 +24,33 @@ class AsteroidBase {
     const rotBase = this.constructor._rotBase;
     this.rotSpeed = rand(-rotBase, rotBase) * (size + 1) * 0.38;
 
-    this.body = Matter.Bodies.circle(x, y, this.radius, {
+    this.body = this._makeBody();
+    Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
+    Matter.Body.setMass(this.body, ASTEROID_MASS[size]);
+  }
+
+  // Baut einen Compound-Body aus einem zentralen Kern + zufälligen Rand-Klumpen.
+  // Ergibt eine unregelmäßige, aber grob kreisförmige Kollisionsform.
+  _makeBody() {
+    const r = this.radius;
+    const parts = [Matter.Bodies.circle(0, 0, r * 0.62)];
+    const n = randInt(4, 6);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + rand(-0.28, 0.28);
+      const d = r * rand(0.28, 0.5);
+      const lr = r * rand(0.27, 0.38);
+      parts.push(Matter.Bodies.circle(Math.cos(a) * d, Math.sin(a) * d, lr));
+    }
+    const body = Matter.Body.create({
+      parts,
       friction: 0,
       frictionAir: 0,
       restitution: 1,
       label: this.constructor._label,
       plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } },
     });
-    Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
-    Matter.Body.setMass(this.body, ASTEROID_MASS[size]);
+    Matter.Body.setPosition(body, { x: this.x, y: this.y });
+    return body;
   }
 
   // Default: collisionRadius = radius. Subklassen können überschreiben.

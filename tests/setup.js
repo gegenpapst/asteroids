@@ -63,6 +63,11 @@ global.Matter = {
   World: { add: () => {}, remove: () => {}, clear: () => {} },
   Bodies: { circle: (x, y) => _mkBody(x, y) },
   Body: {
+    create: (opts) => {
+      const b = _mkBody(0, 0);
+      b.parts = opts.parts ?? [b];
+      return b;
+    },
     setVelocity: (b, v) => {
       b.velocity.x = v.x;
       b.velocity.y = v.y;
