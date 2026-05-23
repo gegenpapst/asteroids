@@ -29,17 +29,29 @@ class AsteroidBase {
     Matter.Body.setMass(this.body, ASTEROID_MASS[size]);
   }
 
-  // Baut einen Compound-Body aus einem zentralen Kern + zufälligen Rand-Klumpen.
-  // Ergibt eine unregelmäßige, aber grob kreisförmige Kollisionsform.
+  // Erzeugt Bump-Daten: n Auswölbungen gleichmäßig um das Zentrum verteilt.
+  // Wird von _makeBody() und _makeVerts() gemeinsam genutzt.
+  _genBumps() {
+    const r = this.radius;
+    const n = randInt(5, 7);
+    return Array.from({ length: n }, (_, i) => {
+      const a = (i / n) * TAU + rand(-0.25, 0.25);
+      const d = r * rand(0.42, 0.65); // weiter vom Kern entfernt → sichtbar
+      const br = r * rand(0.22, 0.32); // kleinere Klumpen
+      return { dx: Math.cos(a) * d, dy: Math.sin(a) * d, br };
+    });
+  }
+
+  // Baut einen Compound-Body aus einem kleinen Kern + weit abstehenden Klumpen.
+  // Setzt this._coreR und this._bumps, damit _makeVerts() darauf zugreifen kann.
   _makeBody() {
     const r = this.radius;
-    const parts = [Matter.Bodies.circle(0, 0, r * 0.62)];
-    const n = randInt(4, 6);
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * TAU + rand(-0.28, 0.28);
-      const d = r * rand(0.28, 0.5);
-      const lr = r * rand(0.27, 0.38);
-      parts.push(Matter.Bodies.circle(Math.cos(a) * d, Math.sin(a) * d, lr));
+    this._coreR = r * 0.46; // kleinerer Kern → Klumpen ragen deutlich heraus
+    this._bumps = this._genBumps();
+
+    const parts = [Matter.Bodies.circle(0, 0, this._coreR)];
+    for (const b of this._bumps) {
+      parts.push(Matter.Bodies.circle(b.dx, b.dy, b.br));
     }
     const body = Matter.Body.create({
       parts,
@@ -51,6 +63,30 @@ class AsteroidBase {
     });
     Matter.Body.setPosition(body, { x: this.x, y: this.y });
     return body;
+  }
+
+  // Leitet Polygon-Vertices aus der Compound-Body-Geometrie ab (Ray-Circle-Intersection).
+  // Jeder Strahl von der Mitte findet den weitesten Schnittpunkt mit Kern oder Klumpen.
+  _makeVerts(n = 18) {
+    return Array.from({ length: n }, (_, i) => {
+      const angle = (i / n) * TAU;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      // Startpunkt: Kernrand
+      let maxR = this._coreR;
+      for (const b of this._bumps) {
+        // Strahl trifft Kreis bei (b.dx, b.dy) mit Radius b.br:
+        // t² - 2t*(b.dx*cos + b.dy*sin) + (b.dx²+b.dy²-b.br²) = 0
+        const proj = b.dx * cos + b.dy * sin;
+        const c = b.dx * b.dx + b.dy * b.dy - b.br * b.br;
+        const disc = proj * proj - c;
+        if (disc >= 0) {
+          const t = proj + Math.sqrt(disc); // äußerer Schnittpunkt
+          if (t > maxR) maxR = t;
+        }
+      }
+      return { a: angle, r: maxR };
+    });
   }
 
   // Default: collisionRadius = radius. Subklassen können überschreiben.
