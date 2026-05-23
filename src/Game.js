@@ -726,7 +726,7 @@ class Game {
                 Matter.Body.set(c.body, "collisionFilter", f);
             }
             this.asteroids.splice(ai, 1, ...children);
-            // Matter body handles the physical bounce automatically
+            this._bounceShip(a.x, a.y); // explicit bounce (asteroid removed before Matter can apply it)
           } else {
             this._killShip();
           }
@@ -739,8 +739,11 @@ class Game {
     if (this.ship && this.ship.invulnerable <= 0) {
       for (const r of this.rocks) {
         if (dist(this.ship, r) < r.collisionRadius + this.ship.hitRadius) {
-          if (this.ship.shieldTimer <= 0) this._killShip();
-          // Shield: Matter body handles the physical bounce automatically
+          if (this.ship.shieldTimer <= 0) {
+            this._killShip();
+          } else {
+            this._bounceShip(r.x, r.y);
+          }
           break;
         }
       }
@@ -751,8 +754,11 @@ class Game {
       for (const p of this.pumices) {
         if (!p.alive) continue;
         if (p.handleShipHit(this.ship)) {
-          if (this.ship.shieldTimer <= 0) this._killShip();
-          // Shield: Matter body handles the physical bounce automatically
+          if (this.ship.shieldTimer <= 0) {
+            this._killShip();
+          } else {
+            this._bounceShip(p.x, p.y);
+          }
           break;
         }
       }
@@ -989,6 +995,7 @@ class Game {
     const nx = dx / d,
       ny = dy / d;
     const dot = this.ship.vx * nx + this.ship.vy * ny;
+    if (dot > 0) return; // already moving away — skip re-bounce
     this.ship.vx -= 2 * dot * nx;
     this.ship.vy -= 2 * dot * ny;
     const spd = Math.hypot(this.ship.vx, this.ship.vy);
@@ -1310,3 +1317,5 @@ class Game {
     }
   }
 }
+
+if (typeof module !== "undefined") module.exports = { Game, STATE };
