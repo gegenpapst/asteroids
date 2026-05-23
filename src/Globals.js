@@ -52,7 +52,7 @@ const PENDULUM_TETHER_MIN = 100; // min. Seillänge px bei Spawn
 const PENDULUM_TETHER_MAX = 180; // max. Seillänge px bei Spawn
 const PENDULUM_INIT_SPEED = 90; // initiale Tangentialgeschwindigkeit px/s
 const PENDULUM_MAX_COUNT = 3; // max. gleichzeitig aktive Pendel-Asteroiden
-const PENDULUM_START_LEVEL = 3; // ab diesem Level erscheinen Pendel-Asteroiden
+const PENDULUM_START_LEVEL = 1; // ab diesem Level erscheinen Pendel-Asteroiden
 
 const INITIAL_ROCKS = 4;
 const MAX_ROCKS_PER_LEVEL = 10;
