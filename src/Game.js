@@ -187,7 +187,8 @@ class Game {
 
     // ── PLAYING ──
 
-    if (Input.wasPressed("F2")) this._debugCollision = !this._debugCollision;
+    if (Input.wasPressed("F2") || Input.wasPressed("KeyQ"))
+      this._debugCollision = !this._debugCollision;
 
     this._updateShipAndBullets(dt);
     this._updateUFOs(dt);
@@ -420,7 +421,7 @@ class Game {
         const ay = rand(H * 0.2, H * 0.8);
         const tetherLen = rand(PENDULUM_TETHER_MIN, PENDULUM_TETHER_MAX);
         const spawnAngle = rand(0, TAU);
-        const pa = new PendulumAsteroid(
+        const pa = this.mode.createPendulumAsteroid(
           ax + Math.cos(spawnAngle) * tetherLen,
           ay + Math.sin(spawnAngle) * tetherLen,
           0,

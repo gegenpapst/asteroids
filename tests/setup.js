@@ -21,6 +21,7 @@ const ctxStub = Object.fromEntries(
     "strokeText",
     "setLineDash",
     "setTransform",
+    "drawImage",
   ].map((m) => [m, noOp]),
 );
 ctxStub.measureText = () => ({ width: 0 });
