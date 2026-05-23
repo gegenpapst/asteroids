@@ -407,6 +407,35 @@ class Game {
       Matter.World.add(this.engine.world, a.body);
     }
     this._applyAsteroidFilter();
+
+    // Pendel-Asteroiden: erscheinen ab Level PENDULUM_START_LEVEL (1 pro Level, max PENDULUM_MAX_COUNT)
+    if (this.level >= PENDULUM_START_LEVEL) {
+      const n = Math.min(
+        this.level - PENDULUM_START_LEVEL + 1,
+        PENDULUM_MAX_COUNT,
+      );
+      for (let i = 0; i < n; i++) {
+        const ax = rand(W * 0.2, W * 0.8);
+        const ay = rand(H * 0.2, H * 0.8);
+        const tetherLen = rand(PENDULUM_TETHER_MIN, PENDULUM_TETHER_MAX);
+        const spawnAngle = rand(0, TAU);
+        const pa = new PendulumAsteroid(
+          ax + Math.cos(spawnAngle) * tetherLen,
+          ay + Math.sin(spawnAngle) * tetherLen,
+          0,
+          null,
+          ax,
+          ay,
+        );
+        this.asteroids.push(pa);
+        Matter.World.add(this.engine.world, [pa.body, pa.constraint]);
+        Matter.Body.set(
+          pa.body,
+          "collisionFilter",
+          this._asteroidCollisionFilter,
+        );
+      }
+    }
   }
 
   _addScore(pts) {
@@ -641,6 +670,8 @@ class Game {
             );
           const children = a.split(Math.atan2(b.vy, b.vx));
           for (const c of children) c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
+          if (a.constraint)
+            Matter.World.remove(this.engine.world, a.constraint);
           Matter.World.remove(this.engine.world, a.body);
           if (children.length) {
             Matter.World.add(
@@ -715,6 +746,8 @@ class Game {
             for (const c of children)
               c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
             this._spawnDebris(a.x, a.y, this.ship.vx, this.ship.vy); // #10
+            if (a.constraint)
+              Matter.World.remove(this.engine.world, a.constraint);
             Matter.World.remove(this.engine.world, a.body);
             if (children.length) {
               Matter.World.add(

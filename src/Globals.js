@@ -45,6 +45,15 @@ const ASTEROID_SCORE = [20, 50, 100];
 const ASTEROID_MASS = [10, 3.5, 1.0]; // Massen für massenbasierte Matter-Kollisionen (size 0–2)
 const ASTEROID_SPIN_FACTOR = 0.065; // Off-Center-Hit Spin-Boost: ±rad/s pro px Hebelarm
 
+// ── Pendel-Asteroiden ───────────────────────────────────────────────────────
+const PENDULUM_STIFFNESS = 0.03; // Federkonstante des Constraints (0 = frei, 1 = starr)
+const PENDULUM_DAMPING = 0.01; // leichte Dämpfung für numerische Stabilität
+const PENDULUM_TETHER_MIN = 100; // min. Seillänge px bei Spawn
+const PENDULUM_TETHER_MAX = 180; // max. Seillänge px bei Spawn
+const PENDULUM_INIT_SPEED = 90; // initiale Tangentialgeschwindigkeit px/s
+const PENDULUM_MAX_COUNT = 3; // max. gleichzeitig aktive Pendel-Asteroiden
+const PENDULUM_START_LEVEL = 3; // ab diesem Level erscheinen Pendel-Asteroiden
+
 const INITIAL_ROCKS = 4;
 const MAX_ROCKS_PER_LEVEL = 10;
 const EXTRA_LIFE_SCORE = 10000;
@@ -310,6 +319,13 @@ if (typeof module !== "undefined") {
     DEBRIS_RADIUS_MIN,
     DEBRIS_RADIUS_MAX,
     DEBRIS_FRICTION_AIR,
+    PENDULUM_STIFFNESS,
+    PENDULUM_DAMPING,
+    PENDULUM_TETHER_MIN,
+    PENDULUM_TETHER_MAX,
+    PENDULUM_INIT_SPEED,
+    PENDULUM_MAX_COUNT,
+    PENDULUM_START_LEVEL,
     Input,
   };
 }

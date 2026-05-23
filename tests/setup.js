@@ -83,6 +83,7 @@ global.Matter = {
       b[k] = v;
     },
   },
+  Constraint: { create: (opts) => ({ ...opts }) },
   Events: { on: () => {} },
 };
 global.MatterWrap = {};
