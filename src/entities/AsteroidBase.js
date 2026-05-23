@@ -65,24 +65,36 @@ class AsteroidBase {
     return body;
   }
 
-  // Leitet Polygon-Vertices aus der Compound-Body-Geometrie ab (Ray-Circle-Intersection).
-  // Jeder Strahl von der Mitte findet den weitesten Schnittpunkt mit Kern oder Klumpen.
+  // Leitet Polygon-Vertices aus der Compound-Body-Geometrie ab (Ray-Circle-Intersection
+  // + Smooth-Shoulder).  Jeder Strahl findet den äußersten Schnittpunkt; knapp
+  // vorbeigehende Strahlen erhalten eine quadratische Übergangszone, damit zwischen
+  // den Klumpen keine tiefen Einbuchtungen entstehen (sieht sonst wie ein Stern aus).
   _makeVerts(n = 18) {
     return Array.from({ length: n }, (_, i) => {
       const angle = (i / n) * TAU;
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
-      // Startpunkt: Kernrand
       let maxR = this._coreR;
       for (const b of this._bumps) {
-        // Strahl trifft Kreis bei (b.dx, b.dy) mit Radius b.br:
-        // t² - 2t*(b.dx*cos + b.dy*sin) + (b.dx²+b.dy²-b.br²) = 0
         const proj = b.dx * cos + b.dy * sin;
-        const c = b.dx * b.dx + b.dy * b.dy - b.br * b.br;
+        const bDistSq = b.dx * b.dx + b.dy * b.dy;
+        const c = bDistSq - b.br * b.br;
         const disc = proj * proj - c;
         if (disc >= 0) {
-          const t = proj + Math.sqrt(disc); // äußerer Schnittpunkt
+          // Strahl trifft Klumpen — äußerer Schnittpunkt
+          const t = proj + Math.sqrt(disc);
           if (t > maxR) maxR = t;
+        } else if (proj > 0) {
+          // Strahl verfehlt Klumpen knapp — Smooth-Shoulder füllt den Übergang.
+          // perp = senkrechter Abstand Strahlursprung→Klumpenmitte
+          const perp = Math.sqrt(bDistSq - proj * proj);
+          const miss = perp - b.br; // wie weit der Strahl am Klumpen vorbeizieht
+          if (miss < b.br) {
+            const f = 1 - miss / b.br; // linearer Abfall 1→0 über eine Klumpen-Radius breite
+            const bumpOuter = Math.sqrt(bDistSq) + b.br;
+            const contrib = this._coreR + (bumpOuter - this._coreR) * f * f;
+            if (contrib > maxR) maxR = contrib;
+          }
         }
       }
       return { a: angle, r: maxR };

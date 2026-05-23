@@ -187,8 +187,7 @@ class Game {
 
     // ── PLAYING ──
 
-    if (Input.wasPressed("F2") || Input.wasPressed("KeyQ"))
-      this._debugCollision = !this._debugCollision;
+    if (Input.wasPressed("F2")) this._debugCollision = !this._debugCollision;
 
     this._updateShipAndBullets(dt);
     this._updateUFOs(dt);
@@ -388,6 +387,8 @@ class Game {
     for (const a of this.asteroids) {
       a.x = a.body.position.x;
       a.y = a.body.position.y;
+      // Pendulum asteroids: sync visual rotation with physics (constraint applies real torque)
+      if (a.constraint) a.rot = a.body.angle;
     }
   }
 
