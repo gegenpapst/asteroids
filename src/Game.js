@@ -1157,6 +1157,17 @@ class Game {
     ctx.fillText("ASTEROIDS", cx, cy - 90);
 
     ctx.shadowBlur = 0;
+
+    const _lm = new Date(document.lastModified);
+    const _pad = (n) => String(n).padStart(2, "0");
+    ctx.fillStyle = "#555";
+    ctx.font = "12px monospace";
+    ctx.fillText(
+      `Stand: ${_pad(_lm.getDate())}.${_pad(_lm.getMonth() + 1)}.${_lm.getFullYear()}  ${_pad(_lm.getHours())}:${_pad(_lm.getMinutes())} Uhr`,
+      cx,
+      cy - 40,
+    );
+
     ctx.fillStyle = "#888";
     ctx.font = "18px monospace";
     ctx.fillText("ARROWS / WASD  —  rotate & thrust", cx, cy + 10);
