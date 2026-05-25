@@ -33,11 +33,11 @@ class AsteroidBase {
   // Wird von _makeBody() und _makeVerts() gemeinsam genutzt.
   _genBumps() {
     const r = this.radius;
-    const n = randInt(5, 7);
+    const n = randInt(4, 7);
     return Array.from({ length: n }, (_, i) => {
-      const a = (i / n) * TAU + rand(-0.25, 0.25);
-      const d = r * rand(0.42, 0.65); // weiter vom Kern entfernt → sichtbar
-      const br = r * rand(0.22, 0.32); // kleinere Klumpen
+      const a = (i / n) * TAU + rand(-0.55, 0.55);
+      const d = r * rand(0.44, 0.8);
+      const br = r * rand(0.2, 0.42);
       return { dx: Math.cos(a) * d, dy: Math.sin(a) * d, br };
     });
   }
