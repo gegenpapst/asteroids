@@ -25,7 +25,9 @@ class AsteroidBase {
     this.rotSpeed = rand(-rotBase, rotBase) * (size + 1) * 0.38;
 
     this.body = this._makeBody();
+    Matter.Body.setAngle(this.body, this.rot);
     Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
+    Matter.Body.setAngularVelocity(this.body, this.rotSpeed / 60);
     Matter.Body.setMass(this.body, ASTEROID_MASS[size]);
   }
 
@@ -107,7 +109,6 @@ class AsteroidBase {
   }
 
   update(dt) {
-    this.rot += this.rotSpeed * dt;
     return true;
   }
 
