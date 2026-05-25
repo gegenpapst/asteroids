@@ -1,0 +1,22 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  conflict-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for unresolved merge conflict markers
+        run: |
+          if grep -rPn "^(<{7} |={7}$|>{7} )" src/ index.html; then
+            echo ""
+            echo "ERROR: Unresolved merge conflict markers found. Fix before merging."
+            exit 1
+          fi
+          echo "No conflict markers found."
