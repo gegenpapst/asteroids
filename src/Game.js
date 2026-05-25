@@ -601,15 +601,10 @@ class Game {
       }
     }
 
-<<<<<<< HEAD
     if (Input.teleport() && this.ship.invulnerable <= 0) {
       const [tx, ty] = this._safeShipPos();
       this.ship.teleport(tx, ty);
       this.snd.powerUp("shield");
-=======
-    _drawStart() {
-        drawMetaballShowcase();
->>>>>>> e375828 (feat(debug): re-enable Q key for collision debug overlay)
     }
 
     if (this.bullets.length < MAX_BULLETS && this.ship.canFire()) {
