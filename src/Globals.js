@@ -63,7 +63,7 @@ const SOLAR_ORBIT_SPEED = 120; // tangentiale Startgeschwindigkeit px/s
 const SOLAR_SATELLITE_MIN = 3; // min. Satelliten
 const SOLAR_SATELLITE_MAX = 7; // max. Satelliten
 const SOLAR_MAX_COUNT = 2; // max. gleichzeitig aktive Solar-Systeme
-const SOLAR_START_LEVEL = 3; // ab diesem Level
+const SOLAR_START_LEVEL = 1; // ab diesem Level
 const SOLAR_CENTER_SCORE = 500; // Punkte für das Zentrum
 
 const INITIAL_ROCKS = 4;
