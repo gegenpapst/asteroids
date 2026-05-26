@@ -8,6 +8,7 @@ const STATE = Object.freeze({
   GAMEOVER: 3,
   HELP: 4,
   CONFIG: 5,
+  CONFIG_DETAIL: 6,
 });
 
 // Presets for Beginner / Novice / Expert (index = mode - 1)
@@ -83,6 +84,7 @@ class Game {
       visualStyle: 2,
     };
     this._configCursor = 0;
+    this._detailCursor = 0;
     this._configPrevState = STATE.START;
 
     this._rockCanvas = Object.assign(document.createElement("canvas"), {
@@ -232,6 +234,10 @@ class Game {
     }
     if (this.state === STATE.CONFIG) {
       this._drawConfig();
+      return;
+    }
+    if (this.state === STATE.CONFIG_DETAIL) {
+      this._drawConfigDetail();
       return;
     }
 
@@ -499,42 +505,70 @@ class Game {
     if (this.state === STATE.CONFIG) {
       const readOnly = this._configPrevState === STATE.PLAYING;
       if (!readOnly) {
-        const params = [
-          "mode",
-          "bulletRange",
-          "powerupFreq",
-          "rockCount",
-          "pumiceCount",
-          "asteroidBounce",
-          "visualStyle",
-        ];
-        const paramMax = {
-          mode: 3,
-          bulletRange: 3,
-          powerupFreq: 3,
-          rockCount: 3,
-          pumiceCount: 3,
-          asteroidBounce: 2,
-          visualStyle: 2,
-        };
+        const prevMode = this.config.mode;
+        if (Input.wasPressed("ArrowLeft"))
+          this.config.mode = Math.max(1, this.config.mode - 1);
+        if (Input.wasPressed("ArrowRight"))
+          this.config.mode = Math.min(3, this.config.mode + 1);
+        if (this.config.mode !== prevMode) {
+          Object.assign(this.config, MODES[this.config.mode - 1]);
+          this._applyAsteroidFilter();
+        }
+      }
+      if (Input.wasPressed("KeyD")) {
+        this._detailCursor = 0;
+        this.state = STATE.CONFIG_DETAIL;
+        Input.flush();
+        return true;
+      }
+      if (Input.wasPressed("Escape")) {
+        this.state = this._configPrevState;
+        Input.flush();
+        return true;
+      }
+      if (Input.wasPressed("Enter") || Input.config()) {
+        if (readOnly) this.state = STATE.PLAYING;
+        else this.start();
+      }
+      Input.flush();
+      return true;
+    }
+
+    if (this.state === STATE.CONFIG_DETAIL) {
+      const readOnly = this._configPrevState === STATE.PLAYING;
+      const params = [
+        "bulletRange",
+        "powerupFreq",
+        "rockCount",
+        "pumiceCount",
+        "asteroidBounce",
+        "visualStyle",
+      ];
+      const paramMax = {
+        bulletRange: 3,
+        powerupFreq: 3,
+        rockCount: 3,
+        pumiceCount: 3,
+        asteroidBounce: 2,
+        visualStyle: 2,
+      };
+      if (!readOnly) {
         if (Input.wasPressed("ArrowUp"))
-          this._configCursor =
-            (this._configCursor + params.length - 1) % params.length;
+          this._detailCursor =
+            (this._detailCursor + params.length - 1) % params.length;
         if (Input.wasPressed("ArrowDown"))
-          this._configCursor = (this._configCursor + 1) % params.length;
-        const key = params[this._configCursor];
+          this._detailCursor = (this._detailCursor + 1) % params.length;
+        const key = params[this._detailCursor];
         if (Input.wasPressed("ArrowLeft"))
           this.config[key] = Math.max(1, this.config[key] - 1);
         if (Input.wasPressed("ArrowRight"))
           this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
-        if (key === "mode")
-          Object.assign(this.config, MODES[this.config.mode - 1]);
-        if (key === "mode" || key === "asteroidBounce")
-          this._applyAsteroidFilter();
+        if (key === "asteroidBounce") this._applyAsteroidFilter();
       }
-      if (Input.config() || Input.wasPressed("Enter")) {
-        if (readOnly) this.state = STATE.PLAYING;
-        else this.start();
+      if (Input.wasPressed("Escape") || Input.wasPressed("KeyD")) {
+        this.state = STATE.CONFIG;
+        Input.flush();
+        return true;
       }
       Input.flush();
       return true;
@@ -1079,25 +1113,125 @@ class Game {
     const cx = W / 2;
     const readOnly = this._configPrevState === STATE.PLAYING;
 
-    ctx.fillStyle = "rgba(0,0,0,0.82)";
+    ctx.fillStyle = "rgba(0,0,0,0.87)";
     ctx.fillRect(0, 0, W, H);
 
     ctx.textAlign = "center";
     ctx.shadowColor = "#4af";
-    ctx.shadowBlur = 24;
+    ctx.shadowBlur = 22;
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 30px monospace";
-    ctx.fillText("KONFIGURATION", cx, 44);
+    ctx.font = "bold 28px monospace";
+    ctx.fillText("KONFIGURATION", cx, 52);
     ctx.shadowBlur = 0;
 
     if (readOnly) {
       ctx.fillStyle = "#f84";
-      ctx.font = "bold 12px monospace";
-      ctx.fillText("READ ONLY", cx, 62);
+      ctx.font = "bold 11px monospace";
+      ctx.fillText("READ ONLY — Änderungen erst beim nächsten Spiel", cx, 70);
     }
 
+    // ── Modus-Karten ─────────────────────────────────────────────────────────
+    const cardW = 196,
+      cardH = 118,
+      cardGap = 16;
+    const totalCardsW = 3 * cardW + 2 * cardGap;
+    const cardStartX = cx - totalCardsW / 2;
+    const cardY = 90;
+
+    const modeInfo = [
+      {
+        name: "BEGINNER",
+        lines: ["Weite Schüsse", "Viele Powerups", "Wenig Hindernisse"],
+      },
+      { name: "NOVICE", lines: ["Ausgewogen", "", ""] },
+      {
+        name: "EXPERT",
+        lines: ["Kurze Schüsse", "Seltene Powerups", "Viele Hindernisse"],
+      },
+    ];
+
+    modeInfo.forEach((m, i) => {
+      const selected = this.config.mode === i + 1;
+      const x = cardStartX + i * (cardW + cardGap);
+
+      ctx.fillStyle = selected
+        ? "rgba(68,170,255,0.16)"
+        : "rgba(255,255,255,0.04)";
+      ctx.strokeStyle = selected ? "#4af" : "rgba(255,255,255,0.13)";
+      ctx.lineWidth = selected ? 2 : 1;
+      ctx.beginPath();
+      ctx.roundRect(x, cardY, cardW, cardH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      // Nummer
+      ctx.textAlign = "left";
+      ctx.fillStyle = selected ? "#4af" : "#444";
+      ctx.font = "11px monospace";
+      ctx.fillText(`${i + 1}`, x + 10, cardY + 16);
+
+      // Name
+      ctx.textAlign = "center";
+      ctx.fillStyle = selected ? "#fff" : "#777";
+      ctx.shadowColor = selected ? "#4af" : "transparent";
+      ctx.shadowBlur = selected ? 10 : 0;
+      ctx.font = (selected ? "bold " : "") + "15px monospace";
+      ctx.fillText(m.name, x + cardW / 2, cardY + 40);
+      ctx.shadowBlur = 0;
+
+      // Beschreibung
+      ctx.font = "11px monospace";
+      ctx.fillStyle = selected ? "#9cf" : "#4a5060";
+      m.lines.forEach((line, li) => {
+        if (line) ctx.fillText(line, x + cardW / 2, cardY + 60 + li * 16);
+      });
+    });
+
+    // ── Details-Button ────────────────────────────────────────────────────────
+    const btnY = cardY + cardH + 28;
+    const btnW = 160,
+      btnH = 32;
+    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(cx - btnW / 2, btnY, btnW, btnH, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#999";
+    ctx.font = "13px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("D  Details  ▶", cx, btnY + 20);
+
+    // ── Hinweise ──────────────────────────────────────────────────────────────
+    ctx.fillStyle = "#444";
+    ctx.font = "12px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      readOnly
+        ? "ESC  Zurück ins Spiel   D  Details"
+        : "← →  Modus wählen   D  Details   ENTER  Spiel starten",
+      cx,
+      H - 18,
+    );
+  }
+
+  _drawConfigDetail() {
+    const cx = W / 2;
+    const readOnly = this._configPrevState === STATE.PLAYING;
+
+    ctx.fillStyle = "rgba(0,0,0,0.90)";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#4af";
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 24px monospace";
+    ctx.fillText("DETAILS", cx, 42);
+    ctx.shadowBlur = 0;
+
     const params = [
-      { key: "mode", label: "Modus", opts: ["Beginner", "Novice", "Expert"] },
       {
         key: "bulletRange",
         label: "Reichweite Schüsse",
@@ -1115,7 +1249,7 @@ class Game {
       },
       {
         key: "pumiceCount",
-        label: "Anzahl Bimsstein",
+        label: "Bimsstein",
         opts: ["keine", "wenige", "viele"],
       },
       {
@@ -1130,61 +1264,58 @@ class Game {
       },
     ];
 
-    let y = 80;
+    let y = 68;
     params.forEach((p, i) => {
-      const active = i === this._configCursor;
+      const active = !readOnly && i === this._detailCursor;
       const val = this.config[p.key];
 
       ctx.textAlign = "center";
-      ctx.font = active ? "bold 14px monospace" : "13px monospace";
-      ctx.fillStyle = active ? "#4af" : "#888";
+      ctx.font = active ? "bold 13px monospace" : "12px monospace";
+      ctx.fillStyle = active ? "#4af" : "#666";
       ctx.fillText(p.label, cx, y);
-      y += 22;
+      y += 20;
 
       const count = p.opts.length;
-      const slotW = 120,
-        gap = 12;
+      const slotW = 148,
+        gap = 10;
       const totalW = count * slotW + (count - 1) * gap;
       const startX = cx - totalW / 2;
 
       for (let n = 1; n <= count; n++) {
         const selected = val === n;
         const bx = startX + (n - 1) * (slotW + gap);
-        const by = y;
 
         ctx.fillStyle = selected
           ? active
             ? "#4af"
-            : "#557"
-          : "rgba(255,255,255,0.06)";
+            : "#446"
+          : "rgba(255,255,255,0.05)";
         ctx.strokeStyle = selected
           ? active
             ? "#4af"
-            : "#557"
-          : "rgba(255,255,255,0.2)";
+            : "#446"
+          : "rgba(255,255,255,0.13)";
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.roundRect(bx, by, slotW, 28, 6);
+        ctx.roundRect(bx, y, slotW, 24, 5);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = selected ? "#fff" : "#666";
-        ctx.font = (selected ? "bold " : "") + "12px monospace";
+        ctx.fillStyle = selected ? "#fff" : "#555";
+        ctx.font = (selected ? "bold " : "") + "11px monospace";
         ctx.textAlign = "center";
-        ctx.fillText(`${n}  ${p.opts[n - 1]}`, bx + slotW / 2, by + 18);
+        ctx.fillText(`${n}  ${p.opts[n - 1]}`, bx + slotW / 2, y + 15);
       }
-      y += 44;
+      y += 36;
     });
 
-    ctx.fillStyle = "#555";
-    ctx.font = "13px monospace";
+    ctx.fillStyle = "#444";
+    ctx.font = "12px monospace";
     ctx.textAlign = "center";
     ctx.fillText(
-      readOnly
-        ? "ENTER / C  Zurück ins Spiel"
-        : "↑ ↓  Parameter   ← →  Wert   ENTER  Spiel starten",
+      readOnly ? "ESC  Zurück" : "↑ ↓  Parameter   ← →  Wert   ESC / D  Zurück",
       cx,
-      548,
+      H - 18,
     );
   }
 
