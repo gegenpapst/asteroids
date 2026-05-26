@@ -64,6 +64,7 @@ class Game {
     this.rocks = [];
     this.pumices = [];
     this.debris = [];
+    this.solarSystems = [];
     this.deadTimer = 0;
     this.nextExtra = EXTRA_LIFE_SCORE;
     this.ufoTimer = 20;
@@ -105,6 +106,7 @@ class Game {
     this.ufos = [];
     this.ufoBullets = [];
     this.debris = [];
+    this.solarSystems = [];
     Matter.World.clear(this.engine.world, false);
     const isMetaball = this.mode instanceof MetaballMode;
     const [rMin, rMax] = this._rockCountRange;
@@ -197,10 +199,14 @@ class Game {
     this._updateBulletCollisions();
     this._updateShipCollisions();
     this._tickDebris(dt);
+    this.solarSystems = this.solarSystems.filter((s) => s.update(dt));
     this._updateDebugStats();
 
-    // Level clear (UFOs persist between levels)
-    if (this.asteroids.length === 0) {
+    // Level clear (UFOs persist between levels; solar systems must be fully destroyed first)
+    if (
+      this.asteroids.filter((a) => !a.isSatellite).length === 0 &&
+      this.solarSystems.length === 0
+    ) {
       this.snd.levelUp();
       this._nextLevel();
       if (this.ship) this.ship.invulnerable = INVULNERABLE_TIME;
@@ -243,6 +249,7 @@ class Game {
 
     this._drawRocks();
     this.pumices.forEach((p) => p.draw());
+    this.solarSystems.forEach((s) => s.draw()); // centers drawn before satellites
     this.asteroids.forEach((a) => a.draw());
     this.debris.forEach((d) => d.draw());
     this.powerups.forEach((p) => p.draw());
@@ -415,6 +422,46 @@ class Game {
       Matter.World.add(this.engine.world, a.body);
     }
     this._applyAsteroidFilter();
+
+    // Solar-Systeme: erscheinen ab Level SOLAR_START_LEVEL, max SOLAR_MAX_COUNT gleichzeitig
+    if (this.level >= SOLAR_START_LEVEL) {
+      const solarCount = Math.min(
+        Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1,
+        SOLAR_MAX_COUNT,
+      );
+      for (let si = 0; si < solarCount; si++) {
+        const ax = rand(W * 0.2, W * 0.8);
+        const ay = rand(H * 0.2, H * 0.8);
+        const satelliteCount = randInt(
+          SOLAR_SATELLITE_MIN,
+          SOLAR_SATELLITE_MAX,
+        );
+        const sys = new SolarSystem(ax, ay, satelliteCount);
+        this.solarSystems.push(sys);
+        for (let j = 0; j < satelliteCount; j++) {
+          const tetherLen = rand(SOLAR_TETHER_MIN, SOLAR_TETHER_MAX);
+          const spawnAngle = (j / satelliteCount) * TAU + rand(-0.3, 0.3);
+          const sx = ax + Math.cos(spawnAngle) * tetherLen;
+          const sy = ay + Math.sin(spawnAngle) * tetherLen;
+          const sat = this.mode.createSatellite(
+            sx,
+            sy,
+            ax,
+            ay,
+            sys,
+            1,
+            maxBumps,
+          );
+          this.asteroids.push(sat);
+          Matter.World.add(this.engine.world, [sat.body, sat.constraint]);
+          Matter.Body.set(
+            sat.body,
+            "collisionFilter",
+            this._asteroidCollisionFilter,
+          );
+        }
+      }
+    }
 
     // Pendel-Asteroiden: erscheinen ab Level PENDULUM_START_LEVEL (1 pro Level, max PENDULUM_MAX_COUNT)
     if (this.level >= PENDULUM_START_LEVEL) {
@@ -596,6 +643,7 @@ class Game {
     this.deadTimer -= dt;
     this.asteroids.forEach((a) => a.update(dt));
     this.ufos = this.ufos.filter((u) => u.update(dt, null));
+    this.solarSystems = this.solarSystems.filter((s) => s.update(dt));
     Matter.Engine.update(this.engine, dt * 1000);
     this._syncBodies();
     this._tickDebris(dt);
@@ -700,6 +748,7 @@ class Game {
           this._addScore(a.score);
           this._boom(a.x, a.y, a.size);
           this._spawnDebris(a.x, a.y, b.vx, b.vy); // #10 debris
+          if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(this);
           if (Math.random() < this._powerupChance)
             this.powerups.push(
               new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]),
@@ -782,6 +831,7 @@ class Game {
             for (const c of children)
               c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
             this._spawnDebris(a.x, a.y, this.ship.vx, this.ship.vy); // #10
+            if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(this);
             if (a.constraint)
               Matter.World.remove(this.engine.world, a.constraint);
             Matter.World.remove(this.engine.world, a.body);

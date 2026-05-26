@@ -7,8 +7,8 @@ class AsteroidPoly extends AsteroidBase {
   static _label = "asteroid";
   static _rotBase = 1.6;
 
-  constructor(x, y, size = 0, angle = null) {
-    super(x, y, size, angle);
+  constructor(x, y, size = 0, angle = null, maxBumps = 7) {
+    super(x, y, size, angle, maxBumps);
     // Verts direkt aus der Compound-Body-Geometrie ableiten —
     // damit Optik und Physik dieselbe Form haben.
     this.verts = this._makeVerts(randInt(16, 22));

@@ -25,6 +25,9 @@ class VisualMode {
   createPendulumAsteroid(x, y, size, angle, ax, ay) {
     throw new Error("abstract");
   }
+  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
+    throw new Error("abstract");
+  }
 }
 
 class PolygonMode extends VisualMode {
@@ -46,6 +49,17 @@ class PolygonMode extends VisualMode {
   createPendulumAsteroid(x, y, size, angle, ax, ay) {
     return new PendulumAsteroid(x, y, size, angle, ax, ay);
   }
+  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
+    return new SatelliteAsteroidPoly(
+      x,
+      y,
+      ax,
+      ay,
+      parentSystem,
+      size,
+      maxBumps,
+    );
+  }
 }
 
 class MetaballMode extends VisualMode {
@@ -66,6 +80,17 @@ class MetaballMode extends VisualMode {
   }
   createPendulumAsteroid(x, y, size, angle, ax, ay) {
     return new PendulumClusterAsteroid(x, y, size, angle, ax, ay);
+  }
+  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
+    return new SatelliteClusterAsteroid(
+      x,
+      y,
+      ax,
+      ay,
+      parentSystem,
+      size,
+      maxBumps,
+    );
   }
 }
 

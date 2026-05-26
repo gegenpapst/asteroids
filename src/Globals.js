@@ -54,6 +54,18 @@ const PENDULUM_INIT_SPEED = 90; // initiale Tangentialgeschwindigkeit px/s
 const PENDULUM_MAX_COUNT = 3; // max. gleichzeitig aktive Pendel-Asteroiden
 const PENDULUM_START_LEVEL = 1; // ab diesem Level erscheinen Pendel-Asteroiden
 
+// ── Solar-System-Asteroiden ─────────────────────────────────────────────────
+const SOLAR_STIFFNESS = 0.8; // nahezu starres Seil → saubere Kreisbahn
+const SOLAR_DAMPING = 0.02;
+const SOLAR_TETHER_MIN = 75; // min. Seillänge px
+const SOLAR_TETHER_MAX = 140; // max. Seillänge px
+const SOLAR_ORBIT_SPEED = 120; // tangentiale Startgeschwindigkeit px/s
+const SOLAR_SATELLITE_MIN = 3; // min. Satelliten
+const SOLAR_SATELLITE_MAX = 7; // max. Satelliten
+const SOLAR_MAX_COUNT = 2; // max. gleichzeitig aktive Solar-Systeme
+const SOLAR_START_LEVEL = 3; // ab diesem Level
+const SOLAR_CENTER_SCORE = 500; // Punkte für das Zentrum
+
 const INITIAL_ROCKS = 4;
 const MAX_ROCKS_PER_LEVEL = 10;
 const EXTRA_LIFE_SCORE = 10000;
