@@ -7,7 +7,7 @@ class AsteroidBase {
   static _label = "asteroid"; // Matter-Body Label (subklassen-spezifisch)
   static _rotBase = 1.4; // Bereich der Rotationsgeschwindigkeit (±)
 
-  constructor(x, y, size = 0, angle = null) {
+  constructor(x, y, size = 0, angle = null, maxBumps = 7) {
     this.x = x;
     this.y = y;
     this.size = size;
@@ -24,6 +24,9 @@ class AsteroidBase {
     const rotBase = this.constructor._rotBase;
     this.rotSpeed = rand(-rotBase, rotBase) * (size + 1) * 0.38;
 
+    this.maxBumps = maxBumps;
+    this.bumpCount = randInt(0, maxBumps);
+
     this.body = this._makeBody();
     Matter.Body.setAngle(this.body, this.rot);
     Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
@@ -35,7 +38,8 @@ class AsteroidBase {
   // Wird von _makeBody() und _makeVerts() gemeinsam genutzt.
   _genBumps() {
     const r = this.radius;
-    const n = randInt(4, 7);
+    const n = this.bumpCount;
+    if (n === 0) return [];
     return Array.from({ length: n }, (_, i) => {
       const a = (i / n) * TAU + rand(-0.55, 0.55);
       const d = r * rand(0.44, 0.8);
@@ -48,7 +52,7 @@ class AsteroidBase {
   // Setzt this._coreR und this._bumps, damit _makeVerts() darauf zugreifen kann.
   _makeBody() {
     const r = this.radius;
-    this._coreR = r * 0.46; // kleinerer Kern → Klumpen ragen deutlich heraus
+    this._coreR = r * (1.0 - (0.54 * Math.min(this.bumpCount, 7)) / 7);
     this._bumps = this._genBumps();
 
     const parts = [Matter.Bodies.circle(0, 0, this._coreR)];
@@ -125,12 +129,14 @@ class AsteroidBase {
         this.y + oy,
         this.size + 1,
         safeSplitAngle(bulletAngle),
+        this.maxBumps,
       ),
       new Cls(
         this.x - ox,
         this.y - oy,
         this.size + 1,
         safeSplitAngle(bulletAngle),
+        this.maxBumps,
       ),
     ];
   }

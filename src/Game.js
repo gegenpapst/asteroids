@@ -397,13 +397,14 @@ class Game {
     const count = Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
     const cx = W / 2,
       cy = H / 2;
+    const maxBumps = Math.min(this.level - 1, 7);
     for (let i = 0; i < count; i++) {
       let x, y;
       do {
         x = rand(0, W);
         y = rand(0, H);
       } while (dist({ x, y }, { x: cx, y: cy }) < W * 0.22);
-      const a = this.mode.createAsteroid(x, y, 0, null);
+      const a = this.mode.createAsteroid(x, y, 0, null, maxBumps);
       this.asteroids.push(a);
       Matter.World.add(this.engine.world, a.body);
     }

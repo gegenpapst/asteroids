@@ -10,7 +10,7 @@ class VisualMode {
   createShip() {
     throw new Error("abstract");
   }
-  createAsteroid(x, y, size, angle) {
+  createAsteroid(x, y, size, angle, maxBumps) {
     throw new Error("abstract");
   }
   createRock(x, y) {
@@ -31,8 +31,8 @@ class PolygonMode extends VisualMode {
   createShip() {
     return new ShipPoly();
   }
-  createAsteroid(x, y, size, angle) {
-    return new AsteroidPoly(x, y, size, angle);
+  createAsteroid(x, y, size, angle, maxBumps) {
+    return new AsteroidPoly(x, y, size, angle, maxBumps);
   }
   createRock(x, y) {
     return new RockPoly(x, y);
@@ -52,8 +52,8 @@ class MetaballMode extends VisualMode {
   createShip() {
     return new ShipCluster();
   }
-  createAsteroid(x, y, size, angle) {
-    return new ClusterAsteroid(x, y, size, angle);
+  createAsteroid(x, y, size, angle, maxBumps) {
+    return new ClusterAsteroid(x, y, size, angle, maxBumps);
   }
   createRock(x, y) {
     return new RockCluster(x, y);

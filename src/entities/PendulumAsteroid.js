@@ -38,7 +38,7 @@ class PendulumAsteroid extends AsteroidPoly {
   // Override: kein matter-wrap plugin — Teleport würde den Constraint zerreißen.
   _makeBody() {
     const r = this.radius;
-    this._coreR = r * 0.46;
+    this._coreR = r * (1.0 - (0.54 * Math.min(this.bumpCount, 7)) / 7);
     this._bumps = this._genBumps();
     const parts = [Matter.Bodies.circle(0, 0, this._coreR)];
     for (const b of this._bumps) {
@@ -71,12 +71,14 @@ class PendulumAsteroid extends AsteroidPoly {
         this.y + oy,
         this.size + 1,
         safeSplitAngle(bulletAngle),
+        this.maxBumps,
       ),
       new AsteroidPoly(
         this.x - ox,
         this.y - oy,
         this.size + 1,
         safeSplitAngle(bulletAngle),
+        this.maxBumps,
       ),
     ];
   }

@@ -5,26 +5,29 @@ class ClusterAsteroid extends AsteroidBase {
   static _label = "cluster-asteroid";
   static _rotBase = 1.2;
 
-  constructor(x, y, size = 0, angle = null) {
-    super(x, y, size, angle);
+  constructor(x, y, size = 0, angle = null, maxBumps = 7) {
+    super(x, y, size, angle, maxBumps);
     // Mirror the compound body: one core cell + one cell per bump.
     // This ensures the metaball silhouette matches the physics shape.
     const cells = [{ dx: 0, dy: 0, r: this._coreR }];
     for (const b of this._bumps) cells.push({ dx: b.dx, dy: b.dy, r: b.br });
-    const avgBumpR =
-      this._bumps.reduce((s, b) => s + b.br, 0) / (this._bumps.length || 1);
+    const blurBase =
+      this._bumps.length > 0
+        ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
+        : this._coreR * 0.4;
     this._offCanvas = buildMetaballCanvas(
       cells,
       "rgb(100, 140, 185)",
       this.radius,
-      avgBumpR,
+      blurBase,
       14,
       0.55,
     );
   }
 
   get collisionRadius() {
-    return this.radius * CLUSTER_COLLISION_FACTOR;
+    // 0 bumps = full circle, scale down with bump count
+    return this.radius * (0.9 - (0.25 * Math.min(this.bumpCount, 7)) / 7);
   }
 
   draw() {
