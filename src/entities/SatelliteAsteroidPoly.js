@@ -7,7 +7,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
   static _label = "satellite-asteroid";
 
   constructor(x, y, ax, ay, parentSystem = null, size = 1, maxBumps = 7) {
-    super(x, y, size, null, maxBumps, SATELLITE_COLORS[3].center);
+    super(x, y, size, null, maxBumps, SATELLITE_COLORS[4].center);
 
     this.parentSystem = parentSystem;
     this.isSatellite = parentSystem != null;
@@ -40,14 +40,14 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     return super._makeBody(false);
   }
 
-  // Split children are free-floating AsteroidPoly instances that inherit the Venom color.
+  // Split children are free-floating AsteroidPoly instances that inherit the Wraith color.
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
     const offset = ASTEROID_RADIUS[this.size + 1];
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
-    const col = SATELLITE_COLORS[3].center;
+    const col = SATELLITE_COLORS[4].center;
     return [
       new AsteroidPoly(
         this.x + ox,
@@ -88,8 +88,8 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     ctx.fill();
     ctx.restore();
 
-    // Polygon with radial gradient fill: dark edge → bright Venom center
-    const { center, body } = SATELLITE_COLORS[3];
+    // Polygon with radial gradient fill: dark edge → bright Wraith center
+    const { center, body } = SATELLITE_COLORS[4];
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);

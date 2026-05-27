@@ -7,8 +7,8 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
   static _label = "satellite-cluster-asteroid";
 
   constructor(x, y, ax, ay, parentSystem = null, size = 1, maxBumps = 7) {
-    // Pass Venom color directly to ClusterAsteroid — no manual _offCanvas rebuild needed.
-    super(x, y, size, null, maxBumps, SATELLITE_COLORS[3].center);
+    // Pass Wraith color directly to ClusterAsteroid — no manual _offCanvas rebuild needed.
+    super(x, y, size, null, maxBumps, SATELLITE_COLORS[4].center);
 
     this.parentSystem = parentSystem;
     this.isSatellite = parentSystem != null;
@@ -41,14 +41,14 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     return super._makeBody(false);
   }
 
-  // Split children are free-floating ClusterAsteroid instances that inherit the Venom color.
+  // Split children are free-floating ClusterAsteroid instances that inherit the Wraith color.
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
     const offset = ASTEROID_RADIUS[this.size + 1];
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
-    const col = SATELLITE_COLORS[3].center;
+    const col = SATELLITE_COLORS[4].center;
     return [
       new ClusterAsteroid(
         this.x + ox,
@@ -75,7 +75,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     ctx.save();
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius * 0.88, 0, TAU);
-    ctx.fillStyle = SATELLITE_COLORS[3].body;
+    ctx.fillStyle = SATELLITE_COLORS[4].body;
     ctx.fill();
     ctx.restore();
 

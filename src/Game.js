@@ -1321,7 +1321,7 @@ class Game {
     const colW = W / cols;
     const rowStartY = [148, 335]; // y-center of asteroid per row
     const r = 36;
-    const SELECTED_IDX = 3; // Venom
+    const SELECTED_IDX = 4; // Wraith
 
     for (let i = 0; i < SATELLITE_COLORS.length; i++) {
       const col = i % cols;
