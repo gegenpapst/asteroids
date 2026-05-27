@@ -1312,96 +1312,99 @@ class Game {
     ctx.fillText("ASTEROIDS", cx, 58);
     ctx.shadowBlur = 0;
 
-    // Showcase label
-    ctx.fillStyle = "rgba(255,165,60,0.75)";
-    ctx.font = "11px monospace";
-    ctx.fillText("SATELLITE ASTEROID — COLOR PROPOSALS", cx, 82);
+    // Showcase disabled — re-enable by removing the "if (false)" wrapper below.
+    if (false) {
+      // Showcase label
+      ctx.fillStyle = "rgba(255,165,60,0.75)";
+      ctx.font = "11px monospace";
+      ctx.fillText("SATELLITE ASTEROID — COLOR PROPOSALS", cx, 82);
 
-    // 4 x 2 grid
-    const cols = 4;
-    const colW = W / cols;
-    const rowStartY = [148, 335]; // y-center of asteroid per row
-    const r = 36;
-    const SELECTED_IDX = 4; // Wraith
+      // 4 x 2 grid
+      const cols = 4;
+      const colW = W / cols;
+      const rowStartY = [148, 335]; // y-center of asteroid per row
+      const r = 36;
+      const SELECTED_IDX = 4; // Wraith
 
-    for (let i = 0; i < SATELLITE_COLORS.length; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = colW * col + colW / 2;
-      const y = rowStartY[row];
-      const { name, center, body } = SATELLITE_COLORS[i];
-      const selected = i === SELECTED_IDX;
+      for (let i = 0; i < SATELLITE_COLORS.length; i++) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = colW * col + colW / 2;
+        const y = rowStartY[row];
+        const { name, center, body } = SATELLITE_COLORS[i];
+        const selected = i === SELECTED_IDX;
 
-      // Soft ambient glow behind the asteroid
-      const ambient = ctx.createRadialGradient(x, y, 0, x, y, r * 2.2);
-      ambient.addColorStop(0, center.replace("rgb(", "rgba(").replace(")", ",0.12)"));
-      ambient.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.beginPath();
-      ctx.arc(x, y, r * 2.2, 0, TAU);
-      ctx.fillStyle = ambient;
-      ctx.fill();
+        // Soft ambient glow behind the asteroid
+        const ambient = ctx.createRadialGradient(x, y, 0, x, y, r * 2.2);
+        ambient.addColorStop(0, center.replace("rgb(", "rgba(").replace(")", ",0.12)"));
+        ambient.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.beginPath();
+        ctx.arc(x, y, r * 2.2, 0, TAU);
+        ctx.fillStyle = ambient;
+        ctx.fill();
 
-      // Radial gradient fill: bright center → dark edge (matches SatelliteAsteroidPoly.draw)
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, TAU);
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-      grad.addColorStop(0, center);
-      grad.addColorStop(0.45, center);
-      grad.addColorStop(1, body);
-      ctx.fillStyle = grad;
-      ctx.fill();
+        // Radial gradient fill: bright center → dark edge (matches SatelliteAsteroidPoly.draw)
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, TAU);
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, center);
+        grad.addColorStop(0.45, center);
+        grad.addColorStop(1, body);
+        ctx.fillStyle = grad;
+        ctx.fill();
 
-      // Rim stroke with glow
-      ctx.save();
-      ctx.strokeStyle = center;
-      ctx.lineWidth = selected ? 2 : 1;
-      ctx.shadowColor = center;
-      ctx.shadowBlur = selected ? 12 : 5;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, TAU);
-      ctx.stroke();
-      ctx.restore();
-
-      // Selection ring for active color
-      if (selected) {
+        // Rim stroke with glow
         ctx.save();
         ctx.strokeStyle = center;
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = 0.5;
-        ctx.setLineDash([5, 4]);
+        ctx.lineWidth = selected ? 2 : 1;
+        ctx.shadowColor = center;
+        ctx.shadowBlur = selected ? 12 : 5;
         ctx.beginPath();
-        ctx.arc(x, y, r + 9, 0, TAU);
+        ctx.arc(x, y, r, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+
+        // Selection ring for active color
+        if (selected) {
+          ctx.save();
+          ctx.strokeStyle = center;
+          ctx.lineWidth = 1.5;
+          ctx.globalAlpha = 0.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.arc(x, y, r + 9, 0, TAU);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+
+        // Tether hint (short dashed line upward + anchor dot)
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,140,60,0.45)";
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 5]);
+        ctx.beginPath();
+        ctx.moveTo(x, y - r);
+        ctx.lineTo(x, y - r - 22);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(x, y - r - 22, 3, 0, TAU);
+        ctx.fillStyle = "rgba(255,140,60,0.65)";
+        ctx.fill();
         ctx.restore();
+
+        // Index + name label — highlight selected
+        ctx.fillStyle = selected ? center : "#999";
+        ctx.font = selected ? "bold 12px monospace" : "bold 11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          selected ? `✓  ${name.toUpperCase()}` : `${i + 1}  ${name.toUpperCase()}`,
+          x,
+          y + r + 17,
+        );
       }
-
-      // Tether hint (short dashed line upward + anchor dot)
-      ctx.save();
-      ctx.strokeStyle = "rgba(255,140,60,0.45)";
-      ctx.lineWidth = 1.2;
-      ctx.setLineDash([3, 5]);
-      ctx.beginPath();
-      ctx.moveTo(x, y - r);
-      ctx.lineTo(x, y - r - 22);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.arc(x, y - r - 22, 3, 0, TAU);
-      ctx.fillStyle = "rgba(255,140,60,0.65)";
-      ctx.fill();
-      ctx.restore();
-
-      // Index + name label — highlight selected
-      ctx.fillStyle = selected ? center : "#999";
-      ctx.font = selected ? "bold 12px monospace" : "bold 11px monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        selected ? `✓  ${name.toUpperCase()}` : `${i + 1}  ${name.toUpperCase()}`,
-        x,
-        y + r + 17,
-      );
-    }
+    } // end showcase
 
     // Blink "press enter"
     if (Math.floor(Date.now() / 520) % 2) {
