@@ -565,7 +565,7 @@ class Game {
         if (key === "asteroidBounce") this._applyAsteroidFilter();
       }
       if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
-        this._configFocus = "details";
+        this._configFocus = "mode"; // return focus to mode tiles so all keys work immediately
         this.state = STATE.CONFIG;
         Input.flush();
         return true;
