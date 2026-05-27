@@ -498,8 +498,8 @@ class Game {
       if (Input.wasPressed("ArrowUp") && this._configFocus === "details")
         this._configFocus = "mode";
 
-      // Modus-Auswahl nur wenn Fokus auf Kacheln
-      if (!readOnly && this._configFocus === "mode") {
+      // Mode change works with ArrowLeft/Right regardless of focus
+      if (!readOnly) {
         const prevMode = this.config.mode;
         if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
         if (Input.wasPressed("ArrowRight")) this.config.mode = Math.min(3, this.config.mode + 1);
@@ -565,7 +565,7 @@ class Game {
         if (key === "asteroidBounce") this._applyAsteroidFilter();
       }
       if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
-        this._configFocus = "mode"; // return focus to mode tiles so all keys work immediately
+        this._configFocus = "details"; // restore focus to details button for re-entry via Enter
         this.state = STATE.CONFIG;
         Input.flush();
         return true;
