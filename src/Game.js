@@ -1321,6 +1321,7 @@ class Game {
     const colW = W / cols;
     const rowStartY = [148, 335]; // y-center of asteroid per row
     const r = 36;
+    const SELECTED_IDX = 3; // Venom
 
     for (let i = 0; i < SATELLITE_COLORS.length; i++) {
       const col = i % cols;
@@ -1328,6 +1329,7 @@ class Game {
       const x = colW * col + colW / 2;
       const y = rowStartY[row];
       const { name, center, body } = SATELLITE_COLORS[i];
+      const selected = i === SELECTED_IDX;
 
       // Soft ambient glow behind the asteroid
       const ambient = ctx.createRadialGradient(x, y, 0, x, y, r * 2.2);
@@ -1338,24 +1340,40 @@ class Game {
       ctx.fillStyle = ambient;
       ctx.fill();
 
-      // Dark rock body
+      // Radial gradient fill: bright center → dark edge (matches SatelliteAsteroidPoly.draw)
       ctx.beginPath();
       ctx.arc(x, y, r, 0, TAU);
-      ctx.fillStyle = body;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+      grad.addColorStop(0, center);
+      grad.addColorStop(0.45, center);
+      grad.addColorStop(1, body);
+      ctx.fillStyle = grad;
       ctx.fill();
 
-      // Inner glow (screen blend — dark edge, bright center)
+      // Rim stroke with glow
       ctx.save();
-      ctx.globalCompositeOperation = "screen";
-      const glow = ctx.createRadialGradient(x - r * 0.28, y - r * 0.28, 0, x, y, r);
-      glow.addColorStop(0, center);
-      glow.addColorStop(0.42, center);
-      glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.strokeStyle = center;
+      ctx.lineWidth = selected ? 2 : 1;
+      ctx.shadowColor = center;
+      ctx.shadowBlur = selected ? 12 : 5;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, TAU);
-      ctx.fillStyle = glow;
-      ctx.fill();
+      ctx.stroke();
       ctx.restore();
+
+      // Selection ring for active color
+      if (selected) {
+        ctx.save();
+        ctx.strokeStyle = center;
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.5;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.arc(x, y, r + 9, 0, TAU);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
 
       // Tether hint (short dashed line upward + anchor dot)
       ctx.save();
@@ -1373,11 +1391,15 @@ class Game {
       ctx.fill();
       ctx.restore();
 
-      // Index + name label
-      ctx.fillStyle = "#999";
-      ctx.font = "bold 11px monospace";
+      // Index + name label — highlight selected
+      ctx.fillStyle = selected ? center : "#999";
+      ctx.font = selected ? "bold 12px monospace" : "bold 11px monospace";
       ctx.textAlign = "center";
-      ctx.fillText(`${i + 1}  ${name.toUpperCase()}`, x, y + r + 17);
+      ctx.fillText(
+        selected ? `✓  ${name.toUpperCase()}` : `${i + 1}  ${name.toUpperCase()}`,
+        x,
+        y + r + 17,
+      );
     }
 
     // Blink "press enter"
