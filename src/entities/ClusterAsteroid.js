@@ -5,7 +5,8 @@ class ClusterAsteroid extends AsteroidBase {
   static _label = "cluster-asteroid";
   static _rotBase = 1.2;
 
-  constructor(x, y, size = 0, angle = null, maxBumps = 7) {
+  // color: optional override; defaults to the standard steel-blue asteroid tint.
+  constructor(x, y, size = 0, angle = null, maxBumps = 7, color = "rgb(100, 140, 185)") {
     super(x, y, size, angle, maxBumps);
     // Mirror the compound body: one core cell + one cell per bump.
     // This ensures the metaball silhouette matches the physics shape.
@@ -15,14 +16,7 @@ class ClusterAsteroid extends AsteroidBase {
       this._bumps.length > 0
         ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
         : this._coreR * 0.4;
-    this._offCanvas = buildMetaballCanvas(
-      cells,
-      "rgb(100, 140, 185)",
-      this.radius,
-      blurBase,
-      14,
-      0.55,
-    );
+    this._offCanvas = buildMetaballCanvas(cells, color, this.radius, blurBase, 14, 0.55);
   }
 
   get collisionRadius() {

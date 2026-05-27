@@ -7,7 +7,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
   static _label = "satellite-asteroid";
 
   constructor(x, y, ax, ay, parentSystem = null, size = 1, maxBumps = 7) {
-    super(x, y, size, null, maxBumps);
+    super(x, y, size, null, maxBumps, SATELLITE_COLORS[3].center);
 
     this.parentSystem = parentSystem;
     this.isSatellite = parentSystem != null;
@@ -40,14 +40,14 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     return super._makeBody(false);
   }
 
-  // Kinder sind reguläre freie Asteroiden (kein Constraint)
+  // Split children are free-floating AsteroidPoly instances that inherit the Venom color.
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
     const offset = ASTEROID_RADIUS[this.size + 1];
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
-
+    const col = SATELLITE_COLORS[3].center;
     return [
       new AsteroidPoly(
         this.x + ox,
@@ -55,6 +55,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
         this.size + 1,
         safeSplitAngle(bulletAngle),
         this.maxBumps,
+        col,
       ),
       new AsteroidPoly(
         this.x - ox,
@@ -62,6 +63,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
         this.size + 1,
         safeSplitAngle(bulletAngle),
         this.maxBumps,
+        col,
       ),
     ];
   }
@@ -80,15 +82,14 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     ctx.setLineDash([4, 6]);
     ctx.stroke();
     ctx.setLineDash([]);
-
     ctx.beginPath();
     ctx.arc(this.anchorX, this.anchorY, 4, 0, TAU);
     ctx.fillStyle = anchorColor;
     ctx.fill();
     ctx.restore();
 
-    // Polygon in Venom color (overrides the default grey from AsteroidPoly)
-    const col = SATELLITE_COLORS[3].center; // Venom
+    // Polygon with radial gradient fill: dark edge → bright Venom center
+    const { center, body } = SATELLITE_COLORS[3];
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
@@ -100,10 +101,16 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
       ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
     }
     ctx.closePath();
-    ctx.strokeStyle = col;
-    ctx.lineWidth = 1.5;
-    ctx.shadowColor = col;
-    ctx.shadowBlur = 8;
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius);
+    grad.addColorStop(0, center);
+    grad.addColorStop(0.45, center);
+    grad.addColorStop(1, body);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = center;
+    ctx.lineWidth = 1;
+    ctx.shadowColor = center;
+    ctx.shadowBlur = 6;
     ctx.stroke();
     ctx.restore();
   }

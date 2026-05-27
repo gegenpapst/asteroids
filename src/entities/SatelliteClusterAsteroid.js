@@ -7,18 +7,8 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
   static _label = "satellite-cluster-asteroid";
 
   constructor(x, y, ax, ay, parentSystem = null, size = 1, maxBumps = 7) {
-    super(x, y, size, null, maxBumps);
-
-    // Rebuild the metaball canvas with the selected satellite color (Venom).
-    // super() already ran buildMetaballCanvas with the default blue — we override it here.
-    const { center } = SATELLITE_COLORS[3]; // Venom
-    const cells = [{ dx: 0, dy: 0, r: this._coreR }];
-    for (const b of this._bumps) cells.push({ dx: b.dx, dy: b.dy, r: b.br });
-    const blurBase =
-      this._bumps.length > 0
-        ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
-        : this._coreR * 0.4;
-    this._offCanvas = buildMetaballCanvas(cells, center, this.radius, blurBase, 14, 0.55);
+    // Pass Venom color directly to ClusterAsteroid — no manual _offCanvas rebuild needed.
+    super(x, y, size, null, maxBumps, SATELLITE_COLORS[3].center);
 
     this.parentSystem = parentSystem;
     this.isSatellite = parentSystem != null;
@@ -51,14 +41,14 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     return super._makeBody(false);
   }
 
-  // Kinder sind reguläre freie Asteroiden (kein Constraint)
+  // Split children are free-floating ClusterAsteroid instances that inherit the Venom color.
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
     const offset = ASTEROID_RADIUS[this.size + 1];
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
-
+    const col = SATELLITE_COLORS[3].center;
     return [
       new ClusterAsteroid(
         this.x + ox,
@@ -66,6 +56,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
         this.size + 1,
         safeSplitAngle(bulletAngle),
         this.maxBumps,
+        col,
       ),
       new ClusterAsteroid(
         this.x - ox,
@@ -73,16 +64,27 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
         this.size + 1,
         safeSplitAngle(bulletAngle),
         this.maxBumps,
+        col,
       ),
     ];
   }
 
   draw() {
-    super.draw(); // Metaball-Blob
+    // 1. Dark rock body drawn first so the metaball glow (screen blend) sits on top of it.
+    //    screen(dark body, bright glow) = bright center fading into dark edges.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius * 0.88, 0, TAU);
+    ctx.fillStyle = SATELLITE_COLORS[3].body;
+    ctx.fill();
+    ctx.restore();
 
+    // 2. Metaball glow (screen blend — bright center, transparent outer)
+    super.draw();
+
+    // 3. Tether + anchor dot
     const tetherColor = this.parentSystem ? "rgba(255, 140, 60, 0.45)" : "#556";
     const anchorColor = this.parentSystem ? "rgba(255,140,60,0.7)" : "#778";
-
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
@@ -92,7 +94,6 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     ctx.setLineDash([4, 6]);
     ctx.stroke();
     ctx.setLineDash([]);
-
     ctx.beginPath();
     ctx.arc(this.anchorX, this.anchorY, 4, 0, TAU);
     ctx.fillStyle = anchorColor;

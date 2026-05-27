@@ -7,10 +7,11 @@ class AsteroidPoly extends AsteroidBase {
   static _label = "asteroid";
   static _rotBase = 1.6;
 
-  constructor(x, y, size = 0, angle = null, maxBumps = 7) {
+  // color: optional override; null = use ASTEROID_COLORS[size] (default grey tones)
+  constructor(x, y, size = 0, angle = null, maxBumps = 7, color = null) {
     super(x, y, size, angle, maxBumps);
-    // Verts direkt aus der Compound-Body-Geometrie ableiten —
-    // damit Optik und Physik dieselbe Form haben.
+    this._color = color;
+    // Derive verts from compound-body geometry so visuals match physics.
     this.verts = this._makeVerts(randInt(16, 22));
   }
 
@@ -28,7 +29,7 @@ class AsteroidPoly extends AsteroidBase {
     }
     ctx.closePath();
 
-    const col = ASTEROID_COLORS[this.size];
+    const col = this._color ?? ASTEROID_COLORS[this.size];
     ctx.strokeStyle = col;
     ctx.lineWidth = 1.5;
     ctx.shadowColor = col;
