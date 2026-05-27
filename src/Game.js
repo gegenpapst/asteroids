@@ -86,6 +86,7 @@ class Game {
     };
     this._configCursor = 0;
     this._detailCursor = 0;
+    this._configFocus = "mode"; // "mode" | "details"
     this._configPrevState = STATE.START;
 
     this._rockCanvas = Object.assign(document.createElement("canvas"), {
@@ -536,6 +537,7 @@ class Game {
     if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
       if (Input.start() || Input.config()) {
         this._configPrevState = this.state;
+        this._configFocus = "mode";
         this.state = STATE.CONFIG;
       }
       Input.flush();
@@ -551,7 +553,15 @@ class Game {
 
     if (this.state === STATE.CONFIG) {
       const readOnly = this._configPrevState === STATE.PLAYING;
-      if (!readOnly) {
+
+      // Fokus zwischen Kacheln und Details-Button wechseln
+      if (Input.wasPressed("ArrowDown") && this._configFocus === "mode")
+        this._configFocus = "details";
+      if (Input.wasPressed("ArrowUp") && this._configFocus === "details")
+        this._configFocus = "mode";
+
+      // Modus-Auswahl nur wenn Fokus auf Kacheln
+      if (!readOnly && this._configFocus === "mode") {
         const prevMode = this.config.mode;
         if (Input.wasPressed("ArrowLeft"))
           this.config.mode = Math.max(1, this.config.mode - 1);
@@ -562,18 +572,29 @@ class Game {
           this._applyAsteroidFilter();
         }
       }
-      if (Input.wasPressed("KeyD")) {
+
+      // Details öffnen: D-Taste immer, Enter wenn Details fokussiert
+      if (
+        Input.wasPressed("KeyD") ||
+        (Input.wasPressed("Enter") && this._configFocus === "details")
+      ) {
         this._detailCursor = 0;
         this.state = STATE.CONFIG_DETAIL;
         Input.flush();
         return true;
       }
+
       if (Input.wasPressed("Escape")) {
         this.state = this._configPrevState;
         Input.flush();
         return true;
       }
-      if (Input.wasPressed("Enter") || Input.config()) {
+
+      // Spiel starten: Enter wenn Kacheln fokussiert, oder C-Taste
+      if (
+        (Input.wasPressed("Enter") && this._configFocus === "mode") ||
+        Input.config()
+      ) {
         if (readOnly) this.state = STATE.PLAYING;
         else this.start();
       }
@@ -612,7 +633,12 @@ class Game {
           this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
         if (key === "asteroidBounce") this._applyAsteroidFilter();
       }
-      if (Input.wasPressed("Escape") || Input.wasPressed("KeyD")) {
+      if (
+        Input.wasPressed("Escape") ||
+        Input.wasPressed("KeyD") ||
+        Input.wasPressed("Enter")
+      ) {
+        this._configFocus = "details";
         this.state = STATE.CONFIG;
         Input.flush();
         return true;
@@ -629,6 +655,7 @@ class Game {
 
     if (this.state === STATE.PLAYING && Input.config()) {
       this._configPrevState = STATE.PLAYING;
+      this._configFocus = "mode";
       this.state = STATE.CONFIG;
       Input.flush();
       return true;
@@ -1247,29 +1274,34 @@ class Game {
     const btnY = cardY + cardH + 28;
     const btnW = 160,
       btnH = 32;
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
-    ctx.strokeStyle = "rgba(255,255,255,0.22)";
-    ctx.lineWidth = 1;
+    const detailsFocused = this._configFocus === "details";
+    ctx.fillStyle = detailsFocused
+      ? "rgba(68,170,255,0.16)"
+      : "rgba(255,255,255,0.05)";
+    ctx.strokeStyle = detailsFocused ? "#4af" : "rgba(255,255,255,0.22)";
+    ctx.lineWidth = detailsFocused ? 2 : 1;
+    ctx.shadowColor = detailsFocused ? "#4af" : "transparent";
+    ctx.shadowBlur = detailsFocused ? 10 : 0;
     ctx.beginPath();
     ctx.roundRect(cx - btnW / 2, btnY, btnW, btnH, 7);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#999";
-    ctx.font = "13px monospace";
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = detailsFocused ? "#fff" : "#999";
+    ctx.font = (detailsFocused ? "bold " : "") + "13px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("D  Details  ▶", cx, btnY + 20);
+    ctx.fillText("Details  ▶", cx, btnY + 20);
 
     // ── Hinweise ──────────────────────────────────────────────────────────────
     ctx.fillStyle = "#444";
     ctx.font = "12px monospace";
     ctx.textAlign = "center";
-    ctx.fillText(
-      readOnly
-        ? "ESC  Zurück ins Spiel   D  Details"
-        : "← →  Modus wählen   D  Details   ENTER  Spiel starten",
-      cx,
-      H - 18,
-    );
+    const hint = readOnly
+      ? "ESC  Zurück   ↓  Details"
+      : detailsFocused
+        ? "ENTER  Details öffnen   ↑  Zurück zu Modus   ESC  Abbrechen"
+        : "← →  Modus   ↓  Details   ENTER  Spiel starten";
+    ctx.fillText(hint, cx, H - 18);
   }
 
   _drawConfigDetail() {
@@ -1369,7 +1401,9 @@ class Game {
     ctx.font = "12px monospace";
     ctx.textAlign = "center";
     ctx.fillText(
-      readOnly ? "ESC  Zurück" : "↑ ↓  Parameter   ← →  Wert   ESC / D  Zurück",
+      readOnly
+        ? "ESC / ENTER  Zurück"
+        : "↑ ↓  Parameter   ← →  Wert   ENTER / ESC  Zurück",
       cx,
       H - 18,
     );
