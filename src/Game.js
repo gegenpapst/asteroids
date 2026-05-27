@@ -475,13 +475,13 @@ class Game {
         const ay = rand(H * 0.2, H * 0.8);
         const tetherLen = rand(PENDULUM_TETHER_MIN, PENDULUM_TETHER_MAX);
         const spawnAngle = rand(0, TAU);
-        const pa = this.mode.createPendulumAsteroid(
+        const pa = this.mode.createSatellite(
           ax + Math.cos(spawnAngle) * tetherLen,
           ay + Math.sin(spawnAngle) * tetherLen,
-          0,
-          null,
           ax,
           ay,
+          null,
+          0,
         );
         this.asteroids.push(pa);
         Matter.World.add(this.engine.world, [pa.body, pa.constraint]);

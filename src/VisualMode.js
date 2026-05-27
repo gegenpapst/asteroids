@@ -22,9 +22,6 @@ class VisualMode {
   createPumice(x, y) {
     throw new Error("abstract");
   }
-  createPendulumAsteroid(x, y, size, angle, ax, ay) {
-    throw new Error("abstract");
-  }
   createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
     throw new Error("abstract");
   }
@@ -45,9 +42,6 @@ class PolygonMode extends VisualMode {
   }
   createPumice(x, y) {
     return new PumicePoly(x, y);
-  }
-  createPendulumAsteroid(x, y, size, angle, ax, ay) {
-    return new PendulumAsteroid(x, y, size, angle, ax, ay);
   }
   createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
     return new SatelliteAsteroidPoly(
@@ -77,9 +71,6 @@ class MetaballMode extends VisualMode {
   }
   createPumice(x, y) {
     return new PumiceCluster(x, y);
-  }
-  createPendulumAsteroid(x, y, size, angle, ax, ay) {
-    return new PendulumClusterAsteroid(x, y, size, angle, ax, ay);
   }
   createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
     return new SatelliteClusterAsteroid(
