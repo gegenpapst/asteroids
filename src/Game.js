@@ -1200,7 +1200,7 @@ class Game {
     const hint = readOnly
       ? "ESC  Zurück   ↓  Details"
       : detailsFocused
-        ? "ENTER  Details öffnen   ↑  Zurück zu Modus   ESC  Abbrechen"
+        ? "← →  Modus   ENTER  Details öffnen   ↑  Modus-Fokus   ESC  Abbrechen"
         : "← →  Modus   ↓  Details   ENTER  Spiel starten";
     ctx.fillText(hint, cx, H - 18);
   }
