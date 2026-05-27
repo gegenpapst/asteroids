@@ -764,8 +764,11 @@ class Game {
               children.map((c) => c.body),
             );
             const f = this._asteroidCollisionFilter;
-            for (const c of children)
+            for (const c of children) {
               Matter.Body.set(c.body, "collisionFilter", f);
+              if (c.constraint)
+                Matter.World.add(this.engine.world, c.constraint);
+            }
           }
           this.asteroids.splice(ai, 1, ...children);
           this.bullets.splice(bi, 1);
@@ -841,8 +844,11 @@ class Game {
                 children.map((c) => c.body),
               );
               const f = this._asteroidCollisionFilter;
-              for (const c of children)
+              for (const c of children) {
                 Matter.Body.set(c.body, "collisionFilter", f);
+                if (c.constraint)
+                  Matter.World.add(this.engine.world, c.constraint);
+              }
             }
             this.asteroids.splice(ai, 1, ...children);
             this._bounceShip(a.x, a.y); // explicit bounce (asteroid removed before Matter can apply it)

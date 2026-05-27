@@ -5,13 +5,21 @@
 // Unterschiede zu ClusterAsteroid:
 //   - kein matter-wrap (Teleport würde Constraint zerreißen)
 //   - initiale Tangentialgeschwindigkeit statt zufälliger Richtung
-//   - split() gibt freie ClusterAsteroid-Kinder zurück (kein Constraint)
+//   - split() erzeugt PendulumClusterAsteroid-Kinder mit leicht versetzten Ankern
 //   - draw() zeichnet Metaball-Blob zuerst, dann Seil + Anker darüber
 class PendulumClusterAsteroid extends ClusterAsteroid {
   static _label = "pendulum-asteroid";
 
-  constructor(x, y, size = 0, angle = null, anchorX = W / 2, anchorY = H / 2) {
-    super(x, y, size, angle);
+  constructor(
+    x,
+    y,
+    size = 0,
+    angle = null,
+    anchorX = W / 2,
+    anchorY = H / 2,
+    maxBumps = 7,
+  ) {
+    super(x, y, size, angle, maxBumps);
 
     this.anchorX = anchorX;
     this.anchorY = anchorY;
@@ -56,26 +64,37 @@ class PendulumClusterAsteroid extends ClusterAsteroid {
     return body;
   }
 
-  // Override: Kinder sind freie ClusterAsteroid-Instanzen ohne Constraint.
+  // Override: Kinder sind ebenfalls PendulumClusterAsteroid-Instanzen mit versetzten Ankern.
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
     const offset = ASTEROID_RADIUS[this.size + 1];
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
+
+    // Anker leicht versetzt, damit die Kinder unabhängig schwingen
+    const spread = rand(30, 45);
+    const aPerp = rand(0, TAU);
+    const aox = Math.cos(aPerp) * spread;
+    const aoy = Math.sin(aPerp) * spread;
+
     return [
-      new ClusterAsteroid(
+      new PendulumClusterAsteroid(
         this.x + ox,
         this.y + oy,
         this.size + 1,
         safeSplitAngle(bulletAngle),
+        this.anchorX + aox,
+        this.anchorY + aoy,
         this.maxBumps,
       ),
-      new ClusterAsteroid(
+      new PendulumClusterAsteroid(
         this.x - ox,
         this.y - oy,
         this.size + 1,
         safeSplitAngle(bulletAngle),
+        this.anchorX - aox,
+        this.anchorY - aoy,
         this.maxBumps,
       ),
     ];
