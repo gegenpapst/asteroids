@@ -64,7 +64,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     return body;
   }
 
-  // Kinder sind stets freie Pendelasteroiden (parentSystem=null), mit versetzten Ankern
+  // Kinder sind reguläre freie Asteroiden (kein Constraint)
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
     const offset = ASTEROID_RADIUS[this.size + 1];
@@ -72,28 +72,19 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
 
-    const spread = rand(30, 45);
-    const aPerp = rand(0, TAU);
-    const aox = Math.cos(aPerp) * spread;
-    const aoy = Math.sin(aPerp) * spread;
-
     return [
-      new SatelliteAsteroidPoly(
+      new AsteroidPoly(
         this.x + ox,
         this.y + oy,
-        this.anchorX + aox,
-        this.anchorY + aoy,
-        null, // freier Pendelasteroid
         this.size + 1,
+        safeSplitAngle(bulletAngle),
         this.maxBumps,
       ),
-      new SatelliteAsteroidPoly(
+      new AsteroidPoly(
         this.x - ox,
         this.y - oy,
-        this.anchorX - aox,
-        this.anchorY - aoy,
-        null,
         this.size + 1,
+        safeSplitAngle(bulletAngle),
         this.maxBumps,
       ),
     ];

@@ -61,7 +61,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     return body;
   }
 
-  // Kinder sind freie Pendelasteroiden (parentSystem=null) mit versetzten Ankern
+  // Kinder sind reguläre freie Asteroiden (kein Constraint)
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
     const offset = ASTEROID_RADIUS[this.size + 1];
@@ -69,28 +69,19 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
 
-    const spread = rand(30, 45);
-    const aPerp = rand(0, TAU);
-    const aox = Math.cos(aPerp) * spread;
-    const aoy = Math.sin(aPerp) * spread;
-
     return [
-      new SatelliteClusterAsteroid(
+      new ClusterAsteroid(
         this.x + ox,
         this.y + oy,
-        this.anchorX + aox,
-        this.anchorY + aoy,
-        null,
         this.size + 1,
+        safeSplitAngle(bulletAngle),
         this.maxBumps,
       ),
-      new SatelliteClusterAsteroid(
+      new ClusterAsteroid(
         this.x - ox,
         this.y - oy,
-        this.anchorX - aox,
-        this.anchorY - aoy,
-        null,
         this.size + 1,
+        safeSplitAngle(bulletAngle),
         this.maxBumps,
       ),
     ];

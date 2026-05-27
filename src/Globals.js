@@ -48,11 +48,7 @@ const ASTEROID_SPIN_FACTOR = 0.065; // Off-Center-Hit Spin-Boost: ±rad/s pro px
 // ── Pendel-Asteroiden ───────────────────────────────────────────────────────
 const PENDULUM_STIFFNESS = 0.03; // Federkonstante des Constraints (0 = frei, 1 = starr)
 const PENDULUM_DAMPING = 0.01; // leichte Dämpfung für numerische Stabilität
-const PENDULUM_TETHER_MIN = 100; // min. Seillänge px bei Spawn
-const PENDULUM_TETHER_MAX = 180; // max. Seillänge px bei Spawn
 const PENDULUM_INIT_SPEED = 90; // initiale Tangentialgeschwindigkeit px/s
-const PENDULUM_MAX_COUNT = 3; // max. gleichzeitig aktive Pendel-Asteroiden
-const PENDULUM_START_LEVEL = 1; // ab diesem Level erscheinen Pendel-Asteroiden
 
 // ── Solar-System-Asteroiden ─────────────────────────────────────────────────
 const SOLAR_STIFFNESS = 0.8; // nahezu starres Seil → saubere Kreisbahn
@@ -333,11 +329,7 @@ if (typeof module !== "undefined") {
     DEBRIS_FRICTION_AIR,
     PENDULUM_STIFFNESS,
     PENDULUM_DAMPING,
-    PENDULUM_TETHER_MIN,
-    PENDULUM_TETHER_MAX,
     PENDULUM_INIT_SPEED,
-    PENDULUM_MAX_COUNT,
-    PENDULUM_START_LEVEL,
     Input,
   };
 }
