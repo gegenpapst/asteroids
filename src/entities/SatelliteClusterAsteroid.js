@@ -9,6 +9,17 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
   constructor(x, y, ax, ay, parentSystem = null, size = 1, maxBumps = 7) {
     super(x, y, size, null, maxBumps);
 
+    // Rebuild the metaball canvas with the selected satellite color (Venom).
+    // super() already ran buildMetaballCanvas with the default blue — we override it here.
+    const { center } = SATELLITE_COLORS[3]; // Venom
+    const cells = [{ dx: 0, dy: 0, r: this._coreR }];
+    for (const b of this._bumps) cells.push({ dx: b.dx, dy: b.dy, r: b.br });
+    const blurBase =
+      this._bumps.length > 0
+        ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
+        : this._coreR * 0.4;
+    this._offCanvas = buildMetaballCanvas(cells, center, this.radius, blurBase, 14, 0.55);
+
     this.parentSystem = parentSystem;
     this.isSatellite = parentSystem != null;
     this.anchorX = ax;

@@ -67,7 +67,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
   }
 
   draw() {
-    // Sonnensystem-Satelliten: orange; freie Pendel: blaugrau
+    // Tether + anchor dot
     const tetherColor = this.parentSystem ? "rgba(255, 140, 60, 0.45)" : "#556";
     const anchorColor = this.parentSystem ? "rgba(255,140,60,0.7)" : "#778";
 
@@ -87,7 +87,25 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     ctx.fill();
     ctx.restore();
 
-    super.draw();
+    // Polygon in Venom color (overrides the default grey from AsteroidPoly)
+    const col = SATELLITE_COLORS[3].center; // Venom
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+    ctx.beginPath();
+    const { a: a0, r: r0 } = this.verts[0];
+    ctx.moveTo(Math.cos(a0) * r0, Math.sin(a0) * r0);
+    for (let i = 1; i < this.verts.length; i++) {
+      const { a, r } = this.verts[i];
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = col;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
