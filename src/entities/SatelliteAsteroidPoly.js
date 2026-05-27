@@ -1,11 +1,8 @@
 "use strict";
 
-// Gebundener Asteroid — an einem Ankerpunkt per Matter.Constraint aufgehängt.
-// Dient als Basis für zwei Rollen:
-//   parentSystem != null → Sonnensystem-Satellit (isSatellite=true, zählt NICHT für Level-Clear)
-//   parentSystem == null → freier Pendelasteroid (isSatellite=false, zählt für Level-Clear)
-//
-// Split-Kinder sind stets freie Pendelasteroiden (parentSystem=null) mit leicht versetzten Ankern.
+// Gebundener Asteroid — an einem Sonnensystem-Ankerpunkt per Matter.Constraint aufgehängt.
+// Immer Teil eines SolarSystem (parentSystem != null, isSatellite=true).
+// Split-Kinder sind reguläre freie AsteroidPoly-Instanzen (kein Constraint).
 class SatelliteAsteroidPoly extends AsteroidPoly {
   static _label = "satellite-asteroid";
 
@@ -22,14 +19,8 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     const dy = y - ay;
     const len = Math.hypot(dx, dy) || 1;
     const sign = Math.random() < 0.5 ? 1 : -1;
-    this.vx =
-      (-dy / len) *
-      sign *
-      (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
-    this.vy =
-      (dx / len) *
-      sign *
-      (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
+    this.vx = (-dy / len) * sign * (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
+    this.vy = (dx / len) * sign * (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
     Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
 
     const stiffness = parentSystem ? SOLAR_STIFFNESS : PENDULUM_STIFFNESS;
@@ -44,24 +35,9 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     });
   }
 
-  // Override: kein plugin.wrap — Constraint würde beim Wrap reißen
+  // Override: plugin.wrap deaktiviert — Constraint würde beim Wrap reißen
   _makeBody() {
-    const r = this.radius;
-    this._coreR = r * (1.0 - (0.54 * Math.min(this.bumpCount, 7)) / 7);
-    this._bumps = this._genBumps();
-    const parts = [Matter.Bodies.circle(0, 0, this._coreR)];
-    for (const b of this._bumps) {
-      parts.push(Matter.Bodies.circle(b.dx, b.dy, b.br));
-    }
-    const body = Matter.Body.create({
-      parts,
-      friction: 0,
-      frictionAir: 0,
-      restitution: 1,
-      label: SatelliteAsteroidPoly._label,
-    });
-    Matter.Body.setPosition(body, { x: this.x, y: this.y });
-    return body;
+    return super._makeBody(false);
   }
 
   // Kinder sind reguläre freie Asteroiden (kein Constraint)

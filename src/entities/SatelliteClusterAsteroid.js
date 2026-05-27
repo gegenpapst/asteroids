@@ -1,8 +1,8 @@
 "use strict";
 
 // Metaball-Variante des gebundenen Asteroiden — erbt Cluster-Rendering von ClusterAsteroid.
-// parentSystem != null → Sonnensystem-Satellit
-// parentSystem == null → freier Pendelasteroid
+// Immer Teil eines SolarSystem (parentSystem != null, isSatellite=true).
+// Split-Kinder sind reguläre freie ClusterAsteroid-Instanzen (kein Constraint).
 class SatelliteClusterAsteroid extends ClusterAsteroid {
   static _label = "satellite-cluster-asteroid";
 
@@ -19,14 +19,8 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     const dy = y - ay;
     const len = Math.hypot(dx, dy) || 1;
     const sign = Math.random() < 0.5 ? 1 : -1;
-    this.vx =
-      (-dy / len) *
-      sign *
-      (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
-    this.vy =
-      (dx / len) *
-      sign *
-      (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
+    this.vx = (-dy / len) * sign * (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
+    this.vy = (dx / len) * sign * (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
     Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
 
     const stiffness = parentSystem ? SOLAR_STIFFNESS : PENDULUM_STIFFNESS;
@@ -41,24 +35,9 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     });
   }
 
-  // Override: kein plugin.wrap
+  // Override: plugin.wrap deaktiviert — Constraint würde beim Wrap reißen
   _makeBody() {
-    const r = this.radius;
-    this._coreR = r * (1.0 - (0.54 * Math.min(this.bumpCount, 7)) / 7);
-    this._bumps = this._genBumps();
-    const parts = [Matter.Bodies.circle(0, 0, this._coreR)];
-    for (const b of this._bumps) {
-      parts.push(Matter.Bodies.circle(b.dx, b.dy, b.br));
-    }
-    const body = Matter.Body.create({
-      parts,
-      friction: 0,
-      frictionAir: 0,
-      restitution: 1,
-      label: SatelliteClusterAsteroid._label,
-    });
-    Matter.Body.setPosition(body, { x: this.x, y: this.y });
-    return body;
+    return super._makeBody(false);
   }
 
   // Kinder sind reguläre freie Asteroiden (kein Constraint)
@@ -111,5 +90,4 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
   }
 }
 
-if (typeof module !== "undefined")
-  module.exports = { SatelliteClusterAsteroid };
+if (typeof module !== "undefined") module.exports = { SatelliteClusterAsteroid };

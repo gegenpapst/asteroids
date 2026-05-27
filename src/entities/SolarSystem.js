@@ -21,10 +21,8 @@ class SolarSystem {
 
   _explode(game) {
     this.alive = false;
-    for (let i = 0; i < 28; i++)
-      game.particles.push(new Particle(this.x, this.y, "#f84"));
-    for (let i = 0; i < 14; i++)
-      game.particles.push(new Particle(this.x, this.y, "#fff"));
+    for (let i = 0; i < 28; i++) game.particles.push(new Particle(this.x, this.y, "#f84"));
+    for (let i = 0; i < 14; i++) game.particles.push(new Particle(this.x, this.y, "#fff"));
     game.snd.explodeLarge();
     game._addScore(SOLAR_CENTER_SCORE);
   }

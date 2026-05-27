@@ -122,6 +122,17 @@ const DEBRIS_FRICTION_AIR = 0.018; // Luftreibung für Matter-Body
 
 // Rock count is controlled by the in-game config dialog (3 levels)
 
+// ── Gameplay-Timing ─────────────────────────────────────────────────────────
+const RESPAWN_DELAY = 2.2; // Sekunden bis Schiff nach dem Tod wieder erscheint
+const UFO_SPAWN_MIN = 20; // Frühester UFO-Spawn nach Level-Start (s)
+const UFO_SPAWN_JITTER = 15; // Zusätzlicher Zufalls-Offset für UFO-Spawn (s)
+const UFO_HUM_INTERVAL = 0.3; // Intervall des UFO-Hum-Sounds (s)
+const BEAT_DENSITY_FACTOR = 0.045; // Beat-Interval-Schrumpfung pro Asteroid
+const BEAT_INTERVAL_MIN = 0.12; // Kürzestes Beat-Intervall (s)
+const BEAT_INTERVAL_MAX = 1.0; // Längstes Beat-Intervall (s)
+const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // Explosions-Partikel pro Asteroiden-Größe (0–2)
+const SAFE_POS_TRIES = 300; // Max. Versuche für sichere Spawn-Position
+
 // ─── Utilities ───────────────────────────────────────────────────────────────
 function rand(a, b) {
   return Math.random() * (b - a) + a;
@@ -195,13 +206,7 @@ const Input = {
     window.addEventListener("keydown", (e) => {
       if (!this._held.has(e.code)) this._pressed.add(e.code);
       this._held.add(e.code);
-      const block = [
-        "Space",
-        "ArrowUp",
-        "ArrowDown",
-        "ArrowLeft",
-        "ArrowRight",
-      ];
+      const block = ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
       if (block.includes(e.code)) e.preventDefault();
     });
     window.addEventListener("keyup", (e) => this._held.delete(e.code));
@@ -330,6 +335,25 @@ if (typeof module !== "undefined") {
     PENDULUM_STIFFNESS,
     PENDULUM_DAMPING,
     PENDULUM_INIT_SPEED,
+    SOLAR_STIFFNESS,
+    SOLAR_DAMPING,
+    SOLAR_TETHER_MIN,
+    SOLAR_TETHER_MAX,
+    SOLAR_ORBIT_SPEED,
+    SOLAR_SATELLITE_MIN,
+    SOLAR_SATELLITE_MAX,
+    SOLAR_MAX_COUNT,
+    SOLAR_START_LEVEL,
+    SOLAR_CENTER_SCORE,
+    RESPAWN_DELAY,
+    UFO_SPAWN_MIN,
+    UFO_SPAWN_JITTER,
+    UFO_HUM_INTERVAL,
+    BEAT_DENSITY_FACTOR,
+    BEAT_INTERVAL_MIN,
+    BEAT_INTERVAL_MAX,
+    BOOM_PARTICLE_COUNTS,
+    SAFE_POS_TRIES,
     Input,
   };
 }

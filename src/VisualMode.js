@@ -44,15 +44,7 @@ class PolygonMode extends VisualMode {
     return new PumicePoly(x, y);
   }
   createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
-    return new SatelliteAsteroidPoly(
-      x,
-      y,
-      ax,
-      ay,
-      parentSystem,
-      size,
-      maxBumps,
-    );
+    return new SatelliteAsteroidPoly(x, y, ax, ay, parentSystem, size, maxBumps);
   }
 }
 
@@ -73,15 +65,7 @@ class MetaballMode extends VisualMode {
     return new PumiceCluster(x, y);
   }
   createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
-    return new SatelliteClusterAsteroid(
-      x,
-      y,
-      ax,
-      ay,
-      parentSystem,
-      size,
-      maxBumps,
-    );
+    return new SatelliteClusterAsteroid(x, y, ax, ay, parentSystem, size, maxBumps);
   }
 }
 

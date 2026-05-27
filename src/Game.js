@@ -67,7 +67,7 @@ class Game {
     this.solarSystems = [];
     this.deadTimer = 0;
     this.nextExtra = EXTRA_LIFE_SCORE;
-    this.ufoTimer = 20;
+    this.ufoTimer = UFO_SPAWN_MIN;
     this.ufoHumTimer = 0;
     this.t = 0;
 
@@ -112,15 +112,13 @@ class Game {
     const isMetaball = this.mode instanceof MetaballMode;
     const [rMin, rMax] = this._rockCountRange;
     // Polygon-Modus: Rock-Anzahl per _rockCountRange; Metaball-Modus: 1..config.rockCount
-    const rockCount = isMetaball
-      ? randInt(1, this.config.rockCount)
-      : randInt(rMin, rMax);
+    const rockCount = isMetaball ? randInt(1, this.config.rockCount) : randInt(rMin, rMax);
     this.rocks = Array.from({ length: rockCount }, () =>
       this.mode.createRock(rand(60, W - 60), rand(60, H - 60)),
     );
     this.deadTimer = 0;
     this.nextExtra = EXTRA_LIFE_SCORE;
-    this.ufoTimer = 20;
+    this.ufoTimer = UFO_SPAWN_MIN;
     this.ufoHumTimer = 0;
     this.beatTimer = 1.0;
     this.beatPhase = 0;
@@ -165,7 +163,11 @@ class Game {
     // Beat throb
     this.beatTimer -= dt;
     if (this.beatTimer <= 0) {
-      this.beatInterval = clamp(1.0 - this.asteroids.length * 0.045, 0.12, 1.0);
+      this.beatInterval = clamp(
+        BEAT_INTERVAL_MAX - this.asteroids.length * BEAT_DENSITY_FACTOR,
+        BEAT_INTERVAL_MIN,
+        BEAT_INTERVAL_MAX,
+      );
       this.beatTimer = this.beatInterval;
       this.beatPhase ^= 1;
       this.snd.throb(this.beatPhase);
@@ -176,7 +178,7 @@ class Game {
       this.ufoHumTimer -= dt;
       if (this.ufoHumTimer <= 0) {
         this.snd.ufoHum();
-        this.ufoHumTimer = 0.3;
+        this.ufoHumTimer = UFO_HUM_INTERVAL;
       }
     }
 
@@ -278,21 +280,13 @@ class Game {
         if (pts && pts.length > 1) {
           // Compound body: draw each sub-circle (parts[0] is the parent hull, skip it)
           for (let i = 1; i < pts.length; i++)
-            drawC(
-              pts[i].position.x,
-              pts[i].position.y,
-              pts[i].circleRadius,
-              "#f84",
-            );
+            drawC(pts[i].position.x, pts[i].position.y, pts[i].circleRadius, "#f84");
         } else {
           drawC(a.x, a.y, a.collisionRadius, "#f84");
         }
       });
       this.pumices.forEach((p) => {
-        if (p.cells)
-          p.cells
-            .filter((c) => c.alive)
-            .forEach((c) => drawC(c.x, c.y, c.r, "#f4f"));
+        if (p.cells) p.cells.filter((c) => c.alive).forEach((c) => drawC(c.x, c.y, c.r, "#f4f"));
         else if (p.alive) drawC(p.x, p.y, p.radius, "#f4f");
       });
       // Enemies
@@ -340,11 +334,7 @@ class Game {
         parseFloat(ms) > 20 ? "#f84" : parseFloat(ms) > 17 ? "#ff4" : "#4f8",
         H - 34,
       );
-      line(
-        `FPS:       ${fps}`,
-        fps < 50 ? "#f84" : fps < 58 ? "#ff4" : "#4f8",
-        H - 20,
-      );
+      line(`FPS:       ${fps}`, fps < 50 ? "#f84" : fps < 58 ? "#ff4" : "#4f8", H - 20);
       ctx.restore();
     }
 
@@ -368,15 +358,11 @@ class Game {
         y = rand(60, H - 60);
         tries++;
         const collides =
-          this.rocks.some(
-            (r) => dist({ x, y }, r) < r.collisionRadius + margin,
-          ) ||
-          this.asteroids.some(
-            (a) => dist({ x, y }, a) < a.collisionRadius + margin,
-          ) ||
+          this.rocks.some((r) => dist({ x, y }, r) < r.collisionRadius + margin) ||
+          this.asteroids.some((a) => dist({ x, y }, a) < a.collisionRadius + margin) ||
           this.pumices.some((p) => p.pointInsideMargin(x, y, margin));
         if (!collides) return [x, y];
-      } while (tries < 300);
+      } while (tries < SAFE_POS_TRIES);
     }
     return [x, y];
   }
@@ -433,10 +419,7 @@ class Game {
       for (let si = 0; si < solarCount; si++) {
         const ax = rand(W * 0.2, W * 0.8);
         const ay = rand(H * 0.2, H * 0.8);
-        const satelliteCount = randInt(
-          SOLAR_SATELLITE_MIN,
-          SOLAR_SATELLITE_MAX,
-        );
+        const satelliteCount = randInt(SOLAR_SATELLITE_MIN, SOLAR_SATELLITE_MAX);
         const sys = new SolarSystem(ax, ay, satelliteCount);
         this.solarSystems.push(sys);
         for (let j = 0; j < satelliteCount; j++) {
@@ -444,22 +427,10 @@ class Game {
           const spawnAngle = (j / satelliteCount) * TAU + rand(-0.3, 0.3);
           const sx = ax + Math.cos(spawnAngle) * tetherLen;
           const sy = ay + Math.sin(spawnAngle) * tetherLen;
-          const sat = this.mode.createSatellite(
-            sx,
-            sy,
-            ax,
-            ay,
-            sys,
-            1,
-            maxBumps,
-          );
+          const sat = this.mode.createSatellite(sx, sy, ax, ay, sys, 1, maxBumps);
           this.asteroids.push(sat);
           Matter.World.add(this.engine.world, [sat.body, sat.constraint]);
-          Matter.Body.set(
-            sat.body,
-            "collisionFilter",
-            this._asteroidCollisionFilter,
-          );
+          Matter.Body.set(sat.body, "collisionFilter", this._asteroidCollisionFilter);
         }
       }
     }
@@ -479,14 +450,10 @@ class Game {
   }
 
   _boom(x, y, size) {
-    const counts = [16, 10, 6];
-    for (let i = 0; i < counts[size]; i++)
-      this.particles.push(new Particle(x, y));
-    [
-      () => this.snd.explodeLarge(),
-      () => this.snd.explodeMed(),
-      () => this.snd.explodeSmall(),
-    ][size]();
+    for (let i = 0; i < BOOM_PARTICLE_COUNTS[size]; i++) this.particles.push(new Particle(x, y));
+    [() => this.snd.explodeLarge(), () => this.snd.explodeMed(), () => this.snd.explodeSmall()][
+      size
+    ]();
   }
 
   _killShip() {
@@ -497,7 +464,7 @@ class Game {
     Matter.World.remove(this.engine.world, this.ship.body);
     this.ship = null;
     this.state = STATE.DEAD;
-    this.deadTimer = 2.2;
+    this.deadTimer = RESPAWN_DELAY;
     this.bullets = [];
     this.ufoBullets = [];
   }
@@ -516,8 +483,7 @@ class Game {
     }
 
     if (this.state === STATE.HELP) {
-      if (Input.help() || Input.wasPressed("Escape"))
-        this.state = STATE.PLAYING;
+      if (Input.help() || Input.wasPressed("Escape")) this.state = STATE.PLAYING;
       Input.flush();
       return true;
     }
@@ -534,10 +500,8 @@ class Game {
       // Modus-Auswahl nur wenn Fokus auf Kacheln
       if (!readOnly && this._configFocus === "mode") {
         const prevMode = this.config.mode;
-        if (Input.wasPressed("ArrowLeft"))
-          this.config.mode = Math.max(1, this.config.mode - 1);
-        if (Input.wasPressed("ArrowRight"))
-          this.config.mode = Math.min(3, this.config.mode + 1);
+        if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
+        if (Input.wasPressed("ArrowRight")) this.config.mode = Math.min(3, this.config.mode + 1);
         if (this.config.mode !== prevMode) {
           Object.assign(this.config, MODES[this.config.mode - 1]);
           this._applyAsteroidFilter();
@@ -562,10 +526,7 @@ class Game {
       }
 
       // Spiel starten: Enter wenn Kacheln fokussiert, oder C-Taste
-      if (
-        (Input.wasPressed("Enter") && this._configFocus === "mode") ||
-        Input.config()
-      ) {
+      if ((Input.wasPressed("Enter") && this._configFocus === "mode") || Input.config()) {
         if (readOnly) this.state = STATE.PLAYING;
         else this.start();
       }
@@ -593,22 +554,16 @@ class Game {
       };
       if (!readOnly) {
         if (Input.wasPressed("ArrowUp"))
-          this._detailCursor =
-            (this._detailCursor + params.length - 1) % params.length;
+          this._detailCursor = (this._detailCursor + params.length - 1) % params.length;
         if (Input.wasPressed("ArrowDown"))
           this._detailCursor = (this._detailCursor + 1) % params.length;
         const key = params[this._detailCursor];
-        if (Input.wasPressed("ArrowLeft"))
-          this.config[key] = Math.max(1, this.config[key] - 1);
+        if (Input.wasPressed("ArrowLeft")) this.config[key] = Math.max(1, this.config[key] - 1);
         if (Input.wasPressed("ArrowRight"))
           this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
         if (key === "asteroidBounce") this._applyAsteroidFilter();
       }
-      if (
-        Input.wasPressed("Escape") ||
-        Input.wasPressed("KeyD") ||
-        Input.wasPressed("Enter")
-      ) {
+      if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
         this._configFocus = "details";
         this.state = STATE.CONFIG;
         Input.flush();
@@ -723,7 +678,7 @@ class Game {
     if (this.ufoTimer <= 0) {
       const size = this.score >= 5000 && Math.random() < 0.4 ? 1 : 0;
       this.ufos.push(this.mode.createUfo(size, (b) => this.ufoBullets.push(b)));
-      this.ufoTimer = 25 + rand(0, 15);
+      this.ufoTimer = UFO_SPAWN_MIN + rand(0, UFO_SPAWN_JITTER);
     }
     this.ufos = this.ufos.filter((u) => u.update(dt, this.ship));
   }
@@ -748,26 +703,12 @@ class Game {
           this._spawnDebris(a.x, a.y, b.vx, b.vy); // #10 debris
           if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(this);
           if (Math.random() < this._powerupChance)
-            this.powerups.push(
-              new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]),
-            );
+            this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]));
           const children = a.split(Math.atan2(b.vy, b.vx));
           for (const c of children) c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
-          if (a.constraint)
-            Matter.World.remove(this.engine.world, a.constraint);
+          if (a.constraint) Matter.World.remove(this.engine.world, a.constraint);
           Matter.World.remove(this.engine.world, a.body);
-          if (children.length) {
-            Matter.World.add(
-              this.engine.world,
-              children.map((c) => c.body),
-            );
-            const f = this._asteroidCollisionFilter;
-            for (const c of children) {
-              Matter.Body.set(c.body, "collisionFilter", f);
-              if (c.constraint)
-                Matter.World.add(this.engine.world, c.constraint);
-            }
-          }
+          this._addAsteroidsToWorld(children);
           this.asteroids.splice(ai, 1, ...children);
           this.bullets.splice(bi, 1);
           continue outer;
@@ -826,28 +767,14 @@ class Game {
             const sLen = Math.hypot(this.ship.vx, this.ship.vy) || 1;
             const hitDx = a.x - this.ship.x,
               hitDy = a.y - this.ship.y;
-            const cross =
-              hitDx * (this.ship.vy / sLen) - hitDy * (this.ship.vx / sLen);
+            const cross = hitDx * (this.ship.vy / sLen) - hitDy * (this.ship.vx / sLen);
             const children = a.split();
-            for (const c of children)
-              c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
+            for (const c of children) c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
             this._spawnDebris(a.x, a.y, this.ship.vx, this.ship.vy); // #10
             if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(this);
-            if (a.constraint)
-              Matter.World.remove(this.engine.world, a.constraint);
+            if (a.constraint) Matter.World.remove(this.engine.world, a.constraint);
             Matter.World.remove(this.engine.world, a.body);
-            if (children.length) {
-              Matter.World.add(
-                this.engine.world,
-                children.map((c) => c.body),
-              );
-              const f = this._asteroidCollisionFilter;
-              for (const c of children) {
-                Matter.Body.set(c.body, "collisionFilter", f);
-                if (c.constraint)
-                  Matter.World.add(this.engine.world, c.constraint);
-              }
-            }
+            this._addAsteroidsToWorld(children);
             this.asteroids.splice(ai, 1, ...children);
             this._bounceShip(a.x, a.y); // explicit bounce (asteroid removed before Matter can apply it)
           } else {
@@ -921,12 +848,9 @@ class Game {
       for (let pi = this.powerups.length - 1; pi >= 0; pi--) {
         const pu = this.powerups[pi];
         if (dist(this.ship, pu) < this.ship.radius + pu.radius) {
-          if (pu.type === "shield")
-            this.ship.shieldTimer = this._powerupDuration;
-          else if (pu.type === "rapid")
-            this.ship.rapidTimer = this._powerupDuration;
-          else if (pu.type === "spread")
-            this.ship.spreadTimer = this._powerupDuration;
+          if (pu.type === "shield") this.ship.shieldTimer = this._powerupDuration;
+          else if (pu.type === "rapid") this.ship.rapidTimer = this._powerupDuration;
+          else if (pu.type === "spread") this.ship.spreadTimer = this._powerupDuration;
           else this.ship.heavyTimer = this._powerupDuration;
           this.snd.powerUp(pu.type);
           this.powerups.splice(pi, 1);
@@ -944,11 +868,7 @@ class Game {
       (s, p) => s + (p.cells ? p.cells.filter((c) => c.alive).length : 1),
       0,
     );
-    const perBullet =
-      this.asteroids.length +
-      this.ufos.length +
-      this.rocks.length +
-      pumiceUnits;
+    const perBullet = this.asteroids.length + this.ufos.length + this.rocks.length + pumiceUnits;
     const shipChecks = this.ship
       ? this.asteroids.length +
         this.rocks.length +
@@ -1130,8 +1050,21 @@ class Game {
 
   _applyAsteroidFilter() {
     const f = this._asteroidCollisionFilter;
-    for (const a of this.asteroids)
+    for (const a of this.asteroids) Matter.Body.set(a.body, "collisionFilter", f);
+  }
+
+  // Fügt Asteroid-Kinder (split-Ergebnis) zur Physik-Welt hinzu und setzt den Kollisions-Filter.
+  _addAsteroidsToWorld(asteroids) {
+    if (!asteroids.length) return;
+    Matter.World.add(
+      this.engine.world,
+      asteroids.map((a) => a.body),
+    );
+    const f = this._asteroidCollisionFilter;
+    for (const a of asteroids) {
       Matter.Body.set(a.body, "collisionFilter", f);
+      if (a.constraint) Matter.World.add(this.engine.world, a.constraint);
+    }
   }
 
   // Spawnt 3–5 Trümmer-Bodies am Ort der Explosion mit Zufallsrichtung + Impuls-Anteil.
@@ -1208,9 +1141,7 @@ class Game {
       const selected = this.config.mode === i + 1;
       const x = cardStartX + i * (cardW + cardGap);
 
-      ctx.fillStyle = selected
-        ? "rgba(68,170,255,0.16)"
-        : "rgba(255,255,255,0.04)";
+      ctx.fillStyle = selected ? "rgba(68,170,255,0.16)" : "rgba(255,255,255,0.04)";
       ctx.strokeStyle = selected ? "#4af" : "rgba(255,255,255,0.13)";
       ctx.lineWidth = selected ? 2 : 1;
       ctx.beginPath();
@@ -1246,9 +1177,7 @@ class Game {
     const btnW = 160,
       btnH = 32;
     const detailsFocused = this._configFocus === "details";
-    ctx.fillStyle = detailsFocused
-      ? "rgba(68,170,255,0.16)"
-      : "rgba(255,255,255,0.05)";
+    ctx.fillStyle = detailsFocused ? "rgba(68,170,255,0.16)" : "rgba(255,255,255,0.05)";
     ctx.strokeStyle = detailsFocused ? "#4af" : "rgba(255,255,255,0.22)";
     ctx.lineWidth = detailsFocused ? 2 : 1;
     ctx.shadowColor = detailsFocused ? "#4af" : "transparent";
@@ -1344,16 +1273,8 @@ class Game {
         const selected = val === n;
         const bx = startX + (n - 1) * (slotW + gap);
 
-        ctx.fillStyle = selected
-          ? active
-            ? "#4af"
-            : "#446"
-          : "rgba(255,255,255,0.05)";
-        ctx.strokeStyle = selected
-          ? active
-            ? "#4af"
-            : "#446"
-          : "rgba(255,255,255,0.13)";
+        ctx.fillStyle = selected ? (active ? "#4af" : "#446") : "rgba(255,255,255,0.05)";
+        ctx.strokeStyle = selected ? (active ? "#4af" : "#446") : "rgba(255,255,255,0.13)";
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.roundRect(bx, y, slotW, 24, 5);
@@ -1372,9 +1293,7 @@ class Game {
     ctx.font = "12px monospace";
     ctx.textAlign = "center";
     ctx.fillText(
-      readOnly
-        ? "ESC / ENTER  Zurück"
-        : "↑ ↓  Parameter   ← →  Wert   ENTER / ESC  Zurück",
+      readOnly ? "ESC / ENTER  Zurück" : "↑ ↓  Parameter   ← →  Wert   ENTER / ESC  Zurück",
       cx,
       H - 18,
     );
