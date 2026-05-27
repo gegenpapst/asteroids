@@ -122,6 +122,20 @@ const DEBRIS_FRICTION_AIR = 0.018; // Luftreibung für Matter-Body
 
 // Rock count is controlled by the in-game config dialog (3 levels)
 
+// ── Satellite asteroid color proposals ──────────────────────────────────────
+// Each entry: center = bright inner glow (rgb string), body = dark outer fill (hex).
+// Used in the start-screen showcase; one will become the permanent satellite color.
+const SATELLITE_COLORS = [
+  { name: "Ember", center: "rgb(255,125,18)", body: "#130300" }, // volcanic amber
+  { name: "Crimson", center: "rgb(235,42,42)", body: "#140202" }, // lava red
+  { name: "Arctic", center: "rgb(48,208,255)", body: "#000e1a" }, // ice cyan
+  { name: "Venom", center: "rgb(32,235,78)", body: "#001204" }, // acid green
+  { name: "Wraith", center: "rgb(162,52,255)", body: "#0a0019" }, // deep violet
+  { name: "Solar", center: "rgb(255,212,38)", body: "#120d00" }, // sun gold
+  { name: "Specter", center: "rgb(182,214,255)", body: "#04080f" }, // cold silver
+  { name: "Plasma", center: "rgb(245,48,172)", body: "#14000e" }, // hot magenta
+];
+
 // ── Gameplay-Timing ─────────────────────────────────────────────────────────
 const RESPAWN_DELAY = 2.2; // Sekunden bis Schiff nach dem Tod wieder erscheint
 const UFO_SPAWN_MIN = 20; // Frühester UFO-Spawn nach Level-Start (s)
@@ -354,6 +368,7 @@ if (typeof module !== "undefined") {
     BEAT_INTERVAL_MAX,
     BOOM_PARTICLE_COUNTS,
     SAFE_POS_TRIES,
+    SATELLITE_COLORS,
     Input,
   };
 }

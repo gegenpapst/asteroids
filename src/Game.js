@@ -1300,43 +1300,92 @@ class Game {
   }
 
   _drawStart() {
-    const cx = W / 2,
-      cy = H / 2;
+    const cx = W / 2;
     ctx.textAlign = "center";
-    ctx.shadowColor = "#4af";
-    ctx.shadowBlur = 30;
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 72px monospace";
-    ctx.fillText("ASTEROIDS", cx, cy - 90);
 
+    // Title
+    ctx.shadowColor = "#fa6";
+    ctx.shadowBlur = 28;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 52px monospace";
+    ctx.fillText("ASTEROIDS", cx, 58);
     ctx.shadowBlur = 0;
 
-    const _lm = new Date(document.lastModified);
-    const _pad = (n) => String(n).padStart(2, "0");
-    ctx.fillStyle = "#555";
-    ctx.font = "12px monospace";
-    ctx.fillText(
-      `Stand: ${_pad(_lm.getDate())}.${_pad(_lm.getMonth() + 1)}.${_lm.getFullYear()}  ${_pad(_lm.getHours())}:${_pad(_lm.getMinutes())} Uhr`,
-      cx,
-      cy - 40,
-    );
+    // Showcase label
+    ctx.fillStyle = "rgba(255,165,60,0.75)";
+    ctx.font = "11px monospace";
+    ctx.fillText("SATELLITE ASTEROID — COLOR PROPOSALS", cx, 82);
 
-    ctx.fillStyle = "#888";
-    ctx.font = "18px monospace";
-    ctx.fillText("ARROWS / WASD  —  rotate & thrust", cx, cy + 10);
-    ctx.fillText("SHIFT + ← →  —  strafe", cx, cy + 36);
-    ctx.fillText("SPACE / Z  —  fire", cx, cy + 62);
+    // 4 x 2 grid
+    const cols = 4;
+    const colW = W / cols;
+    const rowStartY = [148, 335]; // y-center of asteroid per row
+    const r = 36;
 
-    if (this.hiScore > 0) {
-      ctx.fillStyle = "#fc0";
-      ctx.font = "16px monospace";
-      ctx.fillText(`HI-SCORE  ${this.hiScore}`, cx, cy + 88);
+    for (let i = 0; i < SATELLITE_COLORS.length; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = colW * col + colW / 2;
+      const y = rowStartY[row];
+      const { name, center, body } = SATELLITE_COLORS[i];
+
+      // Soft ambient glow behind the asteroid
+      const ambient = ctx.createRadialGradient(x, y, 0, x, y, r * 2.2);
+      ambient.addColorStop(0, center.replace("rgb(", "rgba(").replace(")", ",0.12)"));
+      ambient.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.beginPath();
+      ctx.arc(x, y, r * 2.2, 0, TAU);
+      ctx.fillStyle = ambient;
+      ctx.fill();
+
+      // Dark rock body
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, TAU);
+      ctx.fillStyle = body;
+      ctx.fill();
+
+      // Inner glow (screen blend — dark edge, bright center)
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      const glow = ctx.createRadialGradient(x - r * 0.28, y - r * 0.28, 0, x, y, r);
+      glow.addColorStop(0, center);
+      glow.addColorStop(0.42, center);
+      glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, TAU);
+      ctx.fillStyle = glow;
+      ctx.fill();
+      ctx.restore();
+
+      // Tether hint (short dashed line upward + anchor dot)
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,140,60,0.45)";
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      ctx.moveTo(x, y - r);
+      ctx.lineTo(x, y - r - 22);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(x, y - r - 22, 3, 0, TAU);
+      ctx.fillStyle = "rgba(255,140,60,0.65)";
+      ctx.fill();
+      ctx.restore();
+
+      // Index + name label
+      ctx.fillStyle = "#999";
+      ctx.font = "bold 11px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`${i + 1}  ${name.toUpperCase()}`, x, y + r + 17);
     }
 
+    // Blink "press enter"
     if (Math.floor(Date.now() / 520) % 2) {
-      ctx.fillStyle = "#fff";
-      ctx.font = "22px monospace";
-      ctx.fillText("PRESS ENTER OR SPACE TO START", cx, cy + 140);
+      ctx.fillStyle = "#ccc";
+      ctx.font = "16px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("PRESS ENTER OR SPACE TO START", cx, H - 16);
     }
   }
 
