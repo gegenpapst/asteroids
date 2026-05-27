@@ -397,7 +397,7 @@ class Game {
     const count = Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
     const cx = W / 2,
       cy = H / 2;
-    const maxBumps = Math.min(this.level - 1, 7);
+    const maxBumps = Math.min(Math.max(this.level - 1, 1), 7);
     for (let i = 0; i < count; i++) {
       let x, y;
       do {
