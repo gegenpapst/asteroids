@@ -70,19 +70,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
   }
 
   draw() {
-    // 1. Dark rock body drawn first so the metaball glow (screen blend) sits on top of it.
-    //    screen(dark body, bright glow) = bright center fading into dark edges.
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius * 0.88, 0, TAU);
-    ctx.fillStyle = SATELLITE_COLORS[4].body;
-    ctx.fill();
-    ctx.restore();
-
-    // 2. Metaball glow (screen blend — bright center, transparent outer)
-    super.draw();
-
-    // 3. Tether + anchor dot
+    // Tether + anchor dot
     const tetherColor = this.parentSystem ? "rgba(255, 140, 60, 0.45)" : "#556";
     const anchorColor = this.parentSystem ? "rgba(255,140,60,0.7)" : "#778";
     ctx.save();
@@ -98,6 +86,24 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     ctx.arc(this.anchorX, this.anchorY, 4, 0, TAU);
     ctx.fillStyle = anchorColor;
     ctx.fill();
+    ctx.restore();
+
+    // Radial gradient fill: bright Wraith center → dark edge (matches showcase + SatelliteAsteroidPoly)
+    const { center, body } = SATELLITE_COLORS[4];
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, TAU);
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+    grad.addColorStop(0, center);
+    grad.addColorStop(0.45, center);
+    grad.addColorStop(1, body);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = center;
+    ctx.lineWidth = 1;
+    ctx.shadowColor = center;
+    ctx.shadowBlur = 6;
+    ctx.stroke();
     ctx.restore();
   }
 }
