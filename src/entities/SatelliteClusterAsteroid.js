@@ -48,7 +48,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
-    const col = SATELLITE_COLORS[4].center;
+    const col = SATELLITE_COLORS[4];
     return [
       new ClusterAsteroid(
         this.x + ox,

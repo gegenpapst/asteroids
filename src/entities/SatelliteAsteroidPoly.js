@@ -47,7 +47,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
-    const col = SATELLITE_COLORS[4].center;
+    const col = SATELLITE_COLORS[4];
     return [
       new AsteroidPoly(
         this.x + ox,
