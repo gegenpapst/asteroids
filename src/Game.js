@@ -76,13 +76,13 @@ class Game {
     this.beatPhase = 0;
 
     this.config = {
-      mode: 2,
-      bulletRange: 2,
-      powerupFreq: 2,
-      rockCount: 2,
-      pumiceCount: 2,
-      asteroidBounce: 1,
-      visualStyle: 2,
+      mode: 3,
+      bulletRange: 1,
+      powerupFreq: 1,
+      rockCount: 3,
+      pumiceCount: 3,
+      asteroidBounce: 2,
+      visualStyle: 1,
     };
     this._configCursor = 0;
     this._detailCursor = 0;
