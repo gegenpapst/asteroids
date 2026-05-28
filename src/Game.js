@@ -412,7 +412,7 @@ class Game {
 
     // Solar systems only in Metaball mode — Polygon mode uses no satellite asteroids.
     // Solar-Systeme: erscheinen ab Level SOLAR_START_LEVEL, max SOLAR_MAX_COUNT gleichzeitig
-    if (isMetaball && this.level >= SOLAR_START_LEVEL) {
+    if (this.mode instanceof MetaballMode && this.level >= SOLAR_START_LEVEL) {
       const solarCount = Math.min(
         Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1,
         SOLAR_MAX_COUNT,
