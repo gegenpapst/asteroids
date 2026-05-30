@@ -18,8 +18,18 @@ class AsteroidPoly extends AsteroidBase {
       this._color = color;
       this._bodyColor = null;
     }
-    // Derive verts from compound-body geometry so visuals match physics.
-    this.verts = this._makeVerts(randInt(16, 22));
+    // Use jagged polygon verts for the classic Asteroids look.
+    this.verts = this._makeVerts();
+  }
+
+  // Override: classic jagged polygon — ignores the compound-body geometry used by MetaballMode.
+  // Random angular jitter + wide radius variance give the traditional Asteroids silhouette.
+  _makeVerts() {
+    const n = randInt(8, 12);
+    return Array.from({ length: n }, (_, i) => ({
+      a: (i / n) * TAU + rand(-0.25, 0.25),
+      r: this.radius * rand(0.55, 1.0),
+    }));
   }
 
   draw() {
