@@ -392,6 +392,22 @@ class Game {
     }
   }
 
+  // Clamp each asteroid's Matter body velocity to prevent restitution:1 collisions
+  // from compounding speed unboundedly over many frames.
+  _capAsteroidSpeeds() {
+    for (const a of this.asteroids) {
+      const v = a.body.velocity;
+      const spd = Math.hypot(v.x, v.y);
+      const maxSpd = (ASTEROID_SPEED[a.size] * 2.5) / 60;
+      if (spd > maxSpd) {
+        Matter.Body.setVelocity(a.body, {
+          x: (v.x / spd) * maxSpd,
+          y: (v.y / spd) * maxSpd,
+        });
+      }
+    }
+  }
+
   _nextLevel() {
     this.level++;
     const count = Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
@@ -600,6 +616,7 @@ class Game {
     this.solarSystems = this.solarSystems.filter((s) => s.update(dt));
     Matter.Engine.update(this.engine, dt * 1000);
     this._syncBodies();
+    this._capAsteroidSpeeds();
     this._tickDebris(dt);
     if (this.deadTimer <= 0) {
       if (this.lives > 0) {
@@ -660,6 +677,7 @@ class Game {
 
     Matter.Engine.update(this.engine, dt * 1000);
     this._syncBodies();
+    this._capAsteroidSpeeds();
 
     // When shield is active, read Matter's collision-resolved velocity/position back.
     // hull radius (9.8) < shield hitRadius (30.8), so the game-logic dist() check
