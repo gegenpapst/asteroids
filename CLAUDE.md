@@ -7,6 +7,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Comments always in English** — no German comments, no mixed-language comments
 - **Format before editing** — run `npx prettier --write <file>` on every file before making changes to it
 
+## Task recipes
+
+Before starting work, identify the category and follow the checklist. Two categories have dedicated
+skills that must be invoked:
+
+| Category | How to start |
+|---|---|
+| **New entity** (asteroid variant, obstacle, enemy, pickup) | Run `/new-entity` skill |
+| **Config screen change** | Run `/config-change` skill |
+| **Bug fix** | See checklist below |
+| **Refactoring** | See checklist below |
+| **Visual change** | See checklist below |
+| **New game mechanic** | See checklist below |
+
+### Bug fix
+
+1. Write the exact reproduction steps before touching any code
+2. Identify root cause, not just symptom — read the full call chain
+3. Does the bug exist in both PolygonMode and MetaballMode? Fix both if so
+4. After the fix: run the original reproduction sequence and confirm it no longer triggers
+5. Check whether the fix could introduce a regression in adjacent logic
+
+### Refactoring
+
+1. Is there test coverage for the code being moved or renamed? If not: write tests first
+2. Check every reference to renamed/moved symbols — especially in `Game.js` where closed-over
+   locals and `this.*` properties look identical but have different scope
+3. No behaviour change: verify the game starts, plays through a level, and transitions to the next
+4. Run Prettier on all touched files
+
+### Visual change
+
+1. Does the change affect PolygonMode? MetaballMode? Both? — update both render paths
+2. If an offscreen canvas (`_offCanvas`) is involved: ensure it is invalidated and rebuilt
+3. Do split children inherit the updated visual correctly?
+4. Does the start-screen showcase need updating to match?
+
+### New game mechanic
+
+1. Which `STATE` values does it run in? Update the state machine comment if needed
+2. Every tuning value must be a named constant in `Globals.js` — no magic numbers inline
+3. Does it interact with score, lives, or level progression? Check all three
+4. Write a test or add a manual verification note in the commit message
+
 ## Running the game
 
 Open `index.html` directly in any modern browser — no build step, no server, no dependencies.
