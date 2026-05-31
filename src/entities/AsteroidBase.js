@@ -50,7 +50,8 @@ class AsteroidBase {
 
   // Baut einen Compound-Body aus einem kleinen Kern + weit abstehenden Klumpen.
   // Setzt this._coreR und this._bumps, damit _makeVerts() darauf zugreifen kann.
-  _makeBody() {
+  // wrap=false → kein plugin.wrap (für Constraint-gebundene Subklassen wie SatelliteAsteroid).
+  _makeBody(wrap = true) {
     const r = this.radius;
     this._coreR = r * (1.0 - (0.54 * Math.min(this.bumpCount, 7)) / 7);
     this._bumps = this._genBumps();
@@ -65,7 +66,7 @@ class AsteroidBase {
       frictionAir: 0,
       restitution: 1,
       label: this.constructor._label,
-      plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } },
+      ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } } } : {}),
     });
     Matter.Body.setPosition(body, { x: this.x, y: this.y });
     return body;
@@ -124,20 +125,8 @@ class AsteroidBase {
     const ox = Math.cos(perp) * offset,
       oy = Math.sin(perp) * offset;
     return [
-      new Cls(
-        this.x + ox,
-        this.y + oy,
-        this.size + 1,
-        safeSplitAngle(bulletAngle),
-        this.maxBumps,
-      ),
-      new Cls(
-        this.x - ox,
-        this.y - oy,
-        this.size + 1,
-        safeSplitAngle(bulletAngle),
-        this.maxBumps,
-      ),
+      new Cls(this.x + ox, this.y + oy, this.size + 1, safeSplitAngle(bulletAngle), this.maxBumps),
+      new Cls(this.x - ox, this.y - oy, this.size + 1, safeSplitAngle(bulletAngle), this.maxBumps),
     ];
   }
 }

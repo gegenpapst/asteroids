@@ -48,11 +48,19 @@ const ASTEROID_SPIN_FACTOR = 0.065; // Off-Center-Hit Spin-Boost: ±rad/s pro px
 // ── Pendel-Asteroiden ───────────────────────────────────────────────────────
 const PENDULUM_STIFFNESS = 0.03; // Federkonstante des Constraints (0 = frei, 1 = starr)
 const PENDULUM_DAMPING = 0.01; // leichte Dämpfung für numerische Stabilität
-const PENDULUM_TETHER_MIN = 100; // min. Seillänge px bei Spawn
-const PENDULUM_TETHER_MAX = 180; // max. Seillänge px bei Spawn
 const PENDULUM_INIT_SPEED = 90; // initiale Tangentialgeschwindigkeit px/s
-const PENDULUM_MAX_COUNT = 3; // max. gleichzeitig aktive Pendel-Asteroiden
-const PENDULUM_START_LEVEL = 1; // ab diesem Level erscheinen Pendel-Asteroiden
+
+// ── Solar-System-Asteroiden ─────────────────────────────────────────────────
+const SOLAR_STIFFNESS = 0.8; // nahezu starres Seil → saubere Kreisbahn
+const SOLAR_DAMPING = 0.02;
+const SOLAR_TETHER_MIN = 75; // min. Seillänge px
+const SOLAR_TETHER_MAX = 140; // max. Seillänge px
+const SOLAR_ORBIT_SPEED = 120; // tangentiale Startgeschwindigkeit px/s
+const SOLAR_SATELLITE_MIN = 3; // min. Satelliten
+const SOLAR_SATELLITE_MAX = 7; // max. Satelliten
+const SOLAR_MAX_COUNT = 2; // max. gleichzeitig aktive Solar-Systeme
+const SOLAR_START_LEVEL = 1; // ab diesem Level
+const SOLAR_CENTER_SCORE = 500; // Punkte für das Zentrum
 
 const INITIAL_ROCKS = 4;
 const MAX_ROCKS_PER_LEVEL = 10;
@@ -113,6 +121,31 @@ const DEBRIS_RADIUS_MAX = 5.0; // Größter Trümmer-Radius (px)
 const DEBRIS_FRICTION_AIR = 0.018; // Luftreibung für Matter-Body
 
 // Rock count is controlled by the in-game config dialog (3 levels)
+
+// ── Satellite asteroid color proposals ──────────────────────────────────────
+// Each entry: center = bright inner glow (rgb string), body = dark outer fill (hex).
+// Used in the start-screen showcase; one will become the permanent satellite color.
+const SATELLITE_COLORS = [
+  { name: "Ember", center: "rgb(255,125,18)", body: "#130300" }, // volcanic amber
+  { name: "Crimson", center: "rgb(235,42,42)", body: "#140202" }, // lava red
+  { name: "Arctic", center: "rgb(48,208,255)", body: "#000e1a" }, // ice cyan
+  { name: "Venom", center: "rgb(32,235,78)", body: "#001204" }, // acid green
+  { name: "Wraith", center: "rgb(162,52,255)", body: "#0a0019" }, // deep violet
+  { name: "Solar", center: "rgb(255,212,38)", body: "#120d00" }, // sun gold
+  { name: "Specter", center: "rgb(182,214,255)", body: "#04080f" }, // cold silver
+  { name: "Plasma", center: "rgb(245,48,172)", body: "#14000e" }, // hot magenta
+];
+
+// ── Gameplay-Timing ─────────────────────────────────────────────────────────
+const RESPAWN_DELAY = 2.2; // Sekunden bis Schiff nach dem Tod wieder erscheint
+const UFO_SPAWN_MIN = 20; // Frühester UFO-Spawn nach Level-Start (s)
+const UFO_SPAWN_JITTER = 15; // Zusätzlicher Zufalls-Offset für UFO-Spawn (s)
+const UFO_HUM_INTERVAL = 0.3; // Intervall des UFO-Hum-Sounds (s)
+const BEAT_DENSITY_FACTOR = 0.045; // Beat-Interval-Schrumpfung pro Asteroid
+const BEAT_INTERVAL_MIN = 0.12; // Kürzestes Beat-Intervall (s)
+const BEAT_INTERVAL_MAX = 1.0; // Längstes Beat-Intervall (s)
+const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // Explosions-Partikel pro Asteroiden-Größe (0–2)
+const SAFE_POS_TRIES = 300; // Max. Versuche für sichere Spawn-Position
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 function rand(a, b) {
@@ -187,13 +220,7 @@ const Input = {
     window.addEventListener("keydown", (e) => {
       if (!this._held.has(e.code)) this._pressed.add(e.code);
       this._held.add(e.code);
-      const block = [
-        "Space",
-        "ArrowUp",
-        "ArrowDown",
-        "ArrowLeft",
-        "ArrowRight",
-      ];
+      const block = ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
       if (block.includes(e.code)) e.preventDefault();
     });
     window.addEventListener("keyup", (e) => this._held.delete(e.code));
@@ -321,11 +348,27 @@ if (typeof module !== "undefined") {
     DEBRIS_FRICTION_AIR,
     PENDULUM_STIFFNESS,
     PENDULUM_DAMPING,
-    PENDULUM_TETHER_MIN,
-    PENDULUM_TETHER_MAX,
     PENDULUM_INIT_SPEED,
-    PENDULUM_MAX_COUNT,
-    PENDULUM_START_LEVEL,
+    SOLAR_STIFFNESS,
+    SOLAR_DAMPING,
+    SOLAR_TETHER_MIN,
+    SOLAR_TETHER_MAX,
+    SOLAR_ORBIT_SPEED,
+    SOLAR_SATELLITE_MIN,
+    SOLAR_SATELLITE_MAX,
+    SOLAR_MAX_COUNT,
+    SOLAR_START_LEVEL,
+    SOLAR_CENTER_SCORE,
+    RESPAWN_DELAY,
+    UFO_SPAWN_MIN,
+    UFO_SPAWN_JITTER,
+    UFO_HUM_INTERVAL,
+    BEAT_DENSITY_FACTOR,
+    BEAT_INTERVAL_MIN,
+    BEAT_INTERVAL_MAX,
+    BOOM_PARTICLE_COUNTS,
+    SAFE_POS_TRIES,
+    SATELLITE_COLORS,
     Input,
   };
 }

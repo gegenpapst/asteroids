@@ -5,24 +5,27 @@ class ClusterAsteroid extends AsteroidBase {
   static _label = "cluster-asteroid";
   static _rotBase = 1.2;
 
-  constructor(x, y, size = 0, angle = null, maxBumps = 7) {
+  // color: optional override; defaults to the standard steel-blue asteroid tint.
+  //   Pass a {center, body} object to enable radial gradient fill (e.g. satellite split children).
+  constructor(x, y, size = 0, angle = null, maxBumps = 7, color = "rgb(100, 140, 185)") {
     super(x, y, size, angle, maxBumps);
-    // Mirror the compound body: one core cell + one cell per bump.
-    // This ensures the metaball silhouette matches the physics shape.
-    const cells = [{ dx: 0, dy: 0, r: this._coreR }];
-    for (const b of this._bumps) cells.push({ dx: b.dx, dy: b.dy, r: b.br });
-    const blurBase =
-      this._bumps.length > 0
-        ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
-        : this._coreR * 0.4;
-    this._offCanvas = buildMetaballCanvas(
-      cells,
-      "rgb(100, 140, 185)",
-      this.radius,
-      blurBase,
-      14,
-      0.55,
-    );
+    if (color && typeof color === "object") {
+      this._gradientCenter = color.center;
+      this._gradientBody = color.body;
+      this._offCanvas = null;
+    } else {
+      this._gradientCenter = null;
+      this._gradientBody = null;
+      // Mirror the compound body: one core cell + one cell per bump.
+      // This ensures the metaball silhouette matches the physics shape.
+      const cells = [{ dx: 0, dy: 0, r: this._coreR }];
+      for (const b of this._bumps) cells.push({ dx: b.dx, dy: b.dy, r: b.br });
+      const blurBase =
+        this._bumps.length > 0
+          ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
+          : this._coreR * 0.4;
+      this._offCanvas = buildMetaballCanvas(cells, color, this.radius, blurBase, 14, 0.55);
+    }
   }
 
   get collisionRadius() {
@@ -31,6 +34,25 @@ class ClusterAsteroid extends AsteroidBase {
   }
 
   draw() {
+    if (this._gradientCenter) {
+      // Radial gradient fill: bright center → dark edge (used by satellite split children)
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, TAU);
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+      grad.addColorStop(0, this._gradientCenter);
+      grad.addColorStop(0.45, this._gradientCenter);
+      grad.addColorStop(1, this._gradientBody);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = this._gradientCenter;
+      ctx.lineWidth = 1;
+      ctx.shadowColor = this._gradientCenter;
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
     const sz = this._offCanvas.width;
     ctx.save();
     ctx.globalCompositeOperation = "screen";

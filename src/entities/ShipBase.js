@@ -22,18 +22,13 @@ class ShipBase {
     // Matter body — sensor by default (mask:0).
     // Switched to colliding automatically when shield is active + not invulnerable.
     this._shieldActive = false;
-    this.body = Matter.Bodies.circle(
-      this.x,
-      this.y,
-      SHIP_SIZE * SHIP_HULL_FACTOR,
-      {
-        friction: 0,
-        frictionAir: 0,
-        restitution: 0.85,
-        label: "ship",
-        collisionFilter: { mask: 0 },
-      },
-    );
+    this.body = Matter.Bodies.circle(this.x, this.y, SHIP_SIZE * SHIP_HULL_FACTOR, {
+      friction: 0,
+      frictionAir: 0,
+      restitution: 0.85,
+      label: "ship",
+      collisionFilter: { mask: 0 },
+    });
   }
 
   get radius() {
@@ -61,11 +56,7 @@ class ShipBase {
     // Sensor (mask:0) otherwise — prevents Matter from pushing a dying ship.
     const shielded = this.shieldTimer > 0 && this.invulnerable <= 0;
     if (shielded !== this._shieldActive) {
-      Matter.Body.set(
-        this.body,
-        "collisionFilter",
-        shielded ? {} : { mask: 0 },
-      );
+      Matter.Body.set(this.body, "collisionFilter", shielded ? {} : { mask: 0 });
       this._shieldActive = shielded;
     }
 

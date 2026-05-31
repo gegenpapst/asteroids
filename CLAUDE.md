@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Coding conventions
+
+- **Comments always in English** — no German comments, no mixed-language comments
+- **Format before editing** — run `npx prettier --write <file>` on every file before making changes to it
+
 ## Running the game
 
 Open `index.html` directly in any modern browser — no build step, no server, no dependencies.
