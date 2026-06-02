@@ -1,10 +1,9 @@
 "use strict";
 
-// Strategy-Pattern für visualStyle (Polygon ↔ Metaball).
+// Strategy pattern for visualStyle (Polygon ↔ Metaball).
 //
-// `Game.mode` wird beim Spielstart anhand der Config gesetzt und liefert
-// die passenden Entity-Klassen, ohne dass Game.js irgendwo `visualStyle === 2`
-// prüfen muss.
+// `Game.mode` is set at game start based on the config and provides
+// the appropriate entity classes without Game.js ever checking `visualStyle === 2`.
 
 class VisualMode {
   createShip() {
@@ -69,7 +68,7 @@ class MetaballMode extends VisualMode {
   }
 }
 
-// Lookup-Tabelle, indiziert nach config.visualStyle (1-basiert).
+// Lookup table, indexed by config.visualStyle (1-based).
 const VISUAL_MODES = [new PolygonMode(), new MetaballMode()];
 
 if (typeof module !== "undefined")

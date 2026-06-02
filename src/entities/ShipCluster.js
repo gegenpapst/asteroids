@@ -1,6 +1,6 @@
 "use strict";
 
-// Metaball/Cluster-Variante des Schiffs — erbt Bewegung/Schießen von ShipBase, implementiert nur draw().
+// Metaball/cluster variant of the ship — inherits movement/firing from ShipBase, implements only draw().
 class ShipCluster extends ShipBase {
   draw() {
     if (this.invulnerable > 0 && Math.floor(this.invulnerable * 8) % 2 === 0) return;

@@ -1,7 +1,7 @@
 "use strict";
 
-// Gemeinsame Basis für ShipPoly und ShipCluster.
-// Enthält Bewegung, Schießen, Power-up-Timer und Teleport.
+// Shared base for ShipPoly and ShipCluster.
+// Handles movement, firing, power-up timers and teleport.
 // Subklassen implementieren nur draw().
 class ShipBase {
   constructor() {

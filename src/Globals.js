@@ -29,38 +29,38 @@ const SHIP_ROTATION = 3.5;
 const SHIP_FRICTION = 0.985;
 const SHIP_MIN_SPEED = 5;
 const SHIP_HULL_FACTOR = 0.7; // radius getter: SHIP_SIZE × FACTOR
-const SHIP_SHIELD_FACTOR = 2.2; // hitRadius + Shield-Bubble Visual: SHIP_SIZE × FACTOR
+const SHIP_SHIELD_FACTOR = 2.2; // hitRadius + shield bubble visual: SHIP_SIZE × FACTOR
 
 const BULLET_SPEED = 560;
 const BULLET_LIFE = 0.65;
 const MAX_BULLETS = 8;
 const FIRE_RATE = 0.22;
-const BULLET_SPREAD_ANGLE = 0.26; // 3-Schuss-Spread (rad), seitliche Bullets
+const BULLET_SPREAD_ANGLE = 0.26; // 3-shot spread (rad), side bullets
 
 const INVULNERABLE_TIME = 3.0;
 
 const ASTEROID_RADIUS = [48, 26, 13];
 const ASTEROID_SPEED = [55, 95, 148];
 const ASTEROID_SCORE = [20, 50, 100];
-const ASTEROID_MASS = [10, 3.5, 1.0]; // Massen für massenbasierte Matter-Kollisionen (size 0–2)
-const ASTEROID_SPIN_FACTOR = 0.065; // Off-Center-Hit Spin-Boost: ±rad/s pro px Hebelarm
+const ASTEROID_MASS = [10, 3.5, 1.0]; // masses for mass-based Matter collisions (size 0–2)
+const ASTEROID_SPIN_FACTOR = 0.065; // off-center-hit spin boost: ±rad/s per px lever arm
 
-// ── Pendel-Asteroiden ───────────────────────────────────────────────────────
-const PENDULUM_STIFFNESS = 0.03; // Federkonstante des Constraints (0 = frei, 1 = starr)
-const PENDULUM_DAMPING = 0.01; // leichte Dämpfung für numerische Stabilität
-const PENDULUM_INIT_SPEED = 90; // initiale Tangentialgeschwindigkeit px/s
+// ── Pendulum asteroids ──────────────────────────────────────────────────────
+const PENDULUM_STIFFNESS = 0.03; // spring constant of the constraint (0 = free, 1 = rigid)
+const PENDULUM_DAMPING = 0.01; // slight damping for numerical stability
+const PENDULUM_INIT_SPEED = 90; // initial tangential velocity px/s
 
-// ── Solar-System-Asteroiden ─────────────────────────────────────────────────
-const SOLAR_STIFFNESS = 0.8; // nahezu starres Seil → saubere Kreisbahn
+// ── Solar-system asteroids ──────────────────────────────────────────────────
+const SOLAR_STIFFNESS = 0.8; // nearly rigid tether → clean circular orbit
 const SOLAR_DAMPING = 0.02;
-const SOLAR_TETHER_MIN = 75; // min. Seillänge px
-const SOLAR_TETHER_MAX = 140; // max. Seillänge px
-const SOLAR_ORBIT_SPEED = 120; // tangentiale Startgeschwindigkeit px/s
-const SOLAR_SATELLITE_MIN = 3; // min. Satelliten
-const SOLAR_SATELLITE_MAX = 7; // max. Satelliten
-const SOLAR_MAX_COUNT = 2; // max. gleichzeitig aktive Solar-Systeme
-const SOLAR_START_LEVEL = 1; // ab diesem Level
-const SOLAR_CENTER_SCORE = 500; // Punkte für das Zentrum
+const SOLAR_TETHER_MIN = 75; // min. tether length px
+const SOLAR_TETHER_MAX = 140; // max. tether length px
+const SOLAR_ORBIT_SPEED = 120; // tangential start velocity px/s
+const SOLAR_SATELLITE_MIN = 3; // min. satellites
+const SOLAR_SATELLITE_MAX = 7; // max. satellites
+const SOLAR_MAX_COUNT = 2; // max. simultaneously active solar systems
+const SOLAR_START_LEVEL = 1; // starting from this level
+const SOLAR_CENTER_SCORE = 500; // points for the center
 
 const INITIAL_ROCKS = 4;
 const MAX_ROCKS_PER_LEVEL = 10;
@@ -69,27 +69,27 @@ const EXTRA_LIFE_SCORE = 10000;
 const PARTICLE_LIFE = 0.85;
 const PARTICLE_SPEED = 170;
 
-// ── Metaball-Rendering ──────────────────────────────────────────────────────
-// Geteilt zwischen ClusterAsteroid, RockCluster (via Metaball.js Utility).
-const METABALL_HEX_PACKING = Math.sqrt(3) / 2; // 0.866 — Hex-Reihen-Höhe / spacing
-const METABALL_DEFAULT_CONTRAST = 14; // contrast()-Filter-Stärke
-const METABALL_DEFAULT_BLUR_RATIO = 0.75; // Blur als Faktor von cellR
-const METABALL_DRAW_BLOAT = 1.25; // Beim Zeichnen werden Cells etwas größer gemalt
-const METABALL_SPACING_RATIO = 1.65; // Default Hex-Zell-Abstand
-const METABALL_CELL_JITTER = 1.5; // Positions-Jitter in Pixel
-const METABALL_CELL_SIZE_JITTER = 0.15; // ±-Bereich für Zellgrößen-Variation
-const CLUSTER_CELL_FACTOR = 0.24; // Cell-Radius = radius × FACTOR (Asteroid/Rock)
+// ── Metaball rendering ──────────────────────────────────────────────────────
+// Shared between ClusterAsteroid and RockCluster (via Metaball.js utility).
+const METABALL_HEX_PACKING = Math.sqrt(3) / 2; // 0.866 — hex row height / spacing
+const METABALL_DEFAULT_CONTRAST = 14; // contrast() filter strength
+const METABALL_DEFAULT_BLUR_RATIO = 0.75; // blur as factor of cellR
+const METABALL_DRAW_BLOAT = 1.25; // cells are drawn slightly larger
+const METABALL_SPACING_RATIO = 1.65; // default hex cell spacing
+const METABALL_CELL_JITTER = 1.5; // position jitter in pixels
+const METABALL_CELL_SIZE_JITTER = 0.15; // ± range for cell size variation
+const CLUSTER_CELL_FACTOR = 0.24; // cell radius = radius × FACTOR (asteroid/rock)
 const CLUSTER_COLLISION_FACTOR = 0.65; // collisionRadius = radius × FACTOR
 
-// ── Pumice (Bimsstein) ──────────────────────────────────────────────────────
-// Pumice-Cluster: einzelne Zellen mit eigenen Matter-Bodies, dynamisch zerstörbar.
+// ── Pumice ──────────────────────────────────────────────────────────────────
+// Pumice cluster: individual cells with their own Matter bodies, dynamically destructible.
 const PUMICE_RADIUS_MIN = 22;
 const PUMICE_RADIUS_MAX = 54;
-const PUMICE_CELL_FACTOR = 0.2; // Cell-Radius = radius × FACTOR
-const PUMICE_SPACING_FACTOR = 1.55; // Hex-Zell-Abstand (kompakter als Default)
-const PUMICE_BLUR_FACTOR = 0.68; // Blur als Faktor von cellR
-const PUMICE_CONTRAST = 13; // contrast()-Stärke (schärfere Kante als Default 14)
-const PUMICE_NEIGHBOR_FACTOR = 2.5; // cullIsolated-Threshold = cellR × FACTOR
+const PUMICE_CELL_FACTOR = 0.2; // cell radius = radius × FACTOR
+const PUMICE_SPACING_FACTOR = 1.55; // hex cell spacing (more compact than default)
+const PUMICE_BLUR_FACTOR = 0.68; // blur as factor of cellR
+const PUMICE_CONTRAST = 13; // contrast() strength (sharper edge than default 14)
+const PUMICE_NEIGHBOR_FACTOR = 2.5; // cullIsolated threshold = cellR × FACTOR
 const PUMICE_COLLISION_FACTOR = 0.75; // collisionRadius = radius × FACTOR
 
 // PumicePoly (Polygon-Variante)
@@ -110,15 +110,15 @@ const POWERUP_DURATION = 5.0;
 const POWERUP_SPAWN_CHANCE = 0.12;
 const POWERUP_TYPES = ["shield", "rapid", "spread", "heavy"];
 
-// ── Debris (Trümmer beim Asteroid-Tod) ──────────────────────────────────────
-const DEBRIS_LIFE = 2.0; // Lebensdauer in Sekunden
-const DEBRIS_SPEED_MIN = 60; // Mindest-Startgeschwindigkeit (px/s)
-const DEBRIS_SPEED_MAX = 210; // Max-Startgeschwindigkeit (px/s)
-const DEBRIS_COUNT_MIN = 3; // Mindestanzahl Trümmer pro Explosion
-const DEBRIS_COUNT_MAX = 5; // Maximalanzahl
-const DEBRIS_RADIUS_MIN = 2.5; // Kleinster Trümmer-Radius (px)
-const DEBRIS_RADIUS_MAX = 5.0; // Größter Trümmer-Radius (px)
-const DEBRIS_FRICTION_AIR = 0.018; // Luftreibung für Matter-Body
+// ── Debris (on asteroid death) ──────────────────────────────────────────────
+const DEBRIS_LIFE = 2.0; // lifetime in seconds
+const DEBRIS_SPEED_MIN = 60; // minimum start speed (px/s)
+const DEBRIS_SPEED_MAX = 210; // maximum start speed (px/s)
+const DEBRIS_COUNT_MIN = 3; // minimum debris count per explosion
+const DEBRIS_COUNT_MAX = 5; // maximum debris count
+const DEBRIS_RADIUS_MIN = 2.5; // smallest debris radius (px)
+const DEBRIS_RADIUS_MAX = 5.0; // largest debris radius (px)
+const DEBRIS_FRICTION_AIR = 0.018; // air friction for Matter body
 
 // Rock count is controlled by the in-game config dialog (3 levels)
 
@@ -136,16 +136,16 @@ const SATELLITE_COLORS = [
   { name: "Plasma", center: "rgb(245,48,172)", body: "#14000e" }, // hot magenta
 ];
 
-// ── Gameplay-Timing ─────────────────────────────────────────────────────────
-const RESPAWN_DELAY = 2.2; // Sekunden bis Schiff nach dem Tod wieder erscheint
-const UFO_SPAWN_MIN = 20; // Frühester UFO-Spawn nach Level-Start (s)
-const UFO_SPAWN_JITTER = 15; // Zusätzlicher Zufalls-Offset für UFO-Spawn (s)
-const UFO_HUM_INTERVAL = 0.3; // Intervall des UFO-Hum-Sounds (s)
-const BEAT_DENSITY_FACTOR = 0.045; // Beat-Interval-Schrumpfung pro Asteroid
-const BEAT_INTERVAL_MIN = 0.12; // Kürzestes Beat-Intervall (s)
-const BEAT_INTERVAL_MAX = 1.0; // Längstes Beat-Intervall (s)
-const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // Explosions-Partikel pro Asteroiden-Größe (0–2)
-const SAFE_POS_TRIES = 300; // Max. Versuche für sichere Spawn-Position
+// ── Gameplay timing ─────────────────────────────────────────────────────────
+const RESPAWN_DELAY = 2.2; // seconds until ship respawns after death
+const UFO_SPAWN_MIN = 20; // earliest UFO spawn after level start (s)
+const UFO_SPAWN_JITTER = 15; // additional random offset for UFO spawn (s)
+const UFO_HUM_INTERVAL = 0.3; // interval of the UFO hum sound (s)
+const BEAT_DENSITY_FACTOR = 0.045; // beat interval shrink per asteroid
+const BEAT_INTERVAL_MIN = 0.12; // shortest beat interval (s)
+const BEAT_INTERVAL_MAX = 1.0; // longest beat interval (s)
+const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // explosion particles per asteroid size (0–2)
+const SAFE_POS_TRIES = 300; // max. attempts for a safe spawn position
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 function rand(a, b) {
@@ -165,9 +165,9 @@ function dist(a, b) {
     dy = a.y - b.y;
   return Math.sqrt(dx * dx + dy * dy);
 }
-// Zufälliger Winkel der NICHT in den verbotenen Rückwärts-Kegel fällt.
-// forbidCenter = bulletAngle + π (Richtung zurück zum Schiff)
-// halfArc = halbe Tortenbreite des verbotenen Bereichs (Standard: 60° → 120° gesperrt)
+// Random angle that does NOT fall into the forbidden backward cone.
+// forbidCenter = bulletAngle + π (direction back toward the ship)
+// halfArc = half the width of the forbidden sector (default: 60° → 120° blocked)
 function safeSplitAngle(bulletAngle, halfArc = Math.PI / 4) {
   if (bulletAngle === null || bulletAngle === undefined) return rand(0, TAU);
   const forbidCenter = bulletAngle + Math.PI;

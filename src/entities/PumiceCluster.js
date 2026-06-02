@@ -1,8 +1,8 @@
 "use strict";
 
-// Pumice-Cluster: statisches Hindernis aus einzelnen Matter-Bodies pro Zelle.
-// Zellen können einzeln zerstört werden; das Metaball-Rendering wird pro Frame
-// auf Basis der lebenden Zellen neu aufgebaut.
+// Pumice cluster: static obstacle built from individual Matter bodies per cell.
+// Cells can be destroyed individually; metaball rendering is rebuilt each frame
+// based on the living cells.
 class PumiceCluster {
   constructor(x, y) {
     this.x = x;
@@ -54,8 +54,8 @@ class PumiceCluster {
     return this.cells.some((c) => c.alive);
   }
 
-  // Entfernt lebende Zellen ohne lebenden Nachbarn (eine Runde, keine Kaskade).
-  // Threshold ≈ 1.6× Hex-Abstand — toleriert den ±1.5px Jitter bei der Zell-Platzierung.
+  // Removes living cells that have no living neighbour (single pass, no cascade).
+  // Threshold ≈ 1.6× hex spacing — tolerates the ±1.5 px jitter from cell placement.
   cullIsolated(world) {
     const threshold = this._cellR * PUMICE_NEIGHBOR_FACTOR;
     for (const c of this.cells) {
@@ -82,12 +82,12 @@ class PumiceCluster {
     return true;
   }
 
-  // Prüfung für Safe-Spawning: wäre Punkt (x, y) innerhalb von margin nahe lebenden Zellen?
+  // Safe-spawn check: would point (x, y) be within margin of any living cell?
   pointInsideMargin(x, y, margin) {
     return this.cells.some((c) => c.alive && Math.hypot(x - c.x, y - c.y) < c.r + margin);
   }
 
-  // Vereinheitlichte Bullet-Kollision: returns true wenn Treffer (Side-Effects intern).
+  // Unified bullet collision: returns true on hit (side-effects handled internally).
   handleBulletHit(b, world, game) {
     const hits = this.findHit(b.x, b.y, b.radius);
     if (hits.length === 0) return false;
@@ -101,7 +101,7 @@ class PumiceCluster {
     return true;
   }
 
-  // Vereinheitlichte Ship-Kollision: returns true wenn Treffer.
+  // Unified ship collision: returns true on hit.
   handleShipHit(ship) {
     return this.findHit(ship.x, ship.y, ship.hitRadius).length > 0;
   }
@@ -115,7 +115,7 @@ class PumiceCluster {
       alive,
       this.x,
       this.y,
-      "rgb(146, 146, 150)", // Kompakt: dicht, grau, kühler Ton
+      "rgb(146, 146, 150)", // compact: dense, grey, cool tone
       this._blur,
       PUMICE_CONTRAST,
     );

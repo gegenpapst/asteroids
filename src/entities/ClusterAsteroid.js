@@ -1,6 +1,6 @@
 "use strict";
 
-// Metaball-Variante des Asteroiden — erbt Lifecycle von AsteroidBase, ergänzt Cells + Metaball-Render.
+// Metaball variant of the asteroid — inherits lifecycle from AsteroidBase, adds cells + metaball render.
 class ClusterAsteroid extends AsteroidBase {
   static _label = "cluster-asteroid";
   static _rotBase = 1.2;

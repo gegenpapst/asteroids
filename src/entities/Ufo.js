@@ -1,6 +1,6 @@
 "use strict";
 
-// Polygon-Variante des UFOs — erbt Bewegung/Schießen von UfoBase, implementiert nur draw().
+// Polygon variant of the UFO — inherits movement/firing from UfoBase, implements only draw().
 class Ufo extends UfoBase {
   draw() {
     ctx.save();

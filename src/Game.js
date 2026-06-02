@@ -49,7 +49,7 @@ class Game {
     this._dbgFPS = 0;
     this._dbgFrameMs = 0;
     this._dbgPeakCC = 0;
-    this._dbgPeakTTL = 0; // Frames bis Peak-Reset
+    this._dbgPeakTTL = 0; // frames until peak reset
 
     this.score = 0;
     this.lives = 3;
@@ -111,7 +111,7 @@ class Game {
     Matter.World.clear(this.engine.world, false);
     const isMetaball = this.mode instanceof MetaballMode;
     const [rMin, rMax] = this._rockCountRange;
-    // Polygon-Modus: Rock-Anzahl per _rockCountRange; Metaball-Modus: 1..config.rockCount
+    // Polygon mode: rock count from _rockCountRange; Metaball mode: 1..config.rockCount
     const rockCount = isMetaball ? randInt(1, this.config.rockCount) : randInt(rMin, rMax);
     this.rocks = Array.from({ length: rockCount }, () =>
       this.mode.createRock(rand(60, W - 60), rand(60, H - 60)),
@@ -137,7 +137,7 @@ class Game {
       this.engine.world,
       this.rocks.map((r) => r.body),
     );
-    // PumiceCluster: ein Body pro Zelle; PumicePoly: ein Body pro Cluster
+    // PumiceCluster: one body per cell; PumicePoly: one body per cluster
     for (const p of this.pumices) {
       if (p.cells)
         Matter.World.add(
@@ -322,10 +322,10 @@ class Game {
         ctx.fillStyle = col;
         ctx.fillText(text, W - 6, y);
       };
-      line(`Partikel:  ${this.particles.length}`, "#888", H - 76);
+      line(`Particles: ${this.particles.length}`, "#888", H - 76);
       line(`Entities:  ${entities}`, "#aaa", H - 62);
       line(
-        `Kollision: ${this._dbgCC} / Peak: ${this._dbgPeakCC}`,
+        `Collision: ${this._dbgCC} / Peak: ${this._dbgPeakCC}`,
         this._dbgPeakCC > 200 ? "#f84" : this._dbgPeakCC > 80 ? "#ff4" : "#4f8",
         H - 48,
       );
@@ -427,7 +427,7 @@ class Game {
     this._applyAsteroidFilter();
 
     // Solar systems only in Metaball mode — Polygon mode uses no satellite asteroids.
-    // Solar-Systeme: erscheinen ab Level SOLAR_START_LEVEL, max SOLAR_MAX_COUNT gleichzeitig
+    // Solar systems: appear from level SOLAR_START_LEVEL, max SOLAR_MAX_COUNT at a time
     if (this.mode instanceof MetaballMode && this.level >= SOLAR_START_LEVEL) {
       const solarCount = Math.min(
         Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1,
@@ -486,8 +486,8 @@ class Game {
     this.ufoBullets = [];
   }
 
-  // Behandelt alle State-Übergänge basierend auf Input (START, HELP, CONFIG, PLAYING-Tasten).
-  // Returns `true` falls update() abbrechen soll (State braucht keine weitere Verarbeitung).
+  // Handles all state transitions based on input (START, HELP, CONFIG, PLAYING keys).
+  // Returns `true` if update() should abort (state needs no further processing).
   _updateStateInput() {
     if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
       if (Input.start() || Input.config()) {
@@ -508,7 +508,7 @@ class Game {
     if (this.state === STATE.CONFIG) {
       const readOnly = this._configPrevState === STATE.PLAYING;
 
-      // Fokus zwischen Kacheln und Details-Button wechseln
+      // Switch focus between mode tiles and the details button
       if (Input.wasPressed("ArrowDown") && this._configFocus === "mode")
         this._configFocus = "details";
       if (Input.wasPressed("ArrowUp") && this._configFocus === "details")
@@ -525,7 +525,7 @@ class Game {
         }
       }
 
-      // Details öffnen: D-Taste immer, Enter wenn Details fokussiert
+      // Open details: D key always, Enter when details are focused
       if (
         Input.wasPressed("KeyD") ||
         (Input.wasPressed("Enter") && this._configFocus === "details")
@@ -542,7 +542,7 @@ class Game {
         return true;
       }
 
-      // Spiel starten: Enter wenn Kacheln fokussiert, oder C-Taste
+      // Start game: Enter when mode tiles are focused, or C key
       if ((Input.wasPressed("Enter") && this._configFocus === "mode") || Input.config()) {
         if (readOnly) this.state = STATE.PLAYING;
         else this.start();
@@ -607,8 +607,8 @@ class Game {
     return false;
   }
 
-  // STATE.DEAD: deadTimer runterzählen, Asteroids/UFOs weiter laufen lassen,
-  // danach Respawn (PLAYING) oder GameOver.
+  // STATE.DEAD: count down deadTimer, keep asteroids/UFOs running,
+  // then respawn (PLAYING) or game over.
   _updateDeadState(dt) {
     this.deadTimer -= dt;
     this.asteroids.forEach((a) => a.update(dt));
@@ -635,7 +635,7 @@ class Game {
     Input.flush();
   }
 
-  // Ship-Update + Thrust-Partikel + Teleport + Schießen + Bullets/Asteroids/Physics-Tick.
+  // Ship update + thrust particles + teleport + shooting + bullets/asteroids/physics tick.
   _updateShipAndBullets(dt) {
     this.ship.update(dt);
 
@@ -690,8 +690,8 @@ class Game {
     }
   }
 
-  // UFO-Spawn-Timer + UFO-Update (sinusoidale Bewegung, ggf. Schießen).
-  // UFOs persistieren über Level-Übergänge hinweg.
+  // UFO spawn timer + UFO update (sinusoidal movement, possibly firing).
+  // UFOs persist across level transitions.
   _updateUFOs(dt) {
     this.ufoTimer -= dt;
     if (this.ufoTimer <= 0) {
@@ -702,8 +702,8 @@ class Game {
     this.ufos = this.ufos.filter((u) => u.update(dt, this.ship));
   }
 
-  // Alle Bullet × Entity Kollisionen.
-  // Asteroid/Rock/Pumice nutzen unified Arrays — Mode entscheidet implizit über Entity-Typen.
+  // All bullet × entity collisions.
+  // Asteroid/Rock/Pumice use unified arrays — mode implicitly determines entity types.
   _updateBulletCollisions() {
     // Bullet × Asteroid (uniform via collisionRadius)
     outer: for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
@@ -772,8 +772,8 @@ class Game {
     this.pumices = this.pumices.filter((p) => p.alive);
   }
 
-  // Alle Ship × Entity Kollisionen + Power-up-Pickup.
-  // Mit Shield: Bounce + ggf. Asteroid zerlegen. Ohne Shield: _killShip().
+  // All ship × entity collisions + power-up pickup.
+  // With shield: bounce + optionally split asteroid. Without shield: _killShip().
   _updateShipCollisions() {
     // Ship × Asteroid (uniform via collisionRadius + split)
     if (this.ship && this.ship.invulnerable <= 0) {
@@ -878,8 +878,8 @@ class Game {
     }
   }
 
-  // Theoretische Max-Kollisionsprüfungen pro Frame: Bullets × Entities + Ship × Entities.
-  // Peak gilt 120 Frames (~2 s), danach wird auf den aktuellen Wert zurückgesetzt.
+  // Theoretical max collision checks per frame: bullets × entities + ship × entities.
+  // Peak holds for 120 frames (~2 s), then resets to the current value.
   _updateDebugStats() {
     if (!this._debugCollision) return;
     // PumiceCluster: cells.length; PumicePoly: 1
@@ -911,13 +911,13 @@ class Game {
   _drawRocks() {
     if (!this.rocks.length) return;
 
-    // Metaball-Modus: jeder RockCluster zeichnet sich selbst (Pre-Baked Canvas + screen-Blend)
+    // Metaball mode: each RockCluster draws itself (pre-baked canvas + screen blend)
     if (this.rocks[0] instanceof RockCluster) {
       this.rocks.forEach((r) => r.draw());
       return;
     }
 
-    // Polygon-Modus: Composite-Trick — Pass 1 stroke (glow), Pass 2 fill löscht überlappende Strokes
+    // Polygon mode: composite trick — pass 1 stroke (glow), pass 2 fill erases overlapping strokes
     const off = this._rockCanvas;
     const offCtx = off.getContext("2d");
     offCtx.clearRect(0, 0, W, H);
@@ -970,7 +970,7 @@ class Game {
     ctx.textAlign = "center";
     ctx.fillText(`LVL ${this.level}`, W / 2, 28);
 
-    // Life icons (bottom-left, unterhalb der Power-up-Bars)
+    // Life icons (bottom-left, below the power-up bars)
     for (let i = 0; i < this.lives; i++) {
       ctx.save();
       ctx.translate(14 + i * 21, H - 10);
@@ -988,7 +988,7 @@ class Game {
       ctx.restore();
     }
 
-    // Power-up status bars (bottom-left, oberhalb der Life-Icons)
+    // Power-up status bars (bottom-left, above the life icons)
     if (this.ship) {
       const indicators = [];
       if (this.ship.shieldTimer > 0)
@@ -1007,7 +1007,7 @@ class Game {
         gap = 6;
       indicators.forEach((ind, i) => {
         const bx = 8 + i * (barW + gap);
-        const by = H - 40; // oberhalb der Life-Icons (H-10 ± 7px)
+        const by = H - 40; // above the life icons (H-10 ± 7px)
         const pct = ind.t / this._powerupDuration;
         ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fillRect(bx, by, barW, barH);
@@ -1072,7 +1072,7 @@ class Game {
     for (const a of this.asteroids) Matter.Body.set(a.body, "collisionFilter", f);
   }
 
-  // Fügt Asteroid-Kinder (split-Ergebnis) zur Physik-Welt hinzu und setzt den Kollisions-Filter.
+  // Adds asteroid children (split result) to the physics world and applies the collision filter.
   _addAsteroidsToWorld(asteroids) {
     if (!asteroids.length) return;
     Matter.World.add(
@@ -1086,7 +1086,7 @@ class Game {
     }
   }
 
-  // Spawnt 3–5 Trümmer-Bodies am Ort der Explosion mit Zufallsrichtung + Impuls-Anteil.
+  // Spawns 3–5 debris bodies at the explosion site with random direction + impulse share.
   _spawnDebris(ax, ay, impulseVx, impulseVy) {
     const count = randInt(DEBRIS_COUNT_MIN, DEBRIS_COUNT_MAX);
     const baseSpeed = Math.hypot(impulseVx, impulseVy) * 0.3;
@@ -1104,7 +1104,7 @@ class Game {
     }
   }
 
-  // Update + Cleanup aller Debris-Bodies nach dem Physics-Tick.
+  // Update + cleanup of all debris bodies after the physics tick.
   _tickDebris(dt) {
     this.debris = this.debris.filter((d) => {
       if (!d.update(dt)) {

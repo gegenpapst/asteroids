@@ -1,8 +1,8 @@
 "use strict";
 
-// Gebundener Asteroid — an einem Sonnensystem-Ankerpunkt per Matter.Constraint aufgehängt.
-// Immer Teil eines SolarSystem (parentSystem != null, isSatellite=true).
-// Split-Kinder sind reguläre freie AsteroidPoly-Instanzen (kein Constraint).
+// Satellite asteroid — tethered to a solar system anchor via Matter.Constraint.
+// Always part of a SolarSystem (parentSystem != null, isSatellite=true).
+// Split children are regular free-floating AsteroidPoly instances (no constraint).
 class SatelliteAsteroidPoly extends AsteroidPoly {
   static _label = "satellite-asteroid";
 
@@ -14,7 +14,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     this.anchorX = ax;
     this.anchorY = ay;
 
-    // Tangentialgeschwindigkeit senkrecht zur Radialen Anker→Asteroid
+    // Tangential velocity perpendicular to the radial direction anchor→asteroid
     const dx = x - ax;
     const dy = y - ay;
     const len = Math.hypot(dx, dy) || 1;
@@ -35,7 +35,7 @@ class SatelliteAsteroidPoly extends AsteroidPoly {
     });
   }
 
-  // Override: plugin.wrap deaktiviert — Constraint würde beim Wrap reißen
+  // Override: plugin.wrap disabled — constraint would snap on screen wrap
   _makeBody() {
     return super._makeBody(false);
   }

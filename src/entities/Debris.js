@@ -1,8 +1,8 @@
 "use strict";
 
-// Trümmer-Partikel beim Asteroid-Tod.
-// Nutzt einen Matter-Body für physikalisch korrektes Abbremsen (frictionAir),
-// Wandreflexion erfolgt manuell. Keine Kollisionen mit anderen Entities (mask: 0).
+// Debris particle on asteroid death.
+// Uses a Matter body for physically correct deceleration (frictionAir);
+// wall reflection is handled manually. No collisions with other entities (mask: 0).
 class Debris {
   constructor(x, y, vx, vy) {
     this.radius = rand(DEBRIS_RADIUS_MIN, DEBRIS_RADIUS_MAX);
@@ -21,7 +21,7 @@ class Debris {
       frictionAir: DEBRIS_FRICTION_AIR,
       restitution: 0,
       label: "debris",
-      collisionFilter: { mask: 0 }, // sensor: keine Kollisionen mit anderen Bodies
+      collisionFilter: { mask: 0 }, // sensor: no collisions with other bodies
     });
     // Matter velocity is in px/frame at 60 fps, matching AsteroidBase convention
     Matter.Body.setVelocity(this.body, { x: vx / 60, y: vy / 60 });

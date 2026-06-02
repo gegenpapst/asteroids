@@ -1,11 +1,11 @@
 "use strict";
 
-// Gemeinsame Basis für AsteroidPoly und ClusterAsteroid.
-// Enthält Velocity-Init, Rotation, Matter-Body, Split-Logik.
-// Subklassen liefern `_label` und `_rotBase` via static-Property und implementieren `draw()`.
+// Shared base for AsteroidPoly and ClusterAsteroid.
+// Contains velocity init, rotation, Matter body, and split logic.
+// Subclasses provide `_label` and `_rotBase` via static property and implement `draw()`.
 class AsteroidBase {
-  static _label = "asteroid"; // Matter-Body Label (subklassen-spezifisch)
-  static _rotBase = 1.4; // Bereich der Rotationsgeschwindigkeit (±)
+  static _label = "asteroid"; // Matter body label (subclass-specific)
+  static _rotBase = 1.4; // rotation speed range (±)
 
   constructor(x, y, size = 0, angle = null, maxBumps = 7) {
     this.x = x;
@@ -34,8 +34,8 @@ class AsteroidBase {
     Matter.Body.setMass(this.body, ASTEROID_MASS[size]);
   }
 
-  // Erzeugt Bump-Daten: n Auswölbungen gleichmäßig um das Zentrum verteilt.
-  // Wird von _makeBody() und _makeVerts() gemeinsam genutzt.
+  // Generates bump data: n protrusions evenly distributed around the center.
+  // Shared by _makeBody() and _makeVerts().
   _genBumps() {
     const r = this.radius;
     const n = this.bumpCount;
@@ -48,9 +48,9 @@ class AsteroidBase {
     });
   }
 
-  // Baut einen Compound-Body aus einem kleinen Kern + weit abstehenden Klumpen.
-  // Setzt this._coreR und this._bumps, damit _makeVerts() darauf zugreifen kann.
-  // wrap=false → kein plugin.wrap (für Constraint-gebundene Subklassen wie SatelliteAsteroid).
+  // Builds a compound body from a small core + widely spaced bumps.
+  // Sets this._coreR and this._bumps so _makeVerts() can access them.
+  // wrap=false → no plugin.wrap (for constraint-bound subclasses like SatelliteAsteroid).
   _makeBody(wrap = true) {
     const r = this.radius;
     this._coreR = r * (1.0 - (0.54 * Math.min(this.bumpCount, 7)) / 7);
@@ -72,10 +72,10 @@ class AsteroidBase {
     return body;
   }
 
-  // Leitet Polygon-Vertices aus der Compound-Body-Geometrie ab (Ray-Circle-Intersection
-  // + Smooth-Shoulder).  Jeder Strahl findet den äußersten Schnittpunkt; knapp
-  // vorbeigehende Strahlen erhalten eine quadratische Übergangszone, damit zwischen
-  // den Klumpen keine tiefen Einbuchtungen entstehen (sieht sonst wie ein Stern aus).
+  // Derives polygon vertices from the compound body geometry (ray-circle intersection
+  // + smooth shoulder). Each ray finds the outermost intersection; rays that narrowly
+  // miss a bump get a quadratic transition zone so no deep dents appear between bumps
+  // (would otherwise look like a star).
   _makeVerts(n = 18) {
     return Array.from({ length: n }, (_, i) => {
       const angle = (i / n) * TAU;
@@ -88,16 +88,16 @@ class AsteroidBase {
         const c = bDistSq - b.br * b.br;
         const disc = proj * proj - c;
         if (disc >= 0) {
-          // Strahl trifft Klumpen — äußerer Schnittpunkt
+          // Ray hits bump — outer intersection point
           const t = proj + Math.sqrt(disc);
           if (t > maxR) maxR = t;
         } else if (proj > 0) {
-          // Strahl verfehlt Klumpen knapp — Smooth-Shoulder füllt den Übergang.
-          // perp = senkrechter Abstand Strahlursprung→Klumpenmitte
+          // Ray narrowly misses bump — smooth shoulder fills the transition.
+          // perp = perpendicular distance from ray origin to bump center
           const perp = Math.sqrt(bDistSq - proj * proj);
-          const miss = perp - b.br; // wie weit der Strahl am Klumpen vorbeizieht
+          const miss = perp - b.br; // how far the ray passes beside the bump
           if (miss < b.br) {
-            const f = 1 - miss / b.br; // linearer Abfall 1→0 über eine Klumpen-Radius breite
+            const f = 1 - miss / b.br; // linear falloff 1→0 over one bump-radius width
             const bumpOuter = Math.sqrt(bDistSq) + b.br;
             const contrib = this._coreR + (bumpOuter - this._coreR) * f * f;
             if (contrib > maxR) maxR = contrib;
@@ -108,7 +108,7 @@ class AsteroidBase {
     });
   }
 
-  // Default: collisionRadius = radius. Subklassen können überschreiben.
+  // Default: collisionRadius = radius. Subclasses may override.
   get collisionRadius() {
     return this.radius;
   }
@@ -119,7 +119,7 @@ class AsteroidBase {
 
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
-    const Cls = this.constructor; // korrekte Subklasse für Kinder
+    const Cls = this.constructor; // correct subclass for children
     const offset = ASTEROID_RADIUS[this.size + 1];
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset,

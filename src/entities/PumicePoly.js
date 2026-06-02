@@ -95,12 +95,12 @@ class PumicePoly {
     return this._alive;
   }
 
-  // Prüfung für Safe-Spawning: wäre Punkt (x, y) innerhalb von margin?
+  // Safe-spawn check: would point (x, y) be within margin of the pumice?
   pointInsideMargin(x, y, margin) {
     return Math.hypot(x - this.x, y - this.y) < this.radius + margin;
   }
 
-  // Vereinheitlichte Bullet-Kollision: returns true wenn Treffer (Side-Effects intern).
+  // Unified bullet collision: returns true on hit (side-effects handled internally).
   handleBulletHit(b, world, game) {
     if (!this.collidesWithCircle(b.x, b.y, b.radius)) return false;
     const { destroyed, oldBody, newBody } = this.hit(b.x, b.y);
@@ -112,7 +112,7 @@ class PumicePoly {
     return true;
   }
 
-  // Vereinheitlichte Ship-Kollision: returns true wenn Treffer.
+  // Unified ship collision: returns true on hit.
   handleShipHit(ship) {
     return this.collidesWithCircle(ship.x, ship.y, ship.hitRadius);
   }

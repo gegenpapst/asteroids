@@ -1,8 +1,8 @@
 "use strict";
 
-// Metaball-Variante des gebundenen Asteroiden — erbt Cluster-Rendering von ClusterAsteroid.
-// Immer Teil eines SolarSystem (parentSystem != null, isSatellite=true).
-// Split-Kinder sind reguläre freie ClusterAsteroid-Instanzen (kein Constraint).
+// Metaball variant of the satellite asteroid — inherits cluster rendering from ClusterAsteroid.
+// Always part of a SolarSystem (parentSystem != null, isSatellite=true).
+// Split children are regular free-floating ClusterAsteroid instances (no constraint).
 class SatelliteClusterAsteroid extends ClusterAsteroid {
   static _label = "satellite-cluster-asteroid";
 
@@ -15,7 +15,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     this.anchorX = ax;
     this.anchorY = ay;
 
-    // Tangentialgeschwindigkeit senkrecht zur Radialen Anker→Asteroid
+    // Tangential velocity perpendicular to the radial direction anchor→asteroid
     const dx = x - ax;
     const dy = y - ay;
     const len = Math.hypot(dx, dy) || 1;
@@ -36,7 +36,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     });
   }
 
-  // Override: plugin.wrap deaktiviert — Constraint würde beim Wrap reißen
+  // Override: plugin.wrap disabled — constraint would snap on screen wrap
   _makeBody() {
     return super._makeBody(false);
   }

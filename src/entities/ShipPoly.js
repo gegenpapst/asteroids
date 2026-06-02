@@ -1,6 +1,6 @@
 "use strict";
 
-// Polygon-Variante des Schiffs — erbt Bewegung/Schießen von ShipBase, implementiert nur draw().
+// Polygon variant of the ship — inherits movement/firing from ShipBase, implements only draw().
 class ShipPoly extends ShipBase {
   draw() {
     if (this.invulnerable > 0 && Math.floor(this.invulnerable * 8) % 2 === 0) return;

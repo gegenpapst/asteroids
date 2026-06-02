@@ -1,7 +1,7 @@
 "use strict";
 
-// Gemeinsame Basis für Ufo und UfoCluster.
-// Bewegung (sinusoidale Vertikale), Schießen (size-abhängig: gezielt vs. zufällig).
+// Shared base for Ufo and UfoCluster.
+// Handles movement (sinusoidal vertical), firing (size-dependent: aimed vs. random).
 // Subklassen implementieren nur draw().
 class UfoBase {
   constructor(size, onBullet) {

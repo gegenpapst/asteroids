@@ -1,11 +1,11 @@
 "use strict";
 
-// Gemeinsame Metaball-Render-Utilities.
-// Verwendet von ClusterAsteroid, RockCluster, PumiceCluster.
+// Shared metaball render utilities.
+// Used by ClusterAsteroid, RockCluster, PumiceCluster.
 
 /**
- * Erzeugt Zellen in einem Hex-Gitter innerhalb eines Kreises mit `radius`.
- * Standard für Cluster-Asteroids und RockCluster (statische Position relativ zum Zentrum).
+ * Generates cells in a hex grid within a circle of `radius`.
+ * Default for cluster asteroids and RockCluster (static position relative to center).
  * @returns {Array<{dx, dy, r}>}
  */
 function generateHexCells(
@@ -18,7 +18,7 @@ function generateHexCells(
   } = {},
 ) {
   const spacing = cellR * spacingFactor;
-  const rowH = spacing * METABALL_HEX_PACKING; // sqrt(3)/2 für Hex-Packing
+  const rowH = spacing * METABALL_HEX_PACKING; // sqrt(3)/2 for hex packing
   const span = Math.ceil((radius * 2) / rowH) + 1;
   const cells = [];
   for (let row = 0; row < span; row++) {
@@ -38,18 +38,18 @@ function generateHexCells(
 }
 
 /**
- * Baut eine zweistufige Metaball-Textur:
- *   1. Blur-Canvas mit dunklem Hintergrund + farbigen, weichgezeichneten Zellen
- *   2. Contrast-Canvas, der die Blur-Quelle scharfzeichnet — fertig zum Zeichnen mit `screen`-Blend.
+ * Builds a two-pass metaball texture:
+ *   1. Blur canvas with dark background + soft-drawn colored cells
+ *   2. Contrast canvas that sharpens the blur source — ready to draw with `screen` blend.
  *
- * Aufrufer zeichnet das Resultat mit `ctx.globalCompositeOperation = 'screen'`.
+ * Caller draws the result with `ctx.globalCompositeOperation = 'screen'`.
  *
- * @param {Array<{dx, dy, r}>} cells - Zellpositionen relativ zum Zentrum
- * @param {string} color - Cell-Farbe (z.B. 'rgb(100, 140, 185)')
- * @param {number} radius - Bounding-Radius des Clusters (für Canvas-Größe)
- * @param {number} cellR - Zell-Basisradius (für Blur-Stärke)
- * @param {number} [contrast=14] - Stärke des Contrast-Filters
- * @param {number} [blurFactor=0.75] - Blur als Faktor von cellR
+ * @param {Array<{dx, dy, r}>} cells - cell positions relative to center
+ * @param {string} color - cell color (e.g. 'rgb(100, 140, 185)')
+ * @param {number} radius - bounding radius of the cluster (for canvas size)
+ * @param {number} cellR - base cell radius (for blur strength)
+ * @param {number} [contrast=14] - contrast filter strength
+ * @param {number} [blurFactor=0.75] - blur as factor of cellR
  * @returns {HTMLCanvasElement}
  */
 function buildMetaballCanvas(
@@ -65,7 +65,7 @@ function buildMetaballCanvas(
   const sz = Math.ceil((radius + pad) * 2);
   const half = sz / 2;
 
-  // Pass 1: Blur-Canvas mit dunklem Hintergrund + weichgezeichneten Zellen
+  // Pass 1: blur canvas with dark background + soft-drawn cells
   const blurCanvas = Object.assign(document.createElement("canvas"), { width: sz, height: sz });
   const blurCtx = blurCanvas.getContext("2d");
   blurCtx.fillStyle = "#050210";
@@ -79,7 +79,7 @@ function buildMetaballCanvas(
   }
   blurCtx.filter = "none";
 
-  // Pass 2: Contrast-Filter beim Übertragen einbacken — draw() braucht keinen Filter mehr
+  // Pass 2: bake contrast filter during transfer — draw() needs no filter anymore
   const out = Object.assign(document.createElement("canvas"), { width: sz, height: sz });
   const outCtx = out.getContext("2d");
   outCtx.filter = `contrast(${contrast})`;
@@ -88,19 +88,19 @@ function buildMetaballCanvas(
 }
 
 /**
- * Pro-Frame Metaball-Render in vorhandene Canvas-Buffer.
- * Für dynamische Cluster (z.B. PumiceCluster), wo sich Zellen ändern können.
- * Aufrufer muss die Buffer (bufferCanvas, contrastCanvas) im Konstruktor anlegen.
+ * Per-frame metaball render into existing canvas buffers.
+ * For dynamic clusters (e.g. PumiceCluster) where cells can change each frame.
+ * Caller must allocate the buffers (bufferCanvas, contrastCanvas) in the constructor.
  *
- * @param {CanvasRenderingContext2D} targetCtx - Haupt-Spielfeld-Context
- * @param {HTMLCanvasElement} bufferCanvas - persistenter Blur-Buffer
- * @param {HTMLCanvasElement} contrastCanvas - persistenter Contrast-Buffer
- * @param {Array<{x, y, r}>} cells - Zellen in WELT-Koordinaten (nur lebende)
- * @param {number} worldX - Cluster-Position X (Welt)
- * @param {number} worldY - Cluster-Position Y (Welt)
- * @param {string} color - Cell-Farbe
- * @param {number} blur - Blur-Stärke in Pixel
- * @param {number} contrast - Contrast-Filter-Stärke
+ * @param {CanvasRenderingContext2D} targetCtx - main game canvas context
+ * @param {HTMLCanvasElement} bufferCanvas - persistent blur buffer
+ * @param {HTMLCanvasElement} contrastCanvas - persistent contrast buffer
+ * @param {Array<{x, y, r}>} cells - cells in world coordinates (alive only)
+ * @param {number} worldX - cluster position X (world)
+ * @param {number} worldY - cluster position Y (world)
+ * @param {string} color - cell color
+ * @param {number} blur - blur strength in pixels
+ * @param {number} contrast - contrast filter strength
  */
 function renderMetaballFrame(
   targetCtx,

@@ -1,6 +1,6 @@
 "use strict";
 
-// Cluster-Variante des UFOs — erbt Bewegung/Schießen von UfoBase, implementiert nur draw().
+// Cluster variant of the UFO — inherits movement/firing from UfoBase, implements only draw().
 class UfoCluster extends UfoBase {
   draw() {
     const r = this.radius;

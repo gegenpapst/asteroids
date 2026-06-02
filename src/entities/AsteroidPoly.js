@@ -2,7 +2,7 @@
 
 const ASTEROID_COLORS = ["#8899aa", "#99aaaa", "#aabbbb"];
 
-// Polygon-Variante des Asteroiden — erbt Lifecycle von AsteroidBase, ergänzt verts + draw().
+// Polygon variant of the asteroid — inherits lifecycle from AsteroidBase, adds verts + draw().
 class AsteroidPoly extends AsteroidBase {
   static _label = "asteroid";
   static _rotBase = 1.6;
