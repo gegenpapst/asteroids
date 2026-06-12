@@ -43,7 +43,7 @@ class AsteroidBase {
     return Array.from({ length: n }, (_, i) => {
       const a = (i / n) * TAU + rand(-0.55, 0.55);
       const d = r * rand(0.44, 0.8);
-      const br = r * rand(0.2, 0.42);
+      const br = r * rand(0.28, 0.34);
       return { dx: Math.cos(a) * d, dy: Math.sin(a) * d, br };
     });
   }
