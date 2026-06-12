@@ -2,7 +2,7 @@
 
 // Shared base for ship variants (e.g. ShipCluster).
 // Handles movement, firing, power-up timers and teleport.
-// Subklassen implementieren nur draw().
+// Subclasses implement only draw().
 class ShipBase {
   constructor() {
     this.x = W / 2;
