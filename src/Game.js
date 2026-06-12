@@ -581,7 +581,7 @@ class Game {
         if (key === "asteroidBounce") this._applyAsteroidFilter();
       }
       if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
-        this._configFocus = "details"; // restore focus to details button for re-entry via Enter
+        this._configFocus = "mode";
         this.state = STATE.CONFIG;
         Input.flush();
         return true;
