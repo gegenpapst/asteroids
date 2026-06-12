@@ -16,15 +16,16 @@ class ClusterAsteroid extends AsteroidBase {
     } else {
       this._gradientCenter = null;
       this._gradientBody = null;
-      // Mirror the compound body: one core cell + one cell per bump.
-      // This ensures the metaball silhouette matches the physics shape.
-      const cells = [{ dx: 0, dy: 0, r: this._coreR }];
-      for (const b of this._bumps) cells.push({ dx: b.dx, dy: b.dy, r: b.br });
-      const blurBase =
+      // Use physics bump positions but uniform visual radius for all cells.
+      // The physics body (core + bumps) drives collision; visuals use a
+      // consistent cell size so no single blob dominates the silhouette.
+      const cellR =
         this._bumps.length > 0
           ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
-          : this._coreR * 0.4;
-      this._offCanvas = buildMetaballCanvas(cells, color, this.radius, blurBase, 14, 0.55);
+          : this._coreR * 0.55;
+      const cells = [{ dx: 0, dy: 0, r: cellR }];
+      for (const b of this._bumps) cells.push({ dx: b.dx, dy: b.dy, r: cellR });
+      this._offCanvas = buildMetaballCanvas(cells, color, this.radius, cellR, 14, 0.55);
     }
   }
 
