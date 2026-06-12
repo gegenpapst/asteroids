@@ -64,7 +64,7 @@ class ShipBase {
     if (Input.right()) this.angle += SHIP_ROTATION * dt;
 
     if (Input.strafeLeft() || Input.strafeRight()) {
-      const dir = Input.strafeLeft() ? 1 : -1;
+      const dir = Input.strafeLeft() ? -1 : 1;
       const cos = Math.cos(this.angle),
         sin = Math.sin(this.angle);
       const fwd = this.vx * cos + this.vy * sin;
