@@ -1,8 +1,8 @@
 "use strict";
 
-// Shared base for Ufo and UfoCluster.
+// Shared base for UFO variants (e.g. UfoCluster).
 // Handles movement (sinusoidal vertical), firing (size-dependent: aimed vs. random).
-// Subklassen implementieren nur draw().
+// Subclasses implement only draw().
 class UfoBase {
   constructor(size, onBullet) {
     this.size = size;

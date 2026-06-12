@@ -1,9 +1,7 @@
 "use strict";
 
-// Strategy pattern for visualStyle (Polygon ↔ Metaball).
-//
-// `Game.mode` is set at game start based on the config and provides
-// the appropriate entity classes without Game.js ever checking `visualStyle === 2`.
+// Visual mode strategy: provides the entity classes for rendering.
+// MetaballMode is the only mode; `Game.mode` is set at game start.
 
 class VisualMode {
   createShip() {
@@ -23,27 +21,6 @@ class VisualMode {
   }
   createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
     throw new Error("abstract");
-  }
-}
-
-class PolygonMode extends VisualMode {
-  createShip() {
-    return new ShipPoly();
-  }
-  createAsteroid(x, y, size, angle, maxBumps) {
-    return new AsteroidPoly(x, y, size, angle, maxBumps);
-  }
-  createRock(x, y) {
-    return new RockPoly(x, y);
-  }
-  createUfo(size, onBullet) {
-    return new Ufo(size, onBullet);
-  }
-  createPumice(x, y) {
-    return new PumicePoly(x, y);
-  }
-  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
-    return new SatelliteAsteroidPoly(x, y, ax, ay, parentSystem, size, maxBumps);
   }
 }
 
@@ -68,8 +45,6 @@ class MetaballMode extends VisualMode {
   }
 }
 
-// Lookup table, indexed by config.visualStyle (1-based).
-const VISUAL_MODES = [new PolygonMode(), new MetaballMode()];
+const VISUAL_MODES = [new MetaballMode()];
 
-if (typeof module !== "undefined")
-  module.exports = { VisualMode, PolygonMode, MetaballMode, VISUAL_MODES };
+if (typeof module !== "undefined") module.exports = { VisualMode, MetaballMode, VISUAL_MODES };

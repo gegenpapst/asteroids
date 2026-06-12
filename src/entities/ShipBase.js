@@ -1,6 +1,6 @@
 "use strict";
 
-// Shared base for ShipPoly and ShipCluster.
+// Shared base for ship variants (e.g. ShipCluster).
 // Handles movement, firing, power-up timers and teleport.
 // Subklassen implementieren nur draw().
 class ShipBase {

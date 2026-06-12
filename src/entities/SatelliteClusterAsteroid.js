@@ -88,7 +88,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     ctx.fill();
     ctx.restore();
 
-    // Radial gradient fill: bright Wraith center → dark edge (matches showcase + SatelliteAsteroidPoly)
+    // Radial gradient fill: bright Wraith center → dark edge (matches showcase)
     const { center, body } = SATELLITE_COLORS[4];
     ctx.save();
     ctx.beginPath();
