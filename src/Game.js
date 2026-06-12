@@ -9,6 +9,7 @@ const STATE = Object.freeze({
   HELP: 4,
   CONFIG: 5,
   CONFIG_DETAIL: 6,
+  QUIT_CONFIRM: 7,
 });
 
 // Presets for Beginner / Novice / Expert (index = mode - 1)
@@ -340,6 +341,7 @@ class Game {
 
     this._drawHUD();
 
+    if (this.state === STATE.QUIT_CONFIRM) this._drawQuitConfirm();
     if (this.state === STATE.GAMEOVER) this._drawGameOver();
   }
 
@@ -585,6 +587,22 @@ class Game {
         this.state = STATE.CONFIG;
         Input.flush();
         return true;
+      }
+      Input.flush();
+      return true;
+    }
+
+    if (this.state === STATE.PLAYING && Input.wasPressed("Escape")) {
+      this.state = STATE.QUIT_CONFIRM;
+      Input.flush();
+      return true;
+    }
+
+    if (this.state === STATE.QUIT_CONFIRM) {
+      if (Input.wasPressed("KeyY")) {
+        this.state = STATE.GAMEOVER;
+      } else if (Input.wasPressed("KeyN") || Input.wasPressed("Escape")) {
+        this.state = STATE.PLAYING;
       }
       Input.flush();
       return true;
@@ -1523,6 +1541,32 @@ class Game {
       ctx.textAlign = "center";
       ctx.fillText("H oder ESC — Zurück zum Spiel", cx, cy + 222);
     }
+  }
+
+  _drawQuitConfirm() {
+    const cx = W / 2,
+      cy = H / 2;
+    const bw = 340,
+      bh = 110;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.beginPath();
+    ctx.roundRect(cx - bw / 2, cy - bh / 2, bw, bh, 10);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 22px monospace";
+    ctx.fillText("Quit game?", cx, cy - 18);
+
+    ctx.fillStyle = "#aaa";
+    ctx.font = "16px monospace";
+    ctx.fillText("[Y]  Yes     [N] / ESC  No", cx, cy + 22);
+    ctx.restore();
   }
 
   _drawGameOver() {
