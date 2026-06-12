@@ -599,7 +599,7 @@ class Game {
     }
 
     if (this.state === STATE.QUIT_CONFIRM) {
-      if (Input.wasPressed("KeyY")) {
+      if (Input.wasPressed("KeyY") || Input.wasPressed("KeyZ")) {
         this.state = STATE.GAMEOVER;
       } else if (Input.wasPressed("KeyN") || Input.wasPressed("Escape")) {
         this.state = STATE.PLAYING;
