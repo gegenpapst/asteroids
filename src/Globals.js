@@ -92,13 +92,7 @@ const PUMICE_CONTRAST = 13; // contrast() strength (sharper edge than default 14
 const PUMICE_NEIGHBOR_FACTOR = 2.5; // cullIsolated threshold = cellR × FACTOR
 const PUMICE_COLLISION_FACTOR = 0.75; // collisionRadius = radius × FACTOR
 
-// PumicePoly (Polygon-Variante)
-const PUMICE_POLY_RADIUS_MIN = 28;
-const PUMICE_POLY_RADIUS_MAX = 50;
-
-// Rocks (statische Polygon- bzw. Cluster-Hindernisse)
-const ROCK_POLY_RADIUS_MIN = 22;
-const ROCK_POLY_RADIUS_MAX = 54;
+// Rocks (static cluster obstacles)
 const ROCK_CLUSTER_RADIUS_MIN = 25;
 const ROCK_CLUSTER_RADIUS_MAX = 55;
 
@@ -326,10 +320,6 @@ if (typeof module !== "undefined") {
     PUMICE_CONTRAST,
     PUMICE_NEIGHBOR_FACTOR,
     PUMICE_COLLISION_FACTOR,
-    PUMICE_POLY_RADIUS_MIN,
-    PUMICE_POLY_RADIUS_MAX,
-    ROCK_POLY_RADIUS_MIN,
-    ROCK_POLY_RADIUS_MAX,
     ROCK_CLUSTER_RADIUS_MIN,
     ROCK_CLUSTER_RADIUS_MAX,
     UFO_RADIUS,

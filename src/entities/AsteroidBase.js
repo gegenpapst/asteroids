@@ -1,6 +1,6 @@
 "use strict";
 
-// Shared base for AsteroidPoly and ClusterAsteroid.
+// Shared base for asteroid variants (e.g. ClusterAsteroid).
 // Contains velocity init, rotation, Matter body, and split logic.
 // Subclasses provide `_label` and `_rotBase` via static property and implement `draw()`.
 class AsteroidBase {
@@ -35,7 +35,6 @@ class AsteroidBase {
   }
 
   // Generates bump data: n protrusions evenly distributed around the center.
-  // Shared by _makeBody() and _makeVerts().
   _genBumps() {
     const r = this.radius;
     const n = this.bumpCount;
@@ -49,7 +48,7 @@ class AsteroidBase {
   }
 
   // Builds a compound body from a small core + widely spaced bumps.
-  // Sets this._coreR and this._bumps so _makeVerts() can access them.
+  // Sets this._coreR and this._bumps for subclasses (e.g. metaball cell layout).
   // wrap=false → no plugin.wrap (for constraint-bound subclasses like SatelliteAsteroid).
   _makeBody(wrap = true) {
     const r = this.radius;
@@ -70,42 +69,6 @@ class AsteroidBase {
     });
     Matter.Body.setPosition(body, { x: this.x, y: this.y });
     return body;
-  }
-
-  // Derives polygon vertices from the compound body geometry (ray-circle intersection
-  // + smooth shoulder). Each ray finds the outermost intersection; rays that narrowly
-  // miss a bump get a quadratic transition zone so no deep dents appear between bumps
-  // (would otherwise look like a star).
-  _makeVerts(n = 18) {
-    return Array.from({ length: n }, (_, i) => {
-      const angle = (i / n) * TAU;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      let maxR = this._coreR;
-      for (const b of this._bumps) {
-        const proj = b.dx * cos + b.dy * sin;
-        const bDistSq = b.dx * b.dx + b.dy * b.dy;
-        const c = bDistSq - b.br * b.br;
-        const disc = proj * proj - c;
-        if (disc >= 0) {
-          // Ray hits bump — outer intersection point
-          const t = proj + Math.sqrt(disc);
-          if (t > maxR) maxR = t;
-        } else if (proj > 0) {
-          // Ray narrowly misses bump — smooth shoulder fills the transition.
-          // perp = perpendicular distance from ray origin to bump center
-          const perp = Math.sqrt(bDistSq - proj * proj);
-          const miss = perp - b.br; // how far the ray passes beside the bump
-          if (miss < b.br) {
-            const f = 1 - miss / b.br; // linear falloff 1→0 over one bump-radius width
-            const bumpOuter = Math.sqrt(bDistSq) + b.br;
-            const contrib = this._coreR + (bumpOuter - this._coreR) * f * f;
-            if (contrib > maxR) maxR = contrib;
-          }
-        }
-      }
-      return { a: angle, r: maxR };
-    });
   }
 
   // Default: collisionRadius = radius. Subclasses may override.

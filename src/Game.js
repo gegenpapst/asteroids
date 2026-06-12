@@ -83,21 +83,15 @@ class Game {
       rockCount: 3,
       pumiceCount: 3,
       asteroidBounce: 2,
-      visualStyle: 1,
     };
     this._configCursor = 0;
     this._detailCursor = 0;
     this._configFocus = "mode"; // "mode" | "details"
     this._configPrevState = STATE.START;
-
-    this._rockCanvas = Object.assign(document.createElement("canvas"), {
-      width: W,
-      height: H,
-    });
   }
 
   start() {
-    this.mode = VISUAL_MODES[this.config.visualStyle - 1];
+    this.mode = VISUAL_MODES[0];
     this.score = 0;
     this.lives = 3;
     this.level = 0;
@@ -110,10 +104,7 @@ class Game {
     this.debris = [];
     this.solarSystems = [];
     Matter.World.clear(this.engine.world, false);
-    const isMetaball = this.mode instanceof MetaballMode;
-    const [rMin, rMax] = this._rockCountRange;
-    // Polygon mode: rock count from _rockCountRange; Metaball mode: 1..config.rockCount
-    const rockCount = isMetaball ? randInt(1, this.config.rockCount) : randInt(rMin, rMax);
+    const rockCount = randInt(1, this.config.rockCount);
     this.rocks = Array.from({ length: rockCount }, () =>
       this.mode.createRock(rand(60, W - 60), rand(60, H - 60)),
     );
@@ -138,7 +129,7 @@ class Game {
       this.engine.world,
       this.rocks.map((r) => r.body),
     );
-    // PumiceCluster: one body per cell; PumicePoly: one body per cluster
+    // PumiceCluster: one body per cell
     for (const p of this.pumices) {
       if (p.cells)
         Matter.World.add(
@@ -428,9 +419,8 @@ class Game {
     }
     this._applyAsteroidFilter();
 
-    // Solar systems only in Metaball mode — Polygon mode uses no satellite asteroids.
     // Solar systems: appear from level SOLAR_START_LEVEL, max SOLAR_MAX_COUNT at a time
-    if (this.mode instanceof MetaballMode && this.level >= SOLAR_START_LEVEL) {
+    if (this.level >= SOLAR_START_LEVEL) {
       const solarCount = Math.min(
         Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1,
         SOLAR_MAX_COUNT,
@@ -555,21 +545,13 @@ class Game {
 
     if (this.state === STATE.CONFIG_DETAIL) {
       const readOnly = this._configPrevState === STATE.PLAYING;
-      const params = [
-        "bulletRange",
-        "powerupFreq",
-        "rockCount",
-        "pumiceCount",
-        "asteroidBounce",
-        "visualStyle",
-      ];
+      const params = ["bulletRange", "powerupFreq", "rockCount", "pumiceCount", "asteroidBounce"];
       const paramMax = {
         bulletRange: 3,
         powerupFreq: 3,
         rockCount: 3,
         pumiceCount: 3,
         asteroidBounce: 2,
-        visualStyle: 2,
       };
       if (!readOnly) {
         if (Input.wasPressed("ArrowUp"))
@@ -900,7 +882,7 @@ class Game {
   // Peak holds for 120 frames (~2 s), then resets to the current value.
   _updateDebugStats() {
     if (!this._debugCollision) return;
-    // PumiceCluster: cells.length; PumicePoly: 1
+    // PumiceCluster: count of alive cells
     const pumiceUnits = this.pumices.reduce(
       (s, p) => s + (p.cells ? p.cells.filter((c) => c.alive).length : 1),
       0,
@@ -927,54 +909,8 @@ class Game {
   // ── Draw helpers ────────────────────────────────────────────────────────
 
   _drawRocks() {
-    if (!this.rocks.length) return;
-
-    // Metaball mode: each RockCluster draws itself (pre-baked canvas + screen blend)
-    if (this.rocks[0] instanceof RockCluster) {
-      this.rocks.forEach((r) => r.draw());
-      return;
-    }
-
-    // Polygon mode: composite trick — pass 1 stroke (glow), pass 2 fill erases overlapping strokes
-    const off = this._rockCanvas;
-    const offCtx = off.getContext("2d");
-    offCtx.clearRect(0, 0, W, H);
-
-    const buildPath = (rock, tctx) => {
-      const cos = Math.cos(rock.rot),
-        sin = Math.sin(rock.rot);
-      tctx.beginPath();
-      rock.verts.forEach(({ a, r }, i) => {
-        const lx = Math.cos(a) * r,
-          ly = Math.sin(a) * r;
-        const wx = rock.x + cos * lx - sin * ly;
-        const wy = rock.y + sin * lx + cos * ly;
-        i === 0 ? tctx.moveTo(wx, wy) : tctx.lineTo(wx, wy);
-      });
-      tctx.closePath();
-    };
-
-    // Pass 1: stroke with glow — visible only where not covered by fill
-    offCtx.strokeStyle = "#7a5c3a";
-    offCtx.lineWidth = 2.5;
-    offCtx.shadowColor = "#4a3820";
-    offCtx.shadowBlur = 10;
-    for (const rock of this.rocks) {
-      buildPath(rock, offCtx);
-      offCtx.stroke();
-    }
-    offCtx.shadowBlur = 0;
-
-    // Pass 2: opaque fill erases internal strokes at overlaps
-    offCtx.fillStyle = "rgb(72, 54, 36)";
-    for (const rock of this.rocks) {
-      buildPath(rock, offCtx);
-      offCtx.fill();
-    }
-
-    ctx.globalAlpha = 0.45;
-    ctx.drawImage(off, 0, 0);
-    ctx.globalAlpha = 1;
+    // Each RockCluster draws itself (pre-baked canvas + screen blend)
+    this.rocks.forEach((r) => r.draw());
   }
 
   _drawHUD() {
@@ -1047,13 +983,6 @@ class Game {
   }
   get _powerupDuration() {
     return [5, 7, 10][this.config.powerupFreq - 1];
-  }
-  get _rockCountRange() {
-    return [
-      [1, 5],
-      [5, 10],
-      [10, 20],
-    ][this.config.rockCount - 1];
   }
   get _pumiceCountRange() {
     return [
@@ -1282,11 +1211,6 @@ class Game {
         label: "Asteroiden-Kollisionen",
         opts: ["aus", "ein"],
       },
-      {
-        key: "visualStyle",
-        label: "Visueller Stil",
-        opts: ["Polygon", "Metaball"],
-      },
     ];
 
     let y = 68;
@@ -1379,7 +1303,7 @@ class Game {
         ctx.fillStyle = ambient;
         ctx.fill();
 
-        // Radial gradient fill: bright center → dark edge (matches SatelliteAsteroidPoly.draw)
+        // Radial gradient fill: bright center → dark edge
         ctx.beginPath();
         ctx.arc(x, y, r, 0, TAU);
         const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
