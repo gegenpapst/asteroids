@@ -1,6 +1,6 @@
 "use strict";
 
-// Metaball-Variante des statischen Rocks — Glut-Farbe (rot-orange).
+// Metaball variant of the static rock — ember color.
 class RockCluster {
   constructor(x, y) {
     this.x = x;
