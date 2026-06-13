@@ -61,17 +61,15 @@ describe("SatelliteClusterAsteroid.split", () => {
     const children = s.split();
     expect(children).toHaveLength(2);
     for (const c of children) {
-      expect(c).toBeInstanceOf(ClusterAsteroid);
-      expect(c).not.toBeInstanceOf(SatelliteClusterAsteroid);
+      expect(c).toBeInstanceOf(SatelliteClusterAsteroid);
       expect(c.size).toBe(2);
     }
   });
 
-  test("children inherit the Wraith gradient color", () => {
+  test("children remain bound to the same parentSystem", () => {
     const s = new SatelliteClusterAsteroid(SPAWN_X, SPAWN_Y, AX, AY, parentSystem, 1);
     for (const c of s.split()) {
-      expect(c._gradientCenter).toBe(SATELLITE_COLORS[4].center);
-      expect(c._gradientBody).toBe(SATELLITE_COLORS[4].body);
+      expect(c.parentSystem).toBe(parentSystem);
     }
   });
 

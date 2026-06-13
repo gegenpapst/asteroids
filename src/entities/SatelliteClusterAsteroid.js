@@ -41,30 +41,33 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     return super._makeBody(false);
   }
 
-  // Split children are free-floating ClusterAsteroid instances that inherit the Wraith color.
+  // Split children stay bound to the same solar system center.
   split(bulletAngle = null) {
     if (this.size >= 2) return [];
     const offset = ASTEROID_RADIUS[this.size + 1];
     const perp = rand(0, TAU);
     const ox = Math.cos(perp) * offset;
     const oy = Math.sin(perp) * offset;
-    const col = SATELLITE_COLORS[4];
+    const ax = this.parentSystem ? this.parentSystem.x : this.anchorX;
+    const ay = this.parentSystem ? this.parentSystem.y : this.anchorY;
     return [
-      new ClusterAsteroid(
+      new SatelliteClusterAsteroid(
         this.x + ox,
         this.y + oy,
+        ax,
+        ay,
+        this.parentSystem,
         this.size + 1,
-        safeSplitAngle(bulletAngle),
         this.maxBumps,
-        col,
       ),
-      new ClusterAsteroid(
+      new SatelliteClusterAsteroid(
         this.x - ox,
         this.y - oy,
+        ax,
+        ay,
+        this.parentSystem,
         this.size + 1,
-        safeSplitAngle(bulletAngle),
         this.maxBumps,
-        col,
       ),
     ];
   }
