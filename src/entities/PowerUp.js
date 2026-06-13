@@ -89,3 +89,5 @@ class PowerUp {
     ctx.restore();
   }
 }
+
+if (typeof module !== "undefined") module.exports = { PowerUp };

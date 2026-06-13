@@ -75,7 +75,9 @@ describe("UfoCluster.update", () => {
     const fired = [];
     const u = new UfoCluster(1, (b) => fired.push(b));
     u.x = 100;
-    u.y = 100;
+    u.baseY = 100;
+    u.sineAmp = 0; // disable oscillation so the firing position stays at y=100
+    u.vx = 0;
     const ship = { x: 400, y: 100 }; // straight to the right
     u.fireTimer = 0.01;
     u.update(0.02, ship);
