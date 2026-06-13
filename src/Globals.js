@@ -61,6 +61,7 @@ const SOLAR_SATELLITE_MAX = 7; // max. satellites
 const SOLAR_MAX_COUNT = 2; // max. simultaneously active solar systems
 const SOLAR_START_LEVEL = 1; // starting from this level
 const SOLAR_CENTER_SCORE = 500; // points for the center
+const SOLAR_CENTER_SPEED = 40; // px/s — drift speed of the whole system
 
 const INITIAL_ROCKS = 4;
 const MAX_ROCKS_PER_LEVEL = 10;
@@ -349,6 +350,7 @@ if (typeof module !== "undefined") {
     SOLAR_MAX_COUNT,
     SOLAR_START_LEVEL,
     SOLAR_CENTER_SCORE,
+    SOLAR_CENTER_SPEED,
     RESPAWN_DELAY,
     UFO_SPAWN_MIN,
     UFO_SPAWN_JITTER,

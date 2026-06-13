@@ -440,6 +440,7 @@ class Game {
           const sy = ay + Math.sin(spawnAngle) * tetherLen;
           const sat = this.mode.createSatellite(sx, sy, ax, ay, sys, 1, maxBumps);
           this.asteroids.push(sat);
+          sys.satellites.push(sat);
           Matter.World.add(this.engine.world, [sat.body, sat.constraint]);
           Matter.Body.set(sat.body, "collisionFilter", this._asteroidCollisionFilter);
         }
@@ -730,7 +731,7 @@ class Game {
           this._addScore(a.score);
           this._boom(a.x, a.y, a.size);
           this._spawnDebris(a.x, a.y, b.vx, b.vy); // #10 debris
-          if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(this);
+          if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(a, this);
           if (Math.random() < this._powerupChance)
             this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]));
           const children = a.split(Math.atan2(b.vy, b.vx));
@@ -738,6 +739,9 @@ class Game {
           if (a.constraint) Matter.World.remove(this.engine.world, a.constraint);
           Matter.World.remove(this.engine.world, a.body);
           this._addAsteroidsToWorld(children);
+          for (const c of children) {
+            if (c.parentSystem) c.parentSystem.satellites.push(c);
+          }
           this.asteroids.splice(ai, 1, ...children);
           this.bullets.splice(bi, 1);
           continue outer;
@@ -800,10 +804,13 @@ class Game {
             const children = a.split();
             for (const c of children) c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
             this._spawnDebris(a.x, a.y, this.ship.vx, this.ship.vy); // #10
-            if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(this);
+            if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(a, this);
             if (a.constraint) Matter.World.remove(this.engine.world, a.constraint);
             Matter.World.remove(this.engine.world, a.body);
             this._addAsteroidsToWorld(children);
+            for (const c of children) {
+              if (c.parentSystem) c.parentSystem.satellites.push(c);
+            }
             this.asteroids.splice(ai, 1, ...children);
             this._bounceShip(a.x, a.y); // explicit bounce (asteroid removed before Matter can apply it)
           } else {
