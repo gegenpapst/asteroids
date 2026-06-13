@@ -2,7 +2,8 @@
 
 // Central anchor of a solar system.
 // Moves across the screen at SOLAR_CENTER_SPEED, bouncing off edges.
-// Satellites orbit the moving center; their constraint anchors are updated each frame.
+// Holds a static Matter.Body so satellite constraints can use bodyB — the reliable
+// way to track a moving anchor in Matter.js (mutating constraint.pointB is not stable).
 // When all satellites are destroyed, the center explodes and scores SOLAR_CENTER_SCORE.
 class SolarSystem {
   constructor(x, y, totalCount) {
@@ -18,10 +19,19 @@ class SolarSystem {
     const angle = Math.random() * TAU;
     this.vx = Math.cos(angle) * SOLAR_CENTER_SPEED;
     this.vy = Math.sin(angle) * SOLAR_CENTER_SPEED;
+
+    // Static body used as bodyB anchor for all satellite constraints.
+    // isStatic so physics forces don't move it; we reposition it manually each frame.
+    this.body = Matter.Body.create({
+      isStatic: true,
+      collisionFilter: { mask: 0, category: 0 },
+      label: "solar-center",
+    });
+    Matter.Body.setPosition(this.body, { x, y });
   }
 
-  // Called by Game.js when a satellite belonging to this system is destroyed.
-  // Removes the satellite from the live list; explodes when the last one is gone.
+  // Called by Game.js after split children are registered: removes the satellite
+  // from the live list and explodes when the last one is gone.
   onSatelliteDestroyed(sat, game) {
     const idx = this.satellites.indexOf(sat);
     if (idx !== -1) this.satellites.splice(idx, 1);
@@ -30,6 +40,7 @@ class SolarSystem {
 
   _explode(game) {
     this.alive = false;
+    Matter.World.remove(game.engine.world, this.body);
     for (let i = 0; i < 28; i++) game.particles.push(new Particle(this.x, this.y, "#f84"));
     for (let i = 0; i < 14; i++) game.particles.push(new Particle(this.x, this.y, "#fff"));
     game.snd.explodeLarge();
@@ -53,10 +64,11 @@ class SolarSystem {
       this.y = Math.max(margin, Math.min(H - margin, this.y));
     }
 
-    // Drag every satellite's constraint anchor to the new center position.
+    // Reposition the static body — satellite constraints follow automatically via bodyB.
+    Matter.Body.setPosition(this.body, { x: this.x, y: this.y });
+
+    // Keep anchorX/Y in sync for tether drawing.
     for (const sat of this.satellites) {
-      sat.constraint.pointB.x = this.x;
-      sat.constraint.pointB.y = this.y;
       sat.anchorX = this.x;
       sat.anchorY = this.y;
     }

@@ -433,6 +433,7 @@ class Game {
         const satelliteCount = randInt(SOLAR_SATELLITE_MIN, SOLAR_SATELLITE_MAX);
         const sys = new SolarSystem(ax, ay, satelliteCount);
         this.solarSystems.push(sys);
+        Matter.World.add(this.engine.world, sys.body);
         for (let j = 0; j < satelliteCount; j++) {
           const tetherLen = rand(SOLAR_TETHER_MIN, SOLAR_TETHER_MAX);
           const spawnAngle = (j / satelliteCount) * TAU + rand(-0.3, 0.3);
@@ -731,7 +732,6 @@ class Game {
           this._addScore(a.score);
           this._boom(a.x, a.y, a.size);
           this._spawnDebris(a.x, a.y, b.vx, b.vy); // #10 debris
-          if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(a, this);
           if (Math.random() < this._powerupChance)
             this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]));
           const children = a.split(Math.atan2(b.vy, b.vx));
@@ -739,9 +739,11 @@ class Game {
           if (a.constraint) Matter.World.remove(this.engine.world, a.constraint);
           Matter.World.remove(this.engine.world, a.body);
           this._addAsteroidsToWorld(children);
+          // Register children before notifying destruction so the system counts correctly.
           for (const c of children) {
             if (c.parentSystem) c.parentSystem.satellites.push(c);
           }
+          if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(a, this);
           this.asteroids.splice(ai, 1, ...children);
           this.bullets.splice(bi, 1);
           continue outer;
@@ -804,13 +806,14 @@ class Game {
             const children = a.split();
             for (const c of children) c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
             this._spawnDebris(a.x, a.y, this.ship.vx, this.ship.vy); // #10
-            if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(a, this);
             if (a.constraint) Matter.World.remove(this.engine.world, a.constraint);
             Matter.World.remove(this.engine.world, a.body);
             this._addAsteroidsToWorld(children);
+            // Register children before notifying destruction so the system counts correctly.
             for (const c of children) {
               if (c.parentSystem) c.parentSystem.satellites.push(c);
             }
+            if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(a, this);
             this.asteroids.splice(ai, 1, ...children);
             this._bounceShip(a.x, a.y); // explicit bounce (asteroid removed before Matter can apply it)
           } else {

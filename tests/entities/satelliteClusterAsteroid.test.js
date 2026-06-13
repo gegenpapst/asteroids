@@ -40,11 +40,19 @@ describe("SatelliteClusterAsteroid constructor", () => {
     expect(s.isSatellite).toBe(false);
   });
 
-  test("constraint anchors at the given point with spawn distance as length", () => {
+  test("constraint uses bodyB (solar system body) with spawn distance as length", () => {
     const s = new SatelliteClusterAsteroid(SPAWN_X, SPAWN_Y, AX, AY, parentSystem);
-    expect(s.constraint.pointB).toEqual({ x: AX, y: AY });
+    // With parentSystem set, the constraint anchors to the system body via bodyB.
+    expect(s.constraint.bodyB).toBe(parentSystem.body);
+    expect(s.constraint.pointB).toEqual({ x: 0, y: 0 });
     expect(s.constraint.length).toBeCloseTo(120);
     expect(s.constraint.bodyA).toBe(s.body);
+  });
+
+  test("pendulum constraint (no parentSystem) uses fixed world pointB", () => {
+    const s = new SatelliteClusterAsteroid(SPAWN_X, SPAWN_Y, AX, AY, null);
+    expect(s.constraint.bodyB).toBeUndefined();
+    expect(s.constraint.pointB).toEqual({ x: AX, y: AY });
   });
 
   test("initial velocity is tangential (perpendicular to the radial direction)", () => {

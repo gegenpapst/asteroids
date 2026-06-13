@@ -26,14 +26,28 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
 
     const stiffness = parentSystem ? SOLAR_STIFFNESS : PENDULUM_STIFFNESS;
     const damping = parentSystem ? SOLAR_DAMPING : PENDULUM_DAMPING;
-    this.constraint = Matter.Constraint.create({
-      bodyA: this.body,
-      pointA: { x: 0, y: 0 },
-      pointB: { x: ax, y: ay },
-      length: Math.hypot(dx, dy),
-      stiffness,
-      damping,
-    });
+    if (parentSystem) {
+      // Anchor to the solar system's moving body — bodyB tracks correctly in Matter.js.
+      this.constraint = Matter.Constraint.create({
+        bodyA: this.body,
+        pointA: { x: 0, y: 0 },
+        bodyB: parentSystem.body,
+        pointB: { x: 0, y: 0 },
+        length: Math.hypot(dx, dy),
+        stiffness,
+        damping,
+      });
+    } else {
+      // Pendulum: fixed world-space anchor point.
+      this.constraint = Matter.Constraint.create({
+        bodyA: this.body,
+        pointA: { x: 0, y: 0 },
+        pointB: { x: ax, y: ay },
+        length: Math.hypot(dx, dy),
+        stiffness,
+        damping,
+      });
+    }
   }
 
   // Override: plugin.wrap disabled — constraint would snap on screen wrap

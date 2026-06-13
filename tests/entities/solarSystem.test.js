@@ -10,6 +10,7 @@ function makeFakeGame() {
     particles: [],
     snd: { explodeLarge: jest.fn() },
     _addScore: jest.fn(),
+    engine: { world: {} },
   };
 }
 
@@ -121,15 +122,16 @@ describe("SolarSystem.update — edge bouncing", () => {
 });
 
 describe("SolarSystem.update — satellite anchor sync", () => {
-  test("satellite constraint.pointB follows center", () => {
+  test("satellite anchorX/Y follows center (constraint uses bodyB, not pointB)", () => {
     const sys = new SolarSystem(300, 200, 2);
     sys.vx = SOLAR_CENTER_SPEED;
     sys.vy = 0;
     const sat = makeSatellite(350, 200, 300, 200);
     sys.satellites.push(sat);
     sys.update(1);
-    expect(sat.constraint.pointB.x).toBeCloseTo(sys.x);
-    expect(sat.constraint.pointB.y).toBeCloseTo(sys.y);
+    // anchorX/Y drive tether drawing; constraint anchor is handled by bodyB.
+    expect(sat.anchorX).toBeCloseTo(sys.x);
+    expect(sat.anchorY).toBeCloseTo(sys.y);
   });
 
   test("satellite anchorX/Y follows center", () => {
