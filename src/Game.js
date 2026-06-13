@@ -78,6 +78,7 @@ class Game {
 
     this.config = {
       mode: 3,
+      asteroidStyle: 1,
       bulletRange: 1,
       powerupFreq: 1,
       rockCount: 3,
@@ -91,6 +92,7 @@ class Game {
   }
 
   start() {
+    ClusterAsteroid.renderStyle = this.config.asteroidStyle;
     this.mode = VISUAL_MODES[0];
     this.score = 0;
     this.lives = 3;
@@ -545,8 +547,16 @@ class Game {
 
     if (this.state === STATE.CONFIG_DETAIL) {
       const readOnly = this._configPrevState === STATE.PLAYING;
-      const params = ["bulletRange", "powerupFreq", "rockCount", "pumiceCount", "asteroidBounce"];
+      const params = [
+        "asteroidStyle",
+        "bulletRange",
+        "powerupFreq",
+        "rockCount",
+        "pumiceCount",
+        "asteroidBounce",
+      ];
       const paramMax = {
+        asteroidStyle: 2,
         bulletRange: 3,
         powerupFreq: 3,
         rockCount: 3,
@@ -1186,6 +1196,11 @@ class Game {
     ctx.shadowBlur = 0;
 
     const params = [
+      {
+        key: "asteroidStyle",
+        label: "Asteroiden-Stil",
+        opts: ["Polygon", "Metaball"],
+      },
       {
         key: "bulletRange",
         label: "Reichweite Schüsse",
