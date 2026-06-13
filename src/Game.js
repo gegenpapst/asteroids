@@ -1272,99 +1272,54 @@ class Game {
     ctx.fillText("ASTEROIDS", cx, 58);
     ctx.shadowBlur = 0;
 
-    // Showcase disabled — re-enable by removing the "if (false)" wrapper below.
-    if (false) {
-      // Showcase label
-      ctx.fillStyle = "rgba(255,165,60,0.75)";
-      ctx.font = "11px monospace";
-      ctx.fillText("SATELLITE ASTEROID — COLOR PROPOSALS", cx, 82);
+    // Style comparison showcase
+    if (!this._showcaseReady) this._initShowcase();
 
-      // 4 x 2 grid
-      const cols = 4;
-      const colW = W / cols;
-      const rowStartY = [148, 335]; // y-center of asteroid per row
-      const r = 36;
-      const SELECTED_IDX = 4; // Wraith
+    const rot = (Date.now() / 1000) * 0.22;
+    const lx = W / 4;
+    const rx = (3 * W) / 4;
+    const ay = 300;
 
-      for (let i = 0; i < SATELLITE_COLORS.length; i++) {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const x = colW * col + colW / 2;
-        const y = rowStartY[row];
-        const { name, center, body } = SATELLITE_COLORS[i];
-        const selected = i === SELECTED_IDX;
+    // Vertical divider
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(W / 2, 80);
+    ctx.lineTo(W / 2, 555);
+    ctx.stroke();
+    ctx.restore();
 
-        // Soft ambient glow behind the asteroid
-        const ambient = ctx.createRadialGradient(x, y, 0, x, y, r * 2.2);
-        ambient.addColorStop(0, center.replace("rgb(", "rgba(").replace(")", ",0.12)"));
-        ambient.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.beginPath();
-        ctx.arc(x, y, r * 2.2, 0, TAU);
-        ctx.fillStyle = ambient;
-        ctx.fill();
+    // Panel headers
+    ctx.fillStyle = "rgba(120,200,255,0.90)";
+    ctx.font = "bold 13px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("A — POLYGON", lx, 107);
+    ctx.fillText("B — METABALL", rx, 107);
 
-        // Radial gradient fill: bright center → dark edge
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, TAU);
-        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-        grad.addColorStop(0, center);
-        grad.addColorStop(0.45, center);
-        grad.addColorStop(1, body);
-        ctx.fillStyle = grad;
-        ctx.fill();
+    ctx.fillStyle = "rgba(160,160,160,0.65)";
+    ctx.font = "11px monospace";
+    ctx.fillText("Canvas-Pfad · scharfe Kanten", lx, 123);
+    ctx.fillText("Hex-Grid geclippt · weiches Leuchten", rx, 123);
 
-        // Rim stroke with glow
-        ctx.save();
-        ctx.strokeStyle = center;
-        ctx.lineWidth = selected ? 2 : 1;
-        ctx.shadowColor = center;
-        ctx.shadowBlur = selected ? 12 : 5;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, TAU);
-        ctx.stroke();
-        ctx.restore();
+    // Option A: polygon drawn live each frame
+    this._drawPolyShowcase(lx, ay, rot);
 
-        // Selection ring for active color
-        if (selected) {
-          ctx.save();
-          ctx.strokeStyle = center;
-          ctx.lineWidth = 1.5;
-          ctx.globalAlpha = 0.5;
-          ctx.setLineDash([5, 4]);
-          ctx.beginPath();
-          ctx.arc(x, y, r + 9, 0, TAU);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.restore();
-        }
+    // Option B: pre-built metaball canvas
+    ctx.save();
+    ctx.translate(rx, ay);
+    ctx.rotate(rot);
+    ctx.globalCompositeOperation = "screen";
+    const sw = this._showcaseCanvasB.width;
+    ctx.drawImage(this._showcaseCanvasB, -sw / 2, -sw / 2);
+    ctx.restore();
 
-        // Tether hint (short dashed line upward + anchor dot)
-        ctx.save();
-        ctx.strokeStyle = "rgba(255,140,60,0.45)";
-        ctx.lineWidth = 1.2;
-        ctx.setLineDash([3, 5]);
-        ctx.beginPath();
-        ctx.moveTo(x, y - r);
-        ctx.lineTo(x, y - r - 22);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.arc(x, y - r - 22, 3, 0, TAU);
-        ctx.fillStyle = "rgba(255,140,60,0.65)";
-        ctx.fill();
-        ctx.restore();
-
-        // Index + name label — highlight selected
-        ctx.fillStyle = selected ? center : "#999";
-        ctx.font = selected ? "bold 12px monospace" : "bold 11px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(
-          selected ? `✓  ${name.toUpperCase()}` : `${i + 1}  ${name.toUpperCase()}`,
-          x,
-          y + r + 17,
-        );
-      }
-    } // end showcase
+    // Captions
+    ctx.fillStyle = "rgba(120,120,120,0.55)";
+    ctx.font = "10px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("Sehr unregelmäßig · klassisch", lx, 450);
+    ctx.fillText("Organisch · Science-Fiction", rx, 450);
 
     // Blink "press enter"
     if (Math.floor(Date.now() / 520) % 2) {
@@ -1522,6 +1477,65 @@ class Game {
       ctx.font = "18px monospace";
       ctx.fillText("PRESS ENTER OR SPACE TO PLAY AGAIN", cx, cy + 115);
     }
+  }
+
+  // ── Style showcase helpers ────────────────────────────────────────────────
+
+  _initShowcase() {
+    const sr = 80;
+    this._showcaseSr = sr;
+    // Fixed 6-vertex irregular shape — same polygon used for both style options
+    const rawBumps = [
+      { a: -1.47, d: 0.7 },
+      { a: -0.48, d: 0.76 },
+      { a: 0.72, d: 0.68 },
+      { a: 1.8, d: 0.73 },
+      { a: -2.45, d: 0.74 },
+      { a: 3.0, d: 0.66 },
+    ].map(({ a, d }) => ({ dx: Math.cos(a) * d * sr, dy: Math.sin(a) * d * sr }));
+
+    this._showcaseSorted = rawBumps
+      .slice()
+      .sort((a, b) => Math.atan2(a.dy, a.dx) - Math.atan2(b.dy, b.dx));
+
+    const verts = this._showcaseSorted.map((b) => ({ x: b.dx, y: b.dy }));
+    const cellR = sr * 0.13;
+    const cells = generatePolyCells(verts, cellR);
+    this._showcaseCanvasB = buildMetaballCanvas(cells, "rgb(100, 140, 185)", sr, cellR, 14, 0.72);
+    this._showcaseReady = true;
+  }
+
+  _drawPolyShowcase(x, y, rot) {
+    const verts = this._showcaseSorted;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    // Outer glow
+    ctx.shadowColor = "rgb(120, 190, 255)";
+    ctx.shadowBlur = 28;
+
+    // Filled polygon with radial gradient
+    const sr = this._showcaseSr;
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, sr);
+    grad.addColorStop(0, "rgb(190, 225, 255)");
+    grad.addColorStop(0.45, "rgb(100, 155, 215)");
+    grad.addColorStop(1, "rgb(28, 60, 120)");
+
+    ctx.beginPath();
+    ctx.moveTo(verts[0].dx, verts[0].dy);
+    for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].dx, verts[i].dy);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Edge stroke
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(180, 230, 255, 0.85)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.restore();
   }
 }
 

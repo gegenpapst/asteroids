@@ -142,5 +142,66 @@ function renderMetaballFrame(
   targetCtx.restore();
 }
 
+/**
+ * Ray-casting point-in-polygon test (local coordinates).
+ * @param {number} px
+ * @param {number} py
+ * @param {{x: number, y: number}[]} verts
+ * @returns {boolean}
+ */
+function pointInPolygon(px, py, verts) {
+  let inside = false;
+  for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+    const xi = verts[i].x,
+      yi = verts[i].y;
+    const xj = verts[j].x,
+      yj = verts[j].y;
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Generates hex cells filling the interior of a polygon.
+ * Suitable for building a metaball canvas shaped like a polygon rather than a circle.
+ *
+ * @param {{x: number, y: number}[]} verts - polygon vertices in local coords (center = origin)
+ * @param {number} cellR - base cell radius
+ * @returns {Array<{dx: number, dy: number, r: number}>}
+ */
+function generatePolyCells(verts, cellR) {
+  const xs = verts.map((v) => v.x);
+  const ys = verts.map((v) => v.y);
+  const minX = Math.min(...xs) - cellR;
+  const minY = Math.min(...ys) - cellR;
+  const maxX = Math.max(...xs) + cellR;
+  const maxY = Math.max(...ys) + cellR;
+
+  const spacing = cellR * METABALL_SPACING_RATIO;
+  const rowH = spacing * METABALL_HEX_PACKING;
+  const cells = [];
+
+  for (let row = 0; minY + row * rowH <= maxY + rowH; row++) {
+    const dy = minY + row * rowH;
+    const xOff = ((row % 2) * spacing) / 2;
+    for (let col = 0; minX + col * spacing + xOff <= maxX + spacing; col++) {
+      const dx = minX + col * spacing + xOff;
+      if (!pointInPolygon(dx, dy, verts)) continue;
+      cells.push({
+        dx: dx + rand(-METABALL_CELL_JITTER, METABALL_CELL_JITTER),
+        dy: dy + rand(-METABALL_CELL_JITTER, METABALL_CELL_JITTER),
+        r: cellR * rand(1 - METABALL_CELL_SIZE_JITTER, 1 + METABALL_CELL_SIZE_JITTER),
+      });
+    }
+  }
+  return cells;
+}
+
 if (typeof module !== "undefined")
-  module.exports = { generateHexCells, buildMetaballCanvas, renderMetaballFrame };
+  module.exports = {
+    generateHexCells,
+    buildMetaballCanvas,
+    renderMetaballFrame,
+    pointInPolygon,
+    generatePolyCells,
+  };
