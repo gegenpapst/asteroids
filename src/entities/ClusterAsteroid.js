@@ -5,6 +5,9 @@ class ClusterAsteroid extends AsteroidBase {
   static _label = "cluster-asteroid";
   static _rotBase = 1.2;
 
+  // 1 = polygon path (sharp edges, glow), 2 = metaball hex-grid (soft glow)
+  static renderStyle = 1;
+
   // color: optional override; defaults to the standard steel-blue asteroid tint.
   //   Pass a {center, body} object to enable radial gradient fill (e.g. satellite split children).
   constructor(x, y, size = 0, angle = null, maxBumps = 7, color = "rgb(100, 140, 185)") {
@@ -13,20 +16,38 @@ class ClusterAsteroid extends AsteroidBase {
       this._gradientCenter = color.center;
       this._gradientBody = color.body;
       this._offCanvas = null;
+      this._polyVerts = null;
+      this._color = null;
     } else {
       this._gradientCenter = null;
       this._gradientBody = null;
-      // Mirror the compound physics body: large core cell fills the center,
-      // bump cells follow their physics positions. Blur is scaled to the
-      // average bump radius so all cells merge at a consistent threshold.
-      const cells = [{ dx: 0, dy: 0, r: this._coreR }];
-      for (const b of this._bumps) cells.push({ dx: b.dx, dy: b.dy, r: b.br });
-      const avgBumpR =
-        this._bumps.length > 0
-          ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
-          : this._coreR * 0.55;
-      this._offCanvas = buildMetaballCanvas(cells, color, this.radius, avgBumpR, 14, 0.65);
+      this._color = color;
+      this._offCanvas = null; // built lazily for renderStyle 2
+      this._polyVerts = this._buildPolyVerts();
     }
+  }
+
+  // Polygon vertices sorted by angle. Supplements with synthetic points when
+  // bump count < 3 so the polygon always has at least 5 vertices.
+  _buildPolyVerts() {
+    if (this._bumps.length >= 3) {
+      return this._bumps
+        .slice()
+        .sort((a, b) => Math.atan2(a.dy, a.dx) - Math.atan2(b.dy, b.dx))
+        .map((b) => ({ x: b.dx, y: b.dy }));
+    }
+    const items = this._bumps.map((b) => ({
+      x: b.dx,
+      y: b.dy,
+      a: Math.atan2(b.dy, b.dx),
+    }));
+    const need = 5 - items.length;
+    for (let i = 0; i < need; i++) {
+      const a = (i / need) * TAU + rand(-0.25, 0.25);
+      const d = this._coreR * rand(0.78, 0.98);
+      items.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, a });
+    }
+    return items.sort((a, b) => a.a - b.a).map((v) => ({ x: v.x, y: v.y }));
   }
 
   get collisionRadius() {
@@ -54,6 +75,51 @@ class ClusterAsteroid extends AsteroidBase {
       ctx.restore();
       return;
     }
+
+    if (ClusterAsteroid.renderStyle === 1) {
+      this._drawPoly();
+    } else {
+      if (!this._offCanvas) this._buildMetaball();
+      this._drawMetaball();
+    }
+  }
+
+  _drawPoly() {
+    const verts = this._polyVerts;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+
+    ctx.shadowColor = "rgb(120, 185, 255)";
+    ctx.shadowBlur = 20;
+
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius);
+    grad.addColorStop(0, "rgb(185, 220, 255)");
+    grad.addColorStop(0.45, "rgb(100, 155, 210)");
+    grad.addColorStop(1, "rgb(28, 60, 120)");
+
+    ctx.beginPath();
+    ctx.moveTo(verts[0].x, verts[0].y);
+    for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].x, verts[i].y);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(175, 225, 255, 0.85)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  _buildMetaball() {
+    const cellR = this.radius * 0.13;
+    const cells = generatePolyCells(this._polyVerts, cellR);
+    this._offCanvas = buildMetaballCanvas(cells, this._color, this.radius, cellR, 14, 0.72);
+  }
+
+  _drawMetaball() {
     const sz = this._offCanvas.width;
     ctx.save();
     ctx.globalCompositeOperation = "screen";
