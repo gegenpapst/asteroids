@@ -53,12 +53,12 @@ describe("ClusterAsteroid constructor", () => {
     }
   });
 
-  test("bump radii stay within the uniform 0.28–0.34 band", () => {
+  test("bump radii stay within the 0.35–0.45 band", () => {
     for (let i = 0; i < 20; i++) {
       const a = new ClusterAsteroid(0, 0, 0, null, 7);
       for (const b of a._bumps) {
-        expect(b.br).toBeGreaterThanOrEqual(a.radius * 0.28);
-        expect(b.br).toBeLessThanOrEqual(a.radius * 0.34);
+        expect(b.br).toBeGreaterThanOrEqual(a.radius * 0.35);
+        expect(b.br).toBeLessThanOrEqual(a.radius * 0.45);
       }
     }
   });

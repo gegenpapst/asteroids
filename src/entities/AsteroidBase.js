@@ -42,7 +42,7 @@ class AsteroidBase {
     return Array.from({ length: n }, (_, i) => {
       const a = (i / n) * TAU + rand(-0.55, 0.55);
       const d = r * rand(0.44, 0.8);
-      const br = r * rand(0.28, 0.34);
+      const br = r * rand(0.35, 0.45);
       return { dx: Math.cos(a) * d, dy: Math.sin(a) * d, br };
     });
   }
@@ -52,7 +52,7 @@ class AsteroidBase {
   // wrap=false → no plugin.wrap (for constraint-bound subclasses like SatelliteAsteroid).
   _makeBody(wrap = true) {
     const r = this.radius;
-    this._coreR = r * (1.0 - (0.54 * Math.min(this.bumpCount, 7)) / 7);
+    this._coreR = r * (0.85 - (0.5 * Math.min(this.bumpCount, 7)) / 7);
     this._bumps = this._genBumps();
 
     const parts = [Matter.Bodies.circle(0, 0, this._coreR)];

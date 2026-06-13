@@ -25,7 +25,7 @@ class ClusterAsteroid extends AsteroidBase {
         this._bumps.length > 0
           ? this._bumps.reduce((s, b) => s + b.br, 0) / this._bumps.length
           : this._coreR * 0.55;
-      this._offCanvas = buildMetaballCanvas(cells, color, this.radius, avgBumpR, 14, 0.55);
+      this._offCanvas = buildMetaballCanvas(cells, color, this.radius, avgBumpR, 14, 0.65);
     }
   }
 
