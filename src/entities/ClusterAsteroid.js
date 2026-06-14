@@ -5,9 +5,6 @@ class ClusterAsteroid extends AsteroidBase {
   static _label = "cluster-asteroid";
   static _rotBase = 1.2;
 
-  // 1 = polygon path (sharp edges, glow), 2 = metaball hex-grid (soft glow)
-  static renderStyle = 1;
-
   // color: optional override; defaults to the standard steel-blue asteroid tint.
   //   Pass a {center, body} object to enable radial gradient fill (e.g. satellite split children).
   constructor(x, y, size = 0, angle = null, maxBumps = 7, color = "rgb(100, 140, 185)") {
@@ -18,11 +15,13 @@ class ClusterAsteroid extends AsteroidBase {
       this._offCanvas = null;
       this._polyVerts = null;
       this._color = null;
+      this._renderStyle = 1;
     } else {
       this._gradientCenter = null;
       this._gradientBody = null;
       this._color = color;
-      this._offCanvas = null; // built lazily for renderStyle 2
+      this._offCanvas = null;
+      this._renderStyle = Math.random() < 0.5 ? 1 : 2;
       // _polyVerts is set by _makeBody() (called in AsteroidBase constructor)
     }
   }
@@ -99,7 +98,7 @@ class ClusterAsteroid extends AsteroidBase {
       return;
     }
 
-    if (ClusterAsteroid.renderStyle === 1) {
+    if (this._renderStyle === 1) {
       this._drawPoly();
     } else {
       if (!this._offCanvas) this._buildMetaball();
