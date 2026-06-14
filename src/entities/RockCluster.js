@@ -24,7 +24,7 @@ class RockCluster {
     return this.radius * CLUSTER_COLLISION_FACTOR;
   }
 
-  draw() {
+  draw(ctx) {
     const sz = this._offCanvas.width;
     ctx.save();
     ctx.globalCompositeOperation = "screen";

@@ -47,6 +47,8 @@ global.window = {
 
 // Entities reference globals (rand, wrap, W, H, ASTEROID_RADIUS …) as bare names
 // rather than imports — mirroring the browser's shared script scope.
+const u = require("../src/utils.js");
+Object.assign(global, u);
 const g = require("../src/Globals.js");
 Object.assign(global, g);
 global.ctx = ctxStub;

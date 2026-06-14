@@ -22,7 +22,7 @@ class Bullet {
     return this.life > 0;
   }
 
-  draw() {
+  draw(ctx) {
     const alpha = clamp((this.life / this.maxLife) * 2, 0, 1);
     if (this.power === 2) {
       ctx.beginPath();

@@ -18,8 +18,6 @@ fitCanvas();
 window.addEventListener("resize", fitCanvas);
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const TAU = Math.PI * 2;
-
 const SHIP_SIZE = 14;
 const SHIP_THRUST = 260;
 const SHIP_MAX_SPEED = 460;
@@ -142,34 +140,6 @@ const BEAT_INTERVAL_MIN = 0.12; // shortest beat interval (s)
 const BEAT_INTERVAL_MAX = 1.0; // longest beat interval (s)
 const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // explosion particles per asteroid size (0–2)
 const SAFE_POS_TRIES = 300; // max. attempts for a safe spawn position
-
-// ─── Utilities ───────────────────────────────────────────────────────────────
-function rand(a, b) {
-  return Math.random() * (b - a) + a;
-}
-function randInt(a, b) {
-  return Math.floor(rand(a, b + 1));
-}
-function wrap(v, max) {
-  return ((v % max) + max) % max;
-}
-function clamp(v, lo, hi) {
-  return v < lo ? lo : v > hi ? hi : v;
-}
-function dist(a, b) {
-  const dx = a.x - b.x,
-    dy = a.y - b.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-// Random angle that does NOT fall into the forbidden backward cone.
-// forbidCenter = bulletAngle + π (direction back toward the ship)
-// halfArc = half the width of the forbidden sector (default: 60° → 120° blocked)
-function safeSplitAngle(bulletAngle, halfArc = Math.PI / 4) {
-  if (bulletAngle === null || bulletAngle === undefined) return rand(0, TAU);
-  const forbidCenter = bulletAngle + Math.PI;
-  const available = TAU - 2 * halfArc;
-  return wrap(forbidCenter + halfArc + Math.random() * available, TAU);
-}
 
 // ─── Static star field ───────────────────────────────────────────────────────
 const STARS = Array.from({ length: 90 }, () => ({

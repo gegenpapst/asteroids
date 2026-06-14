@@ -78,7 +78,7 @@ class ClusterAsteroid extends AsteroidBase {
     return this.radius * (0.9 - (0.25 * Math.min(this.bumpCount, 7)) / 7);
   }
 
-  draw() {
+  draw(ctx) {
     if (this._gradientCenter) {
       // Radial gradient fill: bright center → dark edge (used by satellite split children)
       ctx.save();
@@ -100,14 +100,14 @@ class ClusterAsteroid extends AsteroidBase {
     }
 
     if (this._renderStyle === 1) {
-      this._drawPoly();
+      this._drawPoly(ctx);
     } else {
       if (!this._offCanvas) this._buildMetaball();
-      this._drawMetaball();
+      this._drawMetaball(ctx);
     }
   }
 
-  _drawPoly() {
+  _drawPoly(ctx) {
     const verts = this._polyVerts;
     ctx.save();
     ctx.translate(this.x, this.y);
@@ -142,7 +142,7 @@ class ClusterAsteroid extends AsteroidBase {
     this._offCanvas = buildMetaballCanvas(cells, this._color, this.radius, cellR, 14, 0.72);
   }
 
-  _drawMetaball() {
+  _drawMetaball(ctx) {
     const sz = this._offCanvas.width;
     ctx.save();
     ctx.globalCompositeOperation = "screen";

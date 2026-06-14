@@ -2,7 +2,7 @@
 
 // Cluster variant of the UFO — inherits movement/firing from UfoBase, implements only draw().
 class UfoCluster extends UfoBase {
-  draw() {
+  draw(ctx) {
     const r = this.radius;
     // size 0 = large green UFO, size 1 = small red UFO
     const col =

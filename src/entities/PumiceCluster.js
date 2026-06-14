@@ -106,7 +106,7 @@ class PumiceCluster {
     return this.findHit(ship.x, ship.y, ship.hitRadius).length > 0;
   }
 
-  draw() {
+  draw(ctx) {
     const alive = this.cells.filter((c) => c.alive);
     renderMetaballFrame(
       ctx,

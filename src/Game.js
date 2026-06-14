@@ -244,16 +244,16 @@ class Game {
     }
 
     this._drawRocks();
-    this.pumices.forEach((p) => p.draw());
-    this.solarSystems.forEach((s) => s.draw()); // centers drawn before satellites
-    this.asteroids.forEach((a) => a.draw());
-    this.debris.forEach((d) => d.draw());
-    this.powerups.forEach((p) => p.draw());
-    this.ufos.forEach((u) => u.draw());
-    this.ufoBullets.forEach((b) => b.draw());
-    this.bullets.forEach((b) => b.draw());
-    this.particles.forEach((p) => p.draw());
-    if (this.ship) this.ship.draw();
+    this.pumices.forEach((p) => p.draw(ctx));
+    this.solarSystems.forEach((s) => s.draw(ctx)); // centers drawn before satellites
+    this.asteroids.forEach((a) => a.draw(ctx));
+    this.debris.forEach((d) => d.draw(ctx));
+    this.powerups.forEach((p) => p.draw(ctx));
+    this.ufos.forEach((u) => u.draw(ctx));
+    this.ufoBullets.forEach((b) => b.draw(ctx));
+    this.bullets.forEach((b) => b.draw(ctx));
+    this.particles.forEach((p) => p.draw(ctx));
+    if (this.ship) this.ship.draw(ctx);
 
     // ── Collision debug overlay (Q / F2 to toggle) ──────────────────────
     if (this._debugCollision) {
@@ -699,16 +699,6 @@ class Game {
     Matter.Engine.update(this.engine, dt * 1000);
     this._syncBodies();
     this._capAsteroidSpeeds();
-
-    // When shield is active, read Matter's collision-resolved velocity/position back.
-    // hull radius (9.8) < shield hitRadius (30.8), so the game-logic dist() check
-    // still fires after Matter pushes the ship to the hull-surface distance.
-    if (this.ship.shieldTimer > 0 && this.ship.invulnerable <= 0) {
-      this.ship.vx = this.ship.body.velocity.x * 60;
-      this.ship.vy = this.ship.body.velocity.y * 60;
-      this.ship.x = wrap(this.ship.body.position.x, W);
-      this.ship.y = wrap(this.ship.body.position.y, H);
-    }
   }
 
   // UFO spawn timer + UFO update (sinusoidal movement, possibly firing).
@@ -914,7 +904,7 @@ class Game {
 
   _drawRocks() {
     // Each RockCluster draws itself (pre-baked canvas + screen blend)
-    this.rocks.forEach((r) => r.draw());
+    this.rocks.forEach((r) => r.draw(ctx));
   }
 
   _drawHUD() {

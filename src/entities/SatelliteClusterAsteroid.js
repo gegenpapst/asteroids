@@ -71,7 +71,7 @@ class SatelliteClusterAsteroid extends AsteroidBase {
     });
   }
 
-  draw() {
+  draw(ctx) {
     // Tether + anchor dot
     const tetherColor = this.parentSystem ? "rgba(255, 140, 60, 0.45)" : "#556";
     const anchorColor = this.parentSystem ? "rgba(255,140,60,0.7)" : "#778";

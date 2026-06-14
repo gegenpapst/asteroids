@@ -24,7 +24,7 @@ class Particle {
     return this.life > 0;
   }
 
-  draw() {
+  draw(ctx) {
     const t = this.life / this.maxLife;
     ctx.globalAlpha = t * t;
     ctx.beginPath();
