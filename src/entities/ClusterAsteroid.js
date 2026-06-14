@@ -23,7 +23,7 @@ class ClusterAsteroid extends AsteroidBase {
       this._gradientBody = null;
       this._color = color;
       this._offCanvas = null; // built lazily for renderStyle 2
-      this._polyVerts = this._buildPolyVerts();
+      // _polyVerts is set by _makeBody() (called in AsteroidBase constructor)
     }
   }
 
@@ -48,6 +48,29 @@ class ClusterAsteroid extends AsteroidBase {
       items.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, a });
     }
     return items.sort((a, b) => a.a - b.a).map((v) => ({ x: v.x, y: v.y }));
+  }
+
+  // Polygon physics body — vertices match the visual polygon exactly.
+  // Overrides the compound-circle approach in AsteroidBase.
+  _makeBody(wrap = true) {
+    const r = this.radius;
+    this._coreR = r * (0.85 - (0.5 * Math.min(this.bumpCount, 7)) / 7);
+    this._bumps = this._genBumps();
+
+    const rawVerts = this._buildPolyVerts();
+
+    // Center _polyVerts around the polygon's centroid so the visual aligns with body.position.
+    const cx = rawVerts.reduce((s, v) => s + v.x, 0) / rawVerts.length;
+    const cy = rawVerts.reduce((s, v) => s + v.y, 0) / rawVerts.length;
+    this._polyVerts = rawVerts.map((v) => ({ x: v.x - cx, y: v.y - cy }));
+
+    return Matter.Bodies.fromVertices(this.x, this.y, rawVerts, {
+      friction: 0,
+      frictionAir: 0,
+      restitution: 1,
+      label: this.constructor._label,
+      ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } } } : {}),
+    });
   }
 
   get collisionRadius() {

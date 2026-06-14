@@ -62,7 +62,10 @@ global.Matter = {
   use: () => {},
   Engine: { create: () => ({ world: {} }), update: () => {} },
   World: { add: () => {}, remove: () => {}, clear: () => {} },
-  Bodies: { circle: (x, y) => _mkBody(x, y) },
+  Bodies: {
+    circle: (x, y) => _mkBody(x, y),
+    fromVertices: (x, y, _verts, opts) => Object.assign(_mkBody(x, y), opts || {}),
+  },
   Body: {
     create: (opts) => {
       const b = _mkBody(0, 0);
