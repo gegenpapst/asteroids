@@ -469,6 +469,23 @@ class Game {
     ]();
   }
 
+  // Shared asteroid-destruction sequence used by both bullet and shield collisions.
+  // Returns the split children (already added to the world).
+  _destroyAsteroid(asteroid, bulletAngle, debrisVx, debrisVy, spinCross) {
+    this._boom(asteroid.x, asteroid.y, asteroid.size);
+    this._spawnDebris(asteroid.x, asteroid.y, debrisVx, debrisVy);
+    const children = asteroid.split(bulletAngle);
+    for (const c of children) c.rotSpeed += spinCross * ASTEROID_SPIN_FACTOR;
+    if (asteroid.constraint) Matter.World.remove(this.engine.world, asteroid.constraint);
+    Matter.World.remove(this.engine.world, asteroid.body);
+    this._addAsteroidsToWorld(children);
+    for (const c of children) {
+      if (c.parentSystem) c.parentSystem.satellites.push(c);
+    }
+    if (asteroid.parentSystem) asteroid.parentSystem.onSatelliteDestroyed(asteroid, this);
+    return children;
+  }
+
   _killShip() {
     for (let i = 0; i < 22; i++)
       this.particles.push(new Particle(this.ship.x, this.ship.y, "#8ef"));
@@ -715,27 +732,14 @@ class Game {
       for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
         const a = this.asteroids[ai];
         if (dist(b, a) < a.collisionRadius + b.radius) {
-          // #1 Off-center spin: cross product of hit-offset × bullet-direction
           const hitDx = b.x - a.x,
             hitDy = b.y - a.y;
           const bLen = Math.hypot(b.vx, b.vy) || 1;
           const cross = hitDx * (b.vy / bLen) - hitDy * (b.vx / bLen);
-
           this._addScore(a.score);
-          this._boom(a.x, a.y, a.size);
-          this._spawnDebris(a.x, a.y, b.vx, b.vy); // #10 debris
           if (Math.random() < this._powerupChance)
             this.powerups.push(new PowerUp(a.x, a.y, POWERUP_TYPES[randInt(0, 3)]));
-          const children = a.split(Math.atan2(b.vy, b.vx));
-          for (const c of children) c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
-          if (a.constraint) Matter.World.remove(this.engine.world, a.constraint);
-          Matter.World.remove(this.engine.world, a.body);
-          this._addAsteroidsToWorld(children);
-          // Register children before notifying destruction so the system counts correctly.
-          for (const c of children) {
-            if (c.parentSystem) c.parentSystem.satellites.push(c);
-          }
-          if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(a, this);
+          const children = this._destroyAsteroid(a, Math.atan2(b.vy, b.vx), b.vx, b.vy, cross);
           this.asteroids.splice(ai, 1, ...children);
           this.bullets.splice(bi, 1);
           continue outer;
@@ -789,25 +793,13 @@ class Game {
         const a = this.asteroids[ai];
         if (dist(this.ship, a) < a.collisionRadius + this.ship.hitRadius) {
           if (this.ship.shieldTimer > 0) {
-            this._boom(a.x, a.y, a.size);
-            // #1 Off-center spin via ship velocity direction
             const sLen = Math.hypot(this.ship.vx, this.ship.vy) || 1;
             const hitDx = a.x - this.ship.x,
               hitDy = a.y - this.ship.y;
             const cross = hitDx * (this.ship.vy / sLen) - hitDy * (this.ship.vx / sLen);
-            const children = a.split();
-            for (const c of children) c.rotSpeed += cross * ASTEROID_SPIN_FACTOR; // #1
-            this._spawnDebris(a.x, a.y, this.ship.vx, this.ship.vy); // #10
-            if (a.constraint) Matter.World.remove(this.engine.world, a.constraint);
-            Matter.World.remove(this.engine.world, a.body);
-            this._addAsteroidsToWorld(children);
-            // Register children before notifying destruction so the system counts correctly.
-            for (const c of children) {
-              if (c.parentSystem) c.parentSystem.satellites.push(c);
-            }
-            if (a.parentSystem) a.parentSystem.onSatelliteDestroyed(a, this);
+            const children = this._destroyAsteroid(a, null, this.ship.vx, this.ship.vy, cross);
             this.asteroids.splice(ai, 1, ...children);
-            this._bounceShip(a.x, a.y); // explicit bounce (asteroid removed before Matter can apply it)
+            this._bounceShip(a.x, a.y);
           } else {
             this._killShip();
           }

@@ -22,7 +22,7 @@ class ClusterAsteroid extends AsteroidBase {
       this._color = color;
       this._offCanvas = null;
       this._renderStyle = Math.random() < 0.5 ? 1 : 2;
-      // _polyVerts is set by _makeBody() (called in AsteroidBase constructor)
+      this._polyVerts = this._computePolyVerts();
     }
   }
 
@@ -49,21 +49,22 @@ class ClusterAsteroid extends AsteroidBase {
     return items.sort((a, b) => a.a - b.a).map((v) => ({ x: v.x, y: v.y }));
   }
 
+  // Returns polygon vertices centered around their centroid.
+  // Called from constructor after super() has populated _bumps and _coreR.
+  _computePolyVerts() {
+    const raw = this._buildPolyVerts();
+    const cx = raw.reduce((s, v) => s + v.x, 0) / raw.length;
+    const cy = raw.reduce((s, v) => s + v.y, 0) / raw.length;
+    return raw.map((v) => ({ x: v.x - cx, y: v.y - cy }));
+  }
+
   // Polygon physics body — vertices match the visual polygon exactly.
   // Overrides the compound-circle approach in AsteroidBase.
   _makeBody(wrap = true) {
     const r = this.radius;
     this._coreR = r * (0.85 - (0.5 * Math.min(this.bumpCount, 7)) / 7);
     this._bumps = this._genBumps();
-
-    const rawVerts = this._buildPolyVerts();
-
-    // Center _polyVerts around the polygon's centroid so the visual aligns with body.position.
-    const cx = rawVerts.reduce((s, v) => s + v.x, 0) / rawVerts.length;
-    const cy = rawVerts.reduce((s, v) => s + v.y, 0) / rawVerts.length;
-    this._polyVerts = rawVerts.map((v) => ({ x: v.x - cx, y: v.y - cy }));
-
-    return Matter.Bodies.fromVertices(this.x, this.y, rawVerts, {
+    return Matter.Bodies.fromVertices(this.x, this.y, this._buildPolyVerts(), {
       friction: 0,
       frictionAir: 0,
       restitution: 1,

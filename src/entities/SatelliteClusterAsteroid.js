@@ -1,10 +1,10 @@
 "use strict";
 
-// Metaball variant of the satellite asteroid — inherits cluster rendering from ClusterAsteroid.
-// Always part of a SolarSystem (parentSystem != null, isSatellite=true).
+// Satellite asteroid — simple circle body, orbits a SolarSystem center via a constraint.
 // Always spawned at size=2 (smallest) — satellites do not split.
-class SatelliteClusterAsteroid extends ClusterAsteroid {
+class SatelliteClusterAsteroid extends AsteroidBase {
   static _label = "satellite-cluster-asteroid";
+  static _rotBase = 1.2;
 
   constructor(
     x,
@@ -16,8 +16,7 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     maxBumps = 7,
     orbitSpeed = SOLAR_ORBIT_SPEED_MIN,
   ) {
-    // Pass Wraith color directly to ClusterAsteroid — no manual _offCanvas rebuild needed.
-    super(x, y, size, null, maxBumps, SATELLITE_COLORS[4].center);
+    super(x, y, size, null, 0);
 
     this.parentSystem = parentSystem;
     this.isSatellite = parentSystem != null;
