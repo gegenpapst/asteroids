@@ -439,7 +439,8 @@ class Game {
           const spawnAngle = (j / satelliteCount) * TAU + rand(-0.3, 0.3);
           const sx = ax + Math.cos(spawnAngle) * tetherLen;
           const sy = ay + Math.sin(spawnAngle) * tetherLen;
-          const sat = this.mode.createSatellite(sx, sy, ax, ay, sys, 1, maxBumps);
+          const orbitSpeed = rand(SOLAR_ORBIT_SPEED_MIN, SOLAR_ORBIT_SPEED_MAX);
+          const sat = this.mode.createSatellite(sx, sy, ax, ay, sys, 2, maxBumps, orbitSpeed);
           this.asteroids.push(sat);
           sys.satellites.push(sat);
           Matter.World.add(this.engine.world, [sat.body, sat.constraint]);

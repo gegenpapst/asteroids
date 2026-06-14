@@ -19,7 +19,7 @@ class VisualMode {
   createPumice(x, y) {
     throw new Error("abstract");
   }
-  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
+  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps, orbitSpeed) {
     throw new Error("abstract");
   }
 }
@@ -40,8 +40,8 @@ class MetaballMode extends VisualMode {
   createPumice(x, y) {
     return new PumiceCluster(x, y);
   }
-  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps) {
-    return new SatelliteClusterAsteroid(x, y, ax, ay, parentSystem, size, maxBumps);
+  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps, orbitSpeed) {
+    return new SatelliteClusterAsteroid(x, y, ax, ay, parentSystem, size, maxBumps, orbitSpeed);
   }
 }
 

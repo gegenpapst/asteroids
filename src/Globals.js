@@ -55,7 +55,8 @@ const SOLAR_STIFFNESS = 0.8; // nearly rigid tether → clean circular orbit
 const SOLAR_DAMPING = 0.02;
 const SOLAR_TETHER_MIN = 75; // min. tether length px
 const SOLAR_TETHER_MAX = 140; // max. tether length px
-const SOLAR_ORBIT_SPEED = 120; // tangential start velocity px/s
+const SOLAR_ORBIT_SPEED_MIN = 80; // min tangential start velocity px/s
+const SOLAR_ORBIT_SPEED_MAX = 160; // max tangential start velocity px/s
 const SOLAR_SATELLITE_MIN = 3; // min. satellites
 const SOLAR_SATELLITE_MAX = 7; // max. satellites
 const SOLAR_MAX_COUNT = 2; // max. simultaneously active solar systems
@@ -344,7 +345,8 @@ if (typeof module !== "undefined") {
     SOLAR_DAMPING,
     SOLAR_TETHER_MIN,
     SOLAR_TETHER_MAX,
-    SOLAR_ORBIT_SPEED,
+    SOLAR_ORBIT_SPEED_MIN,
+    SOLAR_ORBIT_SPEED_MAX,
     SOLAR_SATELLITE_MIN,
     SOLAR_SATELLITE_MAX,
     SOLAR_MAX_COUNT,
