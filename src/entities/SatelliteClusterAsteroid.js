@@ -59,9 +59,17 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     }
   }
 
-  // Override: plugin.wrap disabled — constraint would snap on screen wrap
+  // Simple circle body — no compound body, no bumps, hitbox matches visual exactly.
+  // wrap=false: no plugin.wrap (constraint would snap on screen wrap).
   _makeBody() {
-    return super._makeBody(false);
+    this._coreR = this.radius;
+    this._bumps = [];
+    return Matter.Bodies.circle(this.x, this.y, this.radius, {
+      friction: 0,
+      frictionAir: 0,
+      restitution: 1,
+      label: this.constructor._label,
+    });
   }
 
   draw() {
