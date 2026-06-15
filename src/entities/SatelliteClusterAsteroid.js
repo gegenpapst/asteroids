@@ -58,6 +58,11 @@ class SatelliteClusterAsteroid extends AsteroidBase {
     }
   }
 
+  onDestroy(game) {
+    super.onDestroy(game);
+    if (this.parentSystem) this.parentSystem.onSatelliteDestroyed(this, game);
+  }
+
   // Simple circle body — no compound body, no bumps, hitbox matches visual exactly.
   // wrap=false: no plugin.wrap (constraint would snap on screen wrap).
   _makeBody() {

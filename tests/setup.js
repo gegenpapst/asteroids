@@ -58,6 +58,12 @@ Object.assign(global, g);
 const { Input } = require("../src/input.js");
 global.Input = Input;
 
+const { CollisionSystem } = require("../src/CollisionSystem.js");
+global.CollisionSystem = CollisionSystem;
+
+const { UIRenderer } = require("../src/UIRenderer.js");
+global.UIRenderer = UIRenderer;
+
 // Matter.js stub — keeps entity constructors working without the real physics engine
 const _mkBody = (x = 0, y = 0) => ({
   position: { x, y },

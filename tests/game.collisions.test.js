@@ -78,6 +78,7 @@ function makeAsteroid(x, y, size = 2) {
     split() {
       return [];
     },
+    onDestroy() {},
   };
 }
 
@@ -147,7 +148,7 @@ describe("Shield × Asteroid collision", () => {
     const asteroid = makeAsteroid(410, 300, 2); // size-2, small collisionRadius
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 5 });
     g.asteroids = [asteroid];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.asteroids).toHaveLength(0);
   });
 
@@ -157,7 +158,7 @@ describe("Shield × Asteroid collision", () => {
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 5 });
     const vxBefore = g.ship.vx;
     g.asteroids = [asteroid];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     // Ship should no longer have its original rightward velocity
     expect(g.ship.vx).not.toBe(vxBefore);
     expect(g.ship.vx).toBeLessThan(0); // bounced left (away from asteroid)
@@ -168,7 +169,7 @@ describe("Shield × Asteroid collision", () => {
     const asteroid = makeAsteroid(410, 300, 2);
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 0 });
     g.asteroids = [asteroid];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.ship).toBeNull(); // _killShip sets this.ship = null
   });
 
@@ -188,10 +189,11 @@ describe("Shield × Asteroid collision", () => {
       split() {
         return [child1, child2];
       },
+      onDestroy() {},
     };
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 5 });
     g.asteroids = [bigAsteroid];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.asteroids).toHaveLength(2);
   });
 });
@@ -207,7 +209,7 @@ describe("Shield × Rock collision", () => {
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 5 });
     const vxBefore = g.ship.vx;
     g.rocks = [rock];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.ship.vx).not.toBe(vxBefore);
     expect(g.ship.vx).toBeLessThan(0); // bounced away
   });
@@ -218,7 +220,7 @@ describe("Shield × Rock collision", () => {
     const rock = makeRock(400 + shieldR - 5, 300, 5);
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 5 });
     g.rocks = [rock];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.ship).not.toBeNull();
   });
 
@@ -227,7 +229,7 @@ describe("Shield × Rock collision", () => {
     const rock = makeRock(410, 300, 20); // well within hull hit radius
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 0 });
     g.rocks = [rock];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.ship).toBeNull();
   });
 
@@ -238,7 +240,7 @@ describe("Shield × Rock collision", () => {
     const rock = makeRock(400 + shieldR - 5, 300, 5);
     g.ship = makeShip({ x: 400, y: 300, vx: -100, vy: 0, shieldTimer: 5 });
     g.rocks = [rock];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.ship.vx).toBe(-100); // unchanged — already moving away
   });
 });
@@ -253,7 +255,7 @@ describe("Shield × Pumice collision", () => {
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 5 });
     const vxBefore = g.ship.vx;
     g.pumices = [pumice];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.ship.vx).not.toBe(vxBefore);
     expect(g.ship.vx).toBeLessThan(0);
   });
@@ -263,7 +265,7 @@ describe("Shield × Pumice collision", () => {
     const pumice = makePumice(450, 300);
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 5 });
     g.pumices = [pumice];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.ship).not.toBeNull();
   });
 
@@ -272,7 +274,7 @@ describe("Shield × Pumice collision", () => {
     const pumice = makePumice(450, 300);
     g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 0 });
     g.pumices = [pumice];
-    g._updateShipCollisions();
+    g.collisions.updateShip();
     expect(g.ship).toBeNull();
   });
 });

@@ -1,0 +1,508 @@
+"use strict";
+
+// Renders all HUD and screen overlays (start, help, config, game-over, HUD bars).
+// Reads game state via this._g; never mutates game state directly.
+class UIRenderer {
+  constructor(game) {
+    this._g = game;
+    this._showcaseReady = false;
+  }
+
+  drawHUD(ctx) {
+    const g = this._g;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#ccc";
+    ctx.font = "18px monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(String(g.score).padStart(6, "0"), 16, 28);
+    ctx.textAlign = "right";
+    ctx.fillText(`HI ${String(g.hiScore).padStart(6, "0")}`, W - 16, 28);
+    ctx.textAlign = "center";
+    ctx.fillText(`LVL ${g.level}`, W / 2, 28);
+
+    // Life icons (bottom-left, below the power-up bars)
+    for (let i = 0; i < g.lives; i++) {
+      ctx.save();
+      ctx.translate(14 + i * 21, H - 10);
+      ctx.rotate(-Math.PI / 2);
+      ctx.beginPath();
+      const s = 7;
+      ctx.moveTo(s, 0);
+      ctx.lineTo(-s * 0.65, -s * 0.5);
+      ctx.lineTo(-s * 0.35, 0);
+      ctx.lineTo(-s * 0.65, s * 0.5);
+      ctx.closePath();
+      ctx.strokeStyle = "#8cf";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Power-up status bars (bottom-left, above the life icons)
+    if (g.ship) {
+      const indicators = [];
+      if (g.ship.shieldTimer > 0)
+        indicators.push({ label: "SH", t: g.ship.shieldTimer, col: "#4cf" });
+      if (g.ship.rapidTimer > 0)
+        indicators.push({ label: "RF", t: g.ship.rapidTimer, col: "#f84" });
+      if (g.ship.spreadTimer > 0)
+        indicators.push({ label: "SP", t: g.ship.spreadTimer, col: "#ff4" });
+      if (g.ship.heavyTimer > 0)
+        indicators.push({ label: "HV", t: g.ship.heavyTimer, col: "#f64" });
+
+      ctx.font = "13px monospace";
+      ctx.textAlign = "left";
+      const barW = 48,
+        barH = 16,
+        gap = 6;
+      indicators.forEach((ind, i) => {
+        const bx = 8 + i * (barW + gap);
+        const by = H - 40;
+        const pct = ind.t / g._powerupDuration;
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(bx, by, barW, barH);
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = ind.col;
+        ctx.fillRect(bx, by, barW * pct, barH);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#fff";
+        ctx.fillText(ind.label, bx + 8, by + barH - 4);
+      });
+    }
+  }
+
+  drawConfig(ctx) {
+    const g = this._g;
+    const cx = W / 2;
+    const readOnly = g.isConfigReadOnly;
+
+    ctx.fillStyle = "rgba(0,0,0,0.87)";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#4af";
+    ctx.shadowBlur = 22;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 28px monospace";
+    ctx.fillText("KONFIGURATION", cx, 52);
+    ctx.shadowBlur = 0;
+
+    if (readOnly) {
+      ctx.fillStyle = "#f84";
+      ctx.font = "bold 11px monospace";
+      ctx.fillText("READ ONLY — Änderungen erst beim nächsten Spiel", cx, 70);
+    }
+
+    const cardW = 196,
+      cardH = 118,
+      cardGap = 16;
+    const totalCardsW = 3 * cardW + 2 * cardGap;
+    const cardStartX = cx - totalCardsW / 2;
+    const cardY = 90;
+
+    const modeInfo = [
+      { name: "BEGINNER", lines: ["Weite Schüsse", "Viele Powerups", "Wenig Hindernisse"] },
+      { name: "NOVICE", lines: ["Ausgewogen", "", ""] },
+      { name: "EXPERT", lines: ["Kurze Schüsse", "Seltene Powerups", "Viele Hindernisse"] },
+    ];
+
+    modeInfo.forEach((m, i) => {
+      const selected = g.config.mode === i + 1;
+      const x = cardStartX + i * (cardW + cardGap);
+
+      ctx.fillStyle = selected ? "rgba(68,170,255,0.16)" : "rgba(255,255,255,0.04)";
+      ctx.strokeStyle = selected ? "#4af" : "rgba(255,255,255,0.13)";
+      ctx.lineWidth = selected ? 2 : 1;
+      ctx.beginPath();
+      ctx.roundRect(x, cardY, cardW, cardH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = selected ? "#4af" : "#444";
+      ctx.font = "11px monospace";
+      ctx.fillText(`${i + 1}`, x + 10, cardY + 16);
+
+      ctx.textAlign = "center";
+      ctx.fillStyle = selected ? "#fff" : "#777";
+      ctx.shadowColor = selected ? "#4af" : "transparent";
+      ctx.shadowBlur = selected ? 10 : 0;
+      ctx.font = (selected ? "bold " : "") + "15px monospace";
+      ctx.fillText(m.name, x + cardW / 2, cardY + 40);
+      ctx.shadowBlur = 0;
+
+      ctx.font = "11px monospace";
+      ctx.fillStyle = selected ? "#9cf" : "#4a5060";
+      m.lines.forEach((line, li) => {
+        if (line) ctx.fillText(line, x + cardW / 2, cardY + 60 + li * 16);
+      });
+    });
+
+    const btnY = cardY + cardH + 28;
+    const btnW = 160,
+      btnH = 32;
+    const detailsFocused = g._configFocus === "details";
+    ctx.fillStyle = detailsFocused ? "rgba(68,170,255,0.16)" : "rgba(255,255,255,0.05)";
+    ctx.strokeStyle = detailsFocused ? "#4af" : "rgba(255,255,255,0.22)";
+    ctx.lineWidth = detailsFocused ? 2 : 1;
+    ctx.shadowColor = detailsFocused ? "#4af" : "transparent";
+    ctx.shadowBlur = detailsFocused ? 10 : 0;
+    ctx.beginPath();
+    ctx.roundRect(cx - btnW / 2, btnY, btnW, btnH, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = detailsFocused ? "#fff" : "#999";
+    ctx.font = (detailsFocused ? "bold " : "") + "13px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("Details  ▶", cx, btnY + 20);
+
+    ctx.fillStyle = "#444";
+    ctx.font = "12px monospace";
+    ctx.textAlign = "center";
+    const hint = readOnly
+      ? "ESC  Zurück   ↓  Details"
+      : detailsFocused
+        ? "← →  Modus   ENTER  Details öffnen   ↑  Modus-Fokus   ESC  Abbrechen"
+        : "← →  Modus   ↓  Details   ENTER  Spiel starten";
+    ctx.fillText(hint, cx, H - 18);
+  }
+
+  drawConfigDetail(ctx) {
+    const g = this._g;
+    const cx = W / 2;
+    const readOnly = g.isConfigReadOnly;
+
+    ctx.fillStyle = "rgba(0,0,0,0.90)";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#4af";
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 24px monospace";
+    ctx.fillText("DETAILS", cx, 42);
+    ctx.shadowBlur = 0;
+
+    const params = [
+      { key: "bulletRange", label: "Reichweite Schüsse", opts: ["kurz", "normal", "weit"] },
+      { key: "powerupFreq", label: "Powerups", opts: ["selten / kurz", "normal", "häufig / lang"] },
+      { key: "rockCount", label: "Anzahl Rocks", opts: ["wenige", "normal", "viele"] },
+      { key: "pumiceCount", label: "Bimsstein", opts: ["keine", "wenige", "viele"] },
+      { key: "asteroidBounce", label: "Asteroiden-Kollisionen", opts: ["aus", "ein"] },
+    ];
+
+    let y = 68;
+    params.forEach((p, i) => {
+      const active = !readOnly && i === g._detailCursor;
+      const val = g.config[p.key];
+
+      ctx.textAlign = "center";
+      ctx.font = active ? "bold 13px monospace" : "12px monospace";
+      ctx.fillStyle = active ? "#4af" : "#666";
+      ctx.fillText(p.label, cx, y);
+      y += 20;
+
+      const count = p.opts.length;
+      const slotW = 148,
+        gap = 10;
+      const totalW = count * slotW + (count - 1) * gap;
+      const startX = cx - totalW / 2;
+
+      for (let n = 1; n <= count; n++) {
+        const selected = val === n;
+        const bx = startX + (n - 1) * (slotW + gap);
+
+        ctx.fillStyle = selected ? (active ? "#4af" : "#446") : "rgba(255,255,255,0.05)";
+        ctx.strokeStyle = selected ? (active ? "#4af" : "#446") : "rgba(255,255,255,0.13)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(bx, y, slotW, 24, 5);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = selected ? "#fff" : "#555";
+        ctx.font = (selected ? "bold " : "") + "11px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(`${n}  ${p.opts[n - 1]}`, bx + slotW / 2, y + 15);
+      }
+      y += 36;
+    });
+
+    ctx.fillStyle = "#444";
+    ctx.font = "12px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      readOnly ? "ESC / ENTER  Zurück" : "↑ ↓  Parameter   ← →  Wert   ENTER / ESC  Zurück",
+      cx,
+      H - 18,
+    );
+  }
+
+  drawStart(ctx) {
+    const cx = W / 2;
+    ctx.textAlign = "center";
+
+    ctx.shadowColor = "#fa6";
+    ctx.shadowBlur = 28;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 52px monospace";
+    ctx.fillText("ASTEROIDS", cx, 58);
+    ctx.shadowBlur = 0;
+
+    if (!this._showcaseReady) this._initShowcase();
+
+    const rot = (Date.now() / 1000) * 0.22;
+    const lx = W / 4;
+    const rx = (3 * W) / 4;
+    const ay = 300;
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(W / 2, 80);
+    ctx.lineTo(W / 2, 555);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = "rgba(120,200,255,0.90)";
+    ctx.font = "bold 13px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("A — POLYGON", lx, 107);
+    ctx.fillText("B — METABALL", rx, 107);
+
+    ctx.fillStyle = "rgba(160,160,160,0.65)";
+    ctx.font = "11px monospace";
+    ctx.fillText("Canvas-Pfad · scharfe Kanten", lx, 123);
+    ctx.fillText("Hex-Grid geclippt · weiches Leuchten", rx, 123);
+
+    this._drawPolyShowcase(ctx, lx, ay, rot);
+
+    ctx.save();
+    ctx.translate(rx, ay);
+    ctx.rotate(rot);
+    ctx.globalCompositeOperation = "screen";
+    const sw = this._showcaseCanvasB.width;
+    ctx.drawImage(this._showcaseCanvasB, -sw / 2, -sw / 2);
+    ctx.restore();
+
+    ctx.fillStyle = "rgba(120,120,120,0.55)";
+    ctx.font = "10px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("Sehr unregelmäßig · klassisch", lx, 450);
+    ctx.fillText("Organisch · Science-Fiction", rx, 450);
+
+    if (Math.floor(Date.now() / 520) % 2) {
+      ctx.fillStyle = "#ccc";
+      ctx.font = "16px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("PRESS ENTER OR SPACE TO START", cx, H - 16);
+    }
+  }
+
+  drawHelp(ctx) {
+    const cx = W / 2,
+      cy = H / 2;
+
+    ctx.fillStyle = "rgba(0,0,0,0.82)";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#4af";
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 36px monospace";
+    ctx.fillText("HILFE", cx, cy - 200);
+    ctx.shadowBlur = 0;
+
+    const _lm = new Date(document.lastModified);
+    const _pad = (n) => String(n).padStart(2, "0");
+    ctx.fillStyle = "#555";
+    ctx.font = "12px monospace";
+    ctx.fillText(
+      `Stand: ${_pad(_lm.getDate())}.${_pad(_lm.getMonth() + 1)}.${_lm.getFullYear()}  ${_pad(_lm.getHours())}:${_pad(_lm.getMinutes())} Uhr`,
+      cx,
+      cy - 178,
+    );
+
+    const sections = [
+      {
+        head: "STEUERUNG",
+        rows: [
+          ["Pfeiltasten / WASD", "Drehen & Schub"],
+          ["Shift + ← / →", "Seitwärts"],
+          ["Space / Z", "Schießen"],
+          ["Enter / Space", "Starten / Neustart"],
+          ["H / ESC", "Hilfe ein/aus"],
+          ["C", "Konfiguration"],
+          ["S / Pfeil-unten", "Teleportieren"],
+        ],
+      },
+      {
+        head: "POWER-UPS",
+        rows: [
+          ["SH — Shield", "Absorbiert einen Treffer"],
+          ["RF — Rapid", "Schnellfeuer"],
+          ["SP — Spread", "Dreifachschuss (5 s)"],
+        ],
+      },
+      {
+        head: "PUNKTE",
+        rows: [
+          ["Großer Asteroid", "20"],
+          ["Mittlerer Asteroid", "50"],
+          ["Kleiner Asteroid", "100"],
+          ["Großes UFO", "200"],
+          ["Kleines UFO", "1 000"],
+          ["Extra-Leben", "alle 10 000 Pkt."],
+        ],
+      },
+    ];
+
+    let y = cy - 148;
+    ctx.font = "13px monospace";
+
+    for (const sec of sections) {
+      ctx.fillStyle = "#4af";
+      ctx.font = "bold 14px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(sec.head, cx, y);
+      y += 22;
+
+      ctx.font = "13px monospace";
+      ctx.fillStyle = "#ccc";
+      for (const [left, right] of sec.rows) {
+        ctx.textAlign = "right";
+        ctx.fillText(left, cx - 12, y);
+        ctx.fillStyle = "#888";
+        ctx.fillText("—", cx, y);
+        ctx.fillStyle = "#ccc";
+        ctx.textAlign = "left";
+        ctx.fillText(right, cx + 12, y);
+        y += 19;
+      }
+      y += 10;
+    }
+
+    if (Math.floor(Date.now() / 520) % 2) {
+      ctx.fillStyle = "#666";
+      ctx.font = "13px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("H oder ESC — Zurück zum Spiel", cx, cy + 222);
+    }
+  }
+
+  drawQuitConfirm(ctx) {
+    const cx = W / 2,
+      cy = H / 2;
+    const bw = 340,
+      bh = 110;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.beginPath();
+    ctx.roundRect(cx - bw / 2, cy - bh / 2, bw, bh, 10);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 22px monospace";
+    ctx.fillText("Quit game?", cx, cy - 18);
+
+    ctx.fillStyle = "#aaa";
+    ctx.font = "16px monospace";
+    ctx.fillText("[Y]  Yes     [N] / ESC  No", cx, cy + 22);
+    ctx.restore();
+  }
+
+  drawGameOver(ctx) {
+    const g = this._g;
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = W / 2,
+      cy = H / 2;
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#f33";
+    ctx.shadowBlur = 28;
+    ctx.fillStyle = "#f55";
+    ctx.font = "bold 64px monospace";
+    ctx.fillText("GAME OVER", cx, cy - 55);
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#ccc";
+    ctx.font = "26px monospace";
+    ctx.fillText(`SCORE  ${g.score}`, cx, cy + 15);
+
+    if (g.score > 0 && g.score >= g.hiScore) {
+      ctx.fillStyle = "#fc0";
+      ctx.font = "20px monospace";
+      ctx.fillText("NEW HIGH SCORE!", cx, cy + 52);
+    }
+
+    if (Math.floor(Date.now() / 520) % 2) {
+      ctx.fillStyle = "#aaa";
+      ctx.font = "18px monospace";
+      ctx.fillText("PRESS ENTER OR SPACE TO PLAY AGAIN", cx, cy + 115);
+    }
+  }
+
+  _initShowcase() {
+    const sr = 80;
+    this._showcaseSr = sr;
+    const rawBumps = [
+      { a: -1.47, d: 0.7 },
+      { a: -0.48, d: 0.76 },
+      { a: 0.72, d: 0.68 },
+      { a: 1.8, d: 0.73 },
+      { a: -2.45, d: 0.74 },
+      { a: 3.0, d: 0.66 },
+    ].map(({ a, d }) => ({ dx: Math.cos(a) * d * sr, dy: Math.sin(a) * d * sr }));
+
+    this._showcaseSorted = rawBumps
+      .slice()
+      .sort((a, b) => Math.atan2(a.dy, a.dx) - Math.atan2(b.dy, b.dx));
+
+    const verts = this._showcaseSorted.map((b) => ({ x: b.dx, y: b.dy }));
+    const cellR = sr * 0.13;
+    const cells = generatePolyCells(verts, cellR);
+    this._showcaseCanvasB = buildMetaballCanvas(cells, "rgb(100, 140, 185)", sr, cellR, 14, 0.72);
+    this._showcaseReady = true;
+  }
+
+  _drawPolyShowcase(ctx, x, y, rot) {
+    const verts = this._showcaseSorted;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    ctx.shadowColor = "rgb(120, 190, 255)";
+    ctx.shadowBlur = 28;
+
+    const sr = this._showcaseSr;
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, sr);
+    grad.addColorStop(0, "rgb(190, 225, 255)");
+    grad.addColorStop(0.45, "rgb(100, 155, 215)");
+    grad.addColorStop(1, "rgb(28, 60, 120)");
+
+    ctx.beginPath();
+    ctx.moveTo(verts[0].dx, verts[0].dy);
+    for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].dx, verts[i].dy);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(180, 230, 255, 0.85)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+if (typeof module !== "undefined") module.exports = { UIRenderer };

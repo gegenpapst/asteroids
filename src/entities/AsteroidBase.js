@@ -76,6 +76,13 @@ class AsteroidBase {
     return this.radius;
   }
 
+  // Called by Game._destroyAsteroid() before removing this asteroid.
+  // Removes physics bodies/constraints from the world. Subclasses extend to add cleanup.
+  onDestroy(game) {
+    if (this.constraint) Matter.World.remove(game.engine.world, this.constraint);
+    Matter.World.remove(game.engine.world, this.body);
+  }
+
   update(dt) {
     return true;
   }
