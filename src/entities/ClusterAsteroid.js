@@ -73,6 +73,12 @@ class ClusterAsteroid extends AsteroidBase {
     });
   }
 
+  split(bulletAngle = null) {
+    const children = super.split(bulletAngle);
+    for (const c of children) c._renderStyle = this._renderStyle;
+    return children;
+  }
+
   get collisionRadius() {
     // 0 bumps = full circle, scale down with bump count
     return this.radius * (0.9 - (0.25 * Math.min(this.bumpCount, 7)) / 7);
