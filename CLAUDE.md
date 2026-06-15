@@ -14,7 +14,7 @@ skills that must be invoked:
 
 | Category                                                   | How to start               |
 | ---------------------------------------------------------- | -------------------------- |
-| **New entity** (asteroid variant, obstacle, enemy, pickup) | Run `/new-entity` skill    |
+| **New visual object** (ship, asteroid, enemy, obstacle, pickup) | Run `/new-entity` skill — interviews first, then 4–8 showcase variants, then implementation |
 | **Config screen change**                                   | Run `/config-change` skill |
 | **Bug fix**                                                | See checklist below        |
 | **Refactoring**                                            | See checklist below        |

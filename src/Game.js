@@ -1346,6 +1346,144 @@ class Game {
     ctx.fillText("Sehr unregelmäßig · klassisch", lx, 450);
     ctx.fillText("Organisch · Science-Fiction", rx, 450);
 
+    // --- TURRET SHOWCASE: pick a style (1–6) ---
+    {
+      const t = Date.now() / 1000;
+      const tr = 22;
+      const ty = 520;
+      const positions = [1, 2, 3, 4, 5, 6].map((i) => (W / 7) * i);
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.10)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(40, 463);
+      ctx.lineTo(W - 40, 463);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = "rgba(255,160,100,0.85)";
+      ctx.font = "bold 12px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("TURRET — choose a style (1–6)", cx, 478);
+
+      // 1: Simple radial gradient — hellrot outside, dunkelrot center
+      {
+        const [x, y] = [positions[0], ty];
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, tr);
+        grad.addColorStop(0, "#6b0000");
+        grad.addColorStop(1, "#ff7070");
+        ctx.beginPath();
+        ctx.arc(x, y, tr, 0, TAU);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      // 2: Same gradient + pulsing outer glow
+      {
+        const [x, y] = [positions[1], ty];
+        const pulse = 0.5 + 0.5 * Math.sin(t * 3);
+        ctx.save();
+        ctx.shadowColor = "#ff4040";
+        ctx.shadowBlur = 6 + pulse * 16;
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, tr);
+        grad.addColorStop(0, "#6b0000");
+        grad.addColorStop(1, "#ff7070");
+        ctx.beginPath();
+        ctx.arc(x, y, tr, 0, TAU);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 3: Core circle + 3 orbiting satellite dots
+      {
+        const [x, y] = [positions[2], ty];
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, tr * 0.68);
+        grad.addColorStop(0, "#6b0000");
+        grad.addColorStop(1, "#ff7070");
+        ctx.beginPath();
+        ctx.arc(x, y, tr * 0.68, 0, TAU);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        for (let i = 0; i < 3; i++) {
+          const a = t * 2 + (i * TAU) / 3;
+          ctx.beginPath();
+          ctx.arc(x + Math.cos(a) * tr * 1.3, y + Math.sin(a) * tr * 1.3, 3.5, 0, TAU);
+          ctx.fillStyle = "#ff8080";
+          ctx.fill();
+        }
+      }
+
+      // 4: Concentric rings, no fill
+      {
+        const [x, y] = [positions[3], ty];
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        for (let i = 3; i >= 1; i--) {
+          ctx.globalAlpha = i / 3.5;
+          ctx.strokeStyle = `hsl(0,80%,${20 + i * 15}%)`;
+          ctx.beginPath();
+          ctx.arc(x, y, (tr * i) / 3, 0, TAU);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 5: 6-point star polygon with red gradient
+      {
+        const [x, y] = [positions[4], ty];
+        const spikes = 6;
+        ctx.save();
+        ctx.beginPath();
+        for (let i = 0; i < spikes * 2; i++) {
+          const a = (i * Math.PI) / spikes - Math.PI / 2;
+          const r = i % 2 === 0 ? tr : tr * 0.48;
+          i === 0
+            ? ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r)
+            : ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+        }
+        ctx.closePath();
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, tr);
+        grad.addColorStop(0, "#6b0000");
+        grad.addColorStop(1, "#ff7070");
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 6: Dark center, bright red rim + rotating radar sweep
+      {
+        const [x, y] = [positions[5], ty];
+        ctx.save();
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, tr);
+        grad.addColorStop(0, "#1a0000");
+        grad.addColorStop(0.55, "#aa1010");
+        grad.addColorStop(1, "#ff5050");
+        ctx.beginPath();
+        ctx.arc(x, y, tr, 0, TAU);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,200,200,0.75)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        const sa = t * 1.8;
+        ctx.lineTo(x + Math.cos(sa) * tr, y + Math.sin(sa) * tr);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Labels
+      ctx.fillStyle = "rgba(200,200,200,0.7)";
+      ctx.font = "11px monospace";
+      ctx.textAlign = "center";
+      for (let i = 0; i < 6; i++) {
+        ctx.fillText(`${i + 1}`, positions[i], ty + tr + 14);
+      }
+    }
+    // --- END TURRET SHOWCASE ---
+
     // Blink "press enter"
     if (Math.floor(Date.now() / 520) % 2) {
       ctx.fillStyle = "#ccc";
