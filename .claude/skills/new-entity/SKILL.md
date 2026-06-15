@@ -1,99 +1,168 @@
 ---
 name: new-entity
 description: >
-  Scaffold a new game entity in the Asteroids project — asteroid variant,
-  obstacle, enemy, pickup, or power-up type. Use this skill whenever the user
-  wants to add any new interactive object to the game, even if they phrase it
-  as "add a thing that does X" or "create a new rock/enemy/item" without
-  explicitly saying "entity". Covers file creation, constants, registration in
-  Game.js, collision wiring, and the Metaball render path.
+  Design and implement a new visual game object in the Asteroids project —
+  ship variant, asteroid style, enemy, obstacle, pickup, or any drawable entity.
+  Use this skill whenever the user wants to add any new visual or interactive object
+  to the game, even when phrased as "create a new thing that looks like X" or "add
+  an enemy that does Y". This skill enforces a structured design-first workflow:
+  it interviews the user about movement, collision, and appearance before writing
+  a single line of code, then renders 4–8 visual variants in the start-screen
+  showcase so the user can choose the best look before the full implementation begins.
 ---
 
 # New Entity Skill
 
-## Step 1 — Clarify before writing any code
+This skill follows a strict four-phase sequence. **Do not jump ahead** — each phase depends on decisions made in the previous one. The goal is that no code is written before the user has approved the design.
 
-Ask the user (or infer from context):
+---
 
-1. **Name** — what is the entity called? (used for the class name and filename)
-2. **Behaviour** — what does it do? Does it move, shoot, split, drift, rotate, home in?
-3. **Lifecycle** — how does it die or expire? (hit by bullet, timeout, collected, flies off screen)
-4. **Interactions** — can it be hit by bullets? Can the ship collect it? Does it damage the ship?
-5. **Score** — does destroying/collecting it affect the score?
+## Phase 1 — Design Interview
 
-Only proceed once you have answers. Do not guess on interaction or lifecycle — these decide which arrays and collision checks are needed.
+Before writing any code, gather answers to these three questions. Ask them all at once in a single message; don't send one question at a time.
 
-## Step 2 — Create the entity file
+### 1. Movement
+- Does the object move on screen?
+- If yes: does it have a fixed direction, random direction, or does it track the player?
+- Does it rotate? Independently of movement, or tied to it?
+- Speed range (slow drift, fast projectile, orbiting, etc.)?
 
-Create `src/entities/<EntityName>.js` (use the `<EntityName>Cluster.js` naming if the entity follows the metaball/gradient-sprite pattern like the existing Cluster entities).
+### 2. Collision behaviour
+- Is it purely decorative (no collision)?
+- Can bullets destroy it?
+- Does it damage or kill the ship on contact?
+- Can the ship collect it (like a power-up)?
+- Does it interact with other entities (e.g., splits, spawns children)?
 
-Every entity must follow this contract:
+### 3. Visual appearance
+- Overall shape feel: blobby/organic (→ metaball), geometric/mechanical (→ polygon/sprite), glowing/energy?
+- Approximate size relative to the existing asteroids (small, medium, large)?
+- Colour palette or theme (e.g., "icy blue", "lava", "neon green")?
+- Any animation or effect (pulsing glow, spinning parts, particle trail)?
+
+After receiving answers, **summarise your understanding** in a short paragraph and ask the user to confirm before moving on. If any answer is unclear or contradictory, ask a focused follow-up — one question at a time.
+
+---
+
+## Phase 2 — Specification
+
+Once the design interview is confirmed, write a short spec in your response (not a file). Include:
+
+- **Class name** and file path
+- **Constants** that will be added to `Globals.js` (radius, speed, score, etc.)
+- **Lifecycle**: when it spawns, when it dies, what happens on death
+- **Collision pairs**: which arrays in `Game.js` it interacts with
+- **Render approach**: metaball, polygon path, gradient sprite, or combination
+- **Showcase plan**: brief description of the 4–8 visual variants to generate
+
+Ask the user to approve the spec. Proceed to Phase 3 only after explicit approval ("ok", "ja", "looks good", etc.).
+
+---
+
+## Phase 3 — Visual Showcase
+
+Generate **4 to 8 distinct visual variants** of the new object and display them in the start-screen showcase. The goal is to let the user pick the best look before any game logic is written.
+
+### How to add variants to the showcase
+
+The start-screen showcase is rendered in `Game.js` inside the `_drawShowcase()` method (called during the `START` state). Each variant is a self-contained anonymous draw block — no class instantiation needed here.
+
+Add a new showcase section at the bottom of `_drawShowcase()`. Lay out the variants in a row or grid. Each variant must:
+- Be labelled with a number (1–8) so the user can refer to it
+- Show the entity at a representative size and colour
+- Demonstrate the key visual trait that distinguishes it from the others (different shape, different colour palette, different glow style, etc.)
+
+The showcase code should be wrapped in a clearly marked block comment:
 
 ```js
+// --- NEW ENTITY SHOWCASE: <EntityName> ---
+// Variants 1–N
+```
+
+After pushing the changes, tell the user: "I've added N variants to the start screen. Open `index.html`, look at the showcase, and tell me which number(s) you like best — or describe what you'd like changed."
+
+### Variant principles
+- Each variant must be visually distinct (not just a different shade of the same shape)
+- Cover the design space: try at least one blobby option, one geometric option, one that leans into the glow/neon aesthetic already in the game, and one that's a bit more unusual
+- Do not write entity class code yet — just the raw canvas draw calls for the showcase
+
+---
+
+## Phase 4 — Full Implementation
+
+Once the user picks a variant (or a combination), implement the full entity. Follow these steps in order.
+
+### Step 4a — Entity file
+
+Create `src/entities/<EntityName>.js`. Every entity must follow the standard contract:
+
+```js
+"use strict";
+
 class EntityName {
   constructor(x, y /*, ...params */) {
-    this.pos = { x, y };
-    this.vel = { x: 0, y: 0 };
-    // set this.radius, this._life, etc.
+    this.x = x;
+    this.y = y;
+    this.vx = 0;
+    this.vy = 0;
+    // this.radius, this._life, etc.
   }
 
-  get radius() {
-    return /* number */;
-  }
+  get radius() { return /* constant */; }
 
-  // Return false (or nothing) when the entity should be removed.
   update(dt) {
-    // Euler integration: this.pos.x += this.vel.x * dt;
-    // wrap(this.pos, canvas.width, canvas.height) if needed
-    // return false when dead
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    // return false when the entity should be removed
+    return true;
   }
 
   draw() {
-    // render to the module-level ctx
+    // render to module-level ctx
+    // translate the chosen showcase variant here — it's already proven to look good
   }
 }
+
+if (typeof module !== "undefined") module.exports = { EntityName };
 ```
 
-- All tuning values (radius, speed, lifetime, score) must be **named constants** — never inline numbers. Add them in the next step.
-- Use `wrap(v, max)` from Globals.js for screen wrapping.
-- Match the game's visual style: metaball blobs for amorphous objects (see `ClusterAsteroid.js`), gradient sprites with glow for oriented objects (see `ShipCluster.js`, `UfoCluster.js`).
+Use `wrap(v, max)` from `Globals.js` for screen wrapping. No inline numbers — all tuning values go in `Globals.js`.
 
-## Step 3 — Add constants to Globals.js
+### Step 4b — Constants in Globals.js
 
-Open `src/Globals.js` and add a clearly named constant block for the new entity. Group related values together.
+Add a clearly labelled constant block:
 
 ```js
 // <EntityName>
 const ENTITYNAME_RADIUS = 18;
-const ENTITYNAME_SPEED = 80;
-const ENTITYNAME_SCORE = 250;
+const ENTITYNAME_SPEED  = 80;
+const ENTITYNAME_SCORE  = 250;
 ```
 
-No magic numbers anywhere in the entity file.
+Export in `module.exports` at the bottom of the file.
 
-## Step 4 — Register in Game.js
+### Step 4c — Register in Game.js
 
-In `Game.js`:
-
-1. **Add an array** if the entity type is new (e.g. `this.mines = []`). Existing arrays: `bullets`, `asteroids`, `particles`, `powerups`, `ufos`, `ufoBullets`.
-2. **Spawn** the entity at the right moment (level start, asteroid death, timer, etc.).
-3. **Update + draw each frame** — the standard pattern:
+1. Add an array if the entity type is new: `this.things = []`
+   - Existing arrays: `bullets`, `asteroids`, `particles`, `powerups`, `ufos`, `ufoBullets`
+2. Spawn the entity at the right moment (level start, asteroid death, timer, etc.)
+3. Update and draw each frame:
    ```js
-   this.mines = this.mines.filter((e) => e.update(dt));
-   this.mines.forEach((e) => e.draw());
+   this.things = this.things.filter((e) => e.update(dt));
+   this.things.forEach((e) => e.draw());
    ```
-4. **Reset** the array in `_reset()` / `_nextLevel()` as appropriate.
+4. Reset in `_reset()` / `_nextLevel()` as appropriate
+5. Remove the showcase block added in Phase 3 (or keep it if the user wants it)
 
-## Step 5 — Wire collision detection (if interactive)
+### Step 4d — Collision detection
 
-In `Game.js`'s collision section, add checks for the new entity. The helper pattern already used in the codebase:
+Wire the entity into the collision section of `Game.js`:
 
 ```js
-// bullet vs mine
 this.bullets = this.bullets.filter((b) => {
-  for (const mine of this.mines) {
-    if (dist(b.pos, mine.pos) < b.radius + mine.radius) {
-      // handle hit: remove mine, spawn particles, add score
+  for (const t of this.things) {
+    if (Math.hypot(b.x - t.x, b.y - t.y) < b.radius + t.radius) {
+      // handle hit
       return false; // remove bullet
     }
   }
@@ -101,25 +170,36 @@ this.bullets = this.bullets.filter((b) => {
 });
 ```
 
-Wire ship collision if the entity can harm or be collected by the ship.
+Wire ship collision if the entity can harm or be collected.
 
-## Step 6 — Register in VisualMode.js (if applicable)
+### Step 4e — VisualMode.js (if applicable)
 
-If the entity is created through the mode factory (like ship, asteroid, rock, UFO, pumice, satellite), add a `create<EntityName>()` method to `MetaballMode` in `src/VisualMode.js` and call it via `this.mode.create<EntityName>(...)` in `Game.js`. Entities spawned directly (like bullets and particles) skip this step.
+If the entity is created through the mode factory (like ship, asteroid, UFO), add a `create<EntityName>()` method to `MetaballMode` in `src/VisualMode.js`.
 
-## Step 7 — Prettier
-
-Run Prettier on every file touched:
+### Step 4f — Prettier
 
 ```
 npx prettier --write src/entities/<EntityName>.js src/Globals.js src/Game.js
 ```
 
-## Step 8 — Verify
+Run on every file touched. Run this before and after edits.
 
-Open `index.html` in a browser. Confirm:
+### Step 4g — Verify
 
-- The entity appears at the expected moment.
-- Collision with bullets and ship works correctly.
-- The entity is removed when its lifecycle ends (no leaked objects).
-- No console errors.
+Open `index.html` in a browser and confirm:
+- The entity appears at the expected moment
+- Collision with bullets and ship works correctly
+- The entity is removed when its lifecycle ends (no leaked objects)
+- No console errors
+- The chosen visual matches what the user approved in Phase 3
+
+---
+
+## Checklist summary
+
+| Phase | Gate to next phase |
+|-------|--------------------|
+| 1. Design interview | User confirms the summary of movement + collision + appearance |
+| 2. Specification | User explicitly approves the spec |
+| 3. Visual showcase | User picks a variant number |
+| 4. Implementation | Visual verified in browser, no console errors |
