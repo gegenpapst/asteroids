@@ -18,8 +18,11 @@ global.Sound = class {
   extraLife() {}
 };
 
-// Minimal VisualMode stub — only used when game.start() is called (not in these tests)
-global.VISUAL_MODES = [null, null, null];
+global.MetaballMode = class {
+  createShip() {
+    return null;
+  }
+};
 
 // ── Entity globals required by _boom / _spawnDebris ──────────────────────────
 
@@ -56,9 +59,7 @@ function makeShip(overrides = {}) {
   });
   Object.defineProperty(s, "hitRadius", {
     get() {
-      return this.shieldTimer > 0
-        ? SHIP_SIZE * SHIP_SHIELD_FACTOR
-        : SHIP_SIZE * SHIP_HULL_FACTOR;
+      return this.shieldTimer > 0 ? SHIP_SIZE * SHIP_SHIELD_FACTOR : SHIP_SIZE * SHIP_HULL_FACTOR;
     },
   });
   return Object.assign(s, overrides);

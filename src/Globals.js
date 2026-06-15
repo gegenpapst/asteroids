@@ -1,22 +1,5 @@
 "use strict";
 
-// ─── Canvas setup ────────────────────────────────────────────────────────────
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-const W = 800;
-const H = 600;
-canvas.width = W;
-canvas.height = H;
-
-function fitCanvas() {
-  const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
-  canvas.style.width = `${W * scale}px`;
-  canvas.style.height = `${H * scale}px`;
-}
-fitCanvas();
-window.addEventListener("resize", fitCanvas);
-
 // ─── Constants ───────────────────────────────────────────────────────────────
 const SHIP_SIZE = 14;
 const SHIP_THRUST = 260;
@@ -114,11 +97,7 @@ const DEBRIS_RADIUS_MIN = 2.5; // smallest debris radius (px)
 const DEBRIS_RADIUS_MAX = 5.0; // largest debris radius (px)
 const DEBRIS_FRICTION_AIR = 0.018; // air friction for Matter body
 
-// Rock count is controlled by the in-game config dialog (3 levels)
-
 // ── Satellite asteroid color proposals ──────────────────────────────────────
-// Each entry: center = bright inner glow (rgb string), body = dark outer fill (hex).
-// Used in the start-screen showcase; one will become the permanent satellite color.
 const SATELLITE_COLORS = [
   { name: "Ember", center: "rgb(255,125,18)", body: "#130300" }, // volcanic amber
   { name: "Crimson", center: "rgb(235,42,42)", body: "#140202" }, // lava red
@@ -177,76 +156,8 @@ bgCanvas.height = H;
   }
 })();
 
-// ─── Input ───────────────────────────────────────────────────────────────────
-const Input = {
-  _held: new Set(),
-  _pressed: new Set(),
-
-  init() {
-    window.addEventListener("keydown", (e) => {
-      if (!this._held.has(e.code)) this._pressed.add(e.code);
-      this._held.add(e.code);
-      const block = ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
-      if (block.includes(e.code)) e.preventDefault();
-    });
-    window.addEventListener("keyup", (e) => this._held.delete(e.code));
-  },
-
-  isHeld(code) {
-    return this._held.has(code);
-  },
-  wasPressed(code) {
-    return this._pressed.has(code);
-  },
-  flush() {
-    this._pressed.clear();
-  },
-
-  _shift() {
-    return this.isHeld("ShiftLeft") || this.isHeld("ShiftRight");
-  },
-
-  left() {
-    return !this._shift() && (this.isHeld("ArrowLeft") || this.isHeld("KeyA"));
-  },
-  right() {
-    return !this._shift() && (this.isHeld("ArrowRight") || this.isHeld("KeyD"));
-  },
-  up() {
-    return this.isHeld("ArrowUp") || this.isHeld("KeyW");
-  },
-  fire() {
-    return this.isHeld("Space") || this.isHeld("KeyZ");
-  },
-  start() {
-    return this.wasPressed("Enter") || this.wasPressed("Space");
-  },
-  help() {
-    return this.wasPressed("KeyH");
-  },
-  config() {
-    return this.wasPressed("KeyC");
-  },
-  teleport() {
-    return this.wasPressed("KeyS") || this.wasPressed("ArrowDown");
-  },
-  strafeLeft() {
-    return this._shift() && (this.isHeld("ArrowLeft") || this.isHeld("KeyA"));
-  },
-  strafeRight() {
-    return this._shift() && (this.isHeld("ArrowRight") || this.isHeld("KeyD"));
-  },
-};
-
 if (typeof module !== "undefined") {
   module.exports = {
-    wrap,
-    clamp,
-    dist,
-    rand,
-    randInt,
-    safeSplitAngle,
-    TAU,
     W,
     H,
     SHIP_SIZE,
@@ -333,6 +244,5 @@ if (typeof module !== "undefined") {
     BOOM_PARTICLE_COUNTS,
     SAFE_POS_TRIES,
     SATELLITE_COLORS,
-    Input,
   };
 }

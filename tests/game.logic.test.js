@@ -18,7 +18,11 @@ global.Sound = class {
   extraLife() {}
 };
 
-global.VISUAL_MODES = [null];
+global.MetaballMode = class {
+  createShip() {
+    return null;
+  }
+};
 
 // ── Entity globals required by _boom / _spawnDebris / powerup spawn ──────────
 

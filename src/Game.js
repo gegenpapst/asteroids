@@ -92,7 +92,7 @@ class Game {
   }
 
   start() {
-    this.mode = VISUAL_MODES[0];
+    this.mode = new MetaballMode();
     this.score = 0;
     this.lives = 3;
     this.level = 0;
@@ -502,129 +502,143 @@ class Game {
   // Handles all state transitions based on input (START, HELP, CONFIG, PLAYING keys).
   // Returns `true` if update() should abort (state needs no further processing).
   _updateStateInput() {
-    if (this.state === STATE.START || this.state === STATE.GAMEOVER) {
-      if (Input.start() || Input.config()) {
-        this._configPrevState = this.state;
-        this._configFocus = "mode";
-        this.state = STATE.CONFIG;
+    switch (this.state) {
+      case STATE.START:
+      case STATE.GAMEOVER:
+        return this._handleStartInput();
+      case STATE.HELP:
+        return this._handleHelpInput();
+      case STATE.CONFIG:
+        return this._handleConfigInput();
+      case STATE.CONFIG_DETAIL:
+        return this._handleConfigDetailInput();
+      case STATE.QUIT_CONFIRM:
+        return this._handleQuitConfirmInput();
+      case STATE.PLAYING:
+        return this._handlePlayingInput();
+      default:
+        return false;
+    }
+  }
+
+  _handleStartInput() {
+    if (Input.start() || Input.config()) {
+      this._configPrevState = this.state;
+      this._configFocus = "mode";
+      this.state = STATE.CONFIG;
+    }
+    Input.flush();
+    return true;
+  }
+
+  _handleHelpInput() {
+    if (Input.help() || Input.wasPressed("Escape")) this.state = STATE.PLAYING;
+    Input.flush();
+    return true;
+  }
+
+  _handleConfigInput() {
+    const readOnly = this._configPrevState === STATE.PLAYING;
+
+    // Switch focus between mode tiles and the details button
+    if (Input.wasPressed("ArrowDown") && this._configFocus === "mode")
+      this._configFocus = "details";
+    if (Input.wasPressed("ArrowUp") && this._configFocus === "details") this._configFocus = "mode";
+
+    // Mode change works with ArrowLeft/Right regardless of focus
+    if (!readOnly) {
+      const prevMode = this.config.mode;
+      if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
+      if (Input.wasPressed("ArrowRight")) this.config.mode = Math.min(3, this.config.mode + 1);
+      if (this.config.mode !== prevMode) {
+        Object.assign(this.config, MODES[this.config.mode - 1]);
+        this._applyAsteroidFilter();
       }
+    }
+
+    // Open details: D key always, Enter when details are focused
+    if (
+      Input.wasPressed("KeyD") ||
+      (Input.wasPressed("Enter") && this._configFocus === "details")
+    ) {
+      this._detailCursor = 0;
+      this.state = STATE.CONFIG_DETAIL;
       Input.flush();
       return true;
     }
 
-    if (this.state === STATE.HELP) {
-      if (Input.help() || Input.wasPressed("Escape")) this.state = STATE.PLAYING;
+    if (Input.wasPressed("Escape")) {
+      this.state = this._configPrevState;
       Input.flush();
       return true;
     }
 
-    if (this.state === STATE.CONFIG) {
-      const readOnly = this._configPrevState === STATE.PLAYING;
-
-      // Switch focus between mode tiles and the details button
-      if (Input.wasPressed("ArrowDown") && this._configFocus === "mode")
-        this._configFocus = "details";
-      if (Input.wasPressed("ArrowUp") && this._configFocus === "details")
-        this._configFocus = "mode";
-
-      // Mode change works with ArrowLeft/Right regardless of focus
-      if (!readOnly) {
-        const prevMode = this.config.mode;
-        if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
-        if (Input.wasPressed("ArrowRight")) this.config.mode = Math.min(3, this.config.mode + 1);
-        if (this.config.mode !== prevMode) {
-          Object.assign(this.config, MODES[this.config.mode - 1]);
-          this._applyAsteroidFilter();
-        }
-      }
-
-      // Open details: D key always, Enter when details are focused
-      if (
-        Input.wasPressed("KeyD") ||
-        (Input.wasPressed("Enter") && this._configFocus === "details")
-      ) {
-        this._detailCursor = 0;
-        this.state = STATE.CONFIG_DETAIL;
-        Input.flush();
-        return true;
-      }
-
-      if (Input.wasPressed("Escape")) {
-        this.state = this._configPrevState;
-        Input.flush();
-        return true;
-      }
-
-      // Start game: Enter when mode tiles are focused, or C key
-      if ((Input.wasPressed("Enter") && this._configFocus === "mode") || Input.config()) {
-        if (readOnly) this.state = STATE.PLAYING;
-        else this.start();
-      }
-      Input.flush();
-      return true;
+    // Start game: Enter when mode tiles are focused, or C key
+    if ((Input.wasPressed("Enter") && this._configFocus === "mode") || Input.config()) {
+      if (readOnly) this.state = STATE.PLAYING;
+      else this.start();
     }
+    Input.flush();
+    return true;
+  }
 
-    if (this.state === STATE.CONFIG_DETAIL) {
-      const readOnly = this._configPrevState === STATE.PLAYING;
-      const params = ["bulletRange", "powerupFreq", "rockCount", "pumiceCount", "asteroidBounce"];
-      const paramMax = {
-        bulletRange: 3,
-        powerupFreq: 3,
-        rockCount: 3,
-        pumiceCount: 3,
-        asteroidBounce: 2,
-      };
-      if (!readOnly) {
-        if (Input.wasPressed("ArrowUp"))
-          this._detailCursor = (this._detailCursor + params.length - 1) % params.length;
-        if (Input.wasPressed("ArrowDown"))
-          this._detailCursor = (this._detailCursor + 1) % params.length;
-        const key = params[this._detailCursor];
-        if (Input.wasPressed("ArrowLeft")) this.config[key] = Math.max(1, this.config[key] - 1);
-        if (Input.wasPressed("ArrowRight"))
-          this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
-        if (key === "asteroidBounce") this._applyAsteroidFilter();
-      }
-      if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
-        this._configFocus = "mode";
-        this.state = STATE.CONFIG;
-        Input.flush();
-        return true;
-      }
-      Input.flush();
-      return true;
+  _handleConfigDetailInput() {
+    const readOnly = this._configPrevState === STATE.PLAYING;
+    const params = ["bulletRange", "powerupFreq", "rockCount", "pumiceCount", "asteroidBounce"];
+    const paramMax = {
+      bulletRange: 3,
+      powerupFreq: 3,
+      rockCount: 3,
+      pumiceCount: 3,
+      asteroidBounce: 2,
+    };
+    if (!readOnly) {
+      if (Input.wasPressed("ArrowUp"))
+        this._detailCursor = (this._detailCursor + params.length - 1) % params.length;
+      if (Input.wasPressed("ArrowDown"))
+        this._detailCursor = (this._detailCursor + 1) % params.length;
+      const key = params[this._detailCursor];
+      if (Input.wasPressed("ArrowLeft")) this.config[key] = Math.max(1, this.config[key] - 1);
+      if (Input.wasPressed("ArrowRight"))
+        this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
+      if (key === "asteroidBounce") this._applyAsteroidFilter();
     }
+    if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
+      this._configFocus = "mode";
+      this.state = STATE.CONFIG;
+    }
+    Input.flush();
+    return true;
+  }
 
-    if (this.state === STATE.PLAYING && Input.wasPressed("Escape")) {
+  _handleQuitConfirmInput() {
+    if (Input.wasPressed("KeyY") || Input.wasPressed("KeyZ")) {
+      this.state = STATE.GAMEOVER;
+    } else if (Input.wasPressed("KeyN") || Input.wasPressed("Escape")) {
+      this.state = STATE.PLAYING;
+    }
+    Input.flush();
+    return true;
+  }
+
+  _handlePlayingInput() {
+    if (Input.wasPressed("Escape")) {
       this.state = STATE.QUIT_CONFIRM;
       Input.flush();
       return true;
     }
-
-    if (this.state === STATE.QUIT_CONFIRM) {
-      if (Input.wasPressed("KeyY") || Input.wasPressed("KeyZ")) {
-        this.state = STATE.GAMEOVER;
-      } else if (Input.wasPressed("KeyN") || Input.wasPressed("Escape")) {
-        this.state = STATE.PLAYING;
-      }
-      Input.flush();
-      return true;
-    }
-
-    if (this.state === STATE.PLAYING && Input.help()) {
+    if (Input.help()) {
       this.state = STATE.HELP;
       Input.flush();
       return true;
     }
-
-    if (this.state === STATE.PLAYING && Input.config()) {
+    if (Input.config()) {
       this._configPrevState = STATE.PLAYING;
       this._configFocus = "mode";
       this.state = STATE.CONFIG;
       Input.flush();
       return true;
     }
-
     return false;
   }
 

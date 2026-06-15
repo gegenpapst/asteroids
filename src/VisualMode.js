@@ -1,30 +1,8 @@
 "use strict";
 
-// Visual mode strategy: provides the entity classes for rendering.
-// MetaballMode is the only mode; `Game.mode` is set at game start.
-
-class VisualMode {
-  createShip() {
-    throw new Error("abstract");
-  }
-  createAsteroid(x, y, size, angle, maxBumps) {
-    throw new Error("abstract");
-  }
-  createRock(x, y) {
-    throw new Error("abstract");
-  }
-  createUfo(size, onBullet) {
-    throw new Error("abstract");
-  }
-  createPumice(x, y) {
-    throw new Error("abstract");
-  }
-  createSatellite(x, y, ax, ay, parentSystem, size, maxBumps, orbitSpeed) {
-    throw new Error("abstract");
-  }
-}
-
-class MetaballMode extends VisualMode {
+// Entity factory for the metaball/cluster visual style.
+// Game holds one instance of this and calls it to spawn all entities.
+class MetaballMode {
   createShip() {
     return new ShipCluster();
   }
@@ -45,6 +23,4 @@ class MetaballMode extends VisualMode {
   }
 }
 
-const VISUAL_MODES = [new MetaballMode()];
-
-if (typeof module !== "undefined") module.exports = { VisualMode, MetaballMode, VISUAL_MODES };
+if (typeof module !== "undefined") module.exports = { MetaballMode };

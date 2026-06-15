@@ -49,9 +49,14 @@ global.window = {
 // rather than imports — mirroring the browser's shared script scope.
 const u = require("../src/utils.js");
 Object.assign(global, u);
+// canvas.js is not required in tests (DOM side-effects); set its exports manually.
+global.W = 800;
+global.H = 600;
+global.ctx = ctxStub;
 const g = require("../src/Globals.js");
 Object.assign(global, g);
-global.ctx = ctxStub;
+const { Input } = require("../src/input.js");
+global.Input = Input;
 
 // Matter.js stub — keeps entity constructors working without the real physics engine
 const _mkBody = (x = 0, y = 0) => ({
