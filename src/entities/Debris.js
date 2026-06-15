@@ -69,7 +69,7 @@ class Debris {
     return true;
   }
 
-  draw() {
+  draw(ctx) {
     const t = Math.max(0, this.life / this.maxLife);
     ctx.save();
     ctx.globalAlpha = t * t * 0.88;

@@ -21,7 +21,7 @@ class UfoBullet {
     return this.life > 0;
   }
 
-  draw() {
+  draw(ctx) {
     const alpha = clamp((this.life / this.maxLife) * 2, 0, 1);
     ctx.beginPath();
     ctx.arc(this.x, this.y, 2.5, 0, TAU);

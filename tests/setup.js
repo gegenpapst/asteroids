@@ -47,9 +47,22 @@ global.window = {
 
 // Entities reference globals (rand, wrap, W, H, ASTEROID_RADIUS …) as bare names
 // rather than imports — mirroring the browser's shared script scope.
+const u = require("../src/utils.js");
+Object.assign(global, u);
+// canvas.js is not required in tests (DOM side-effects); set its exports manually.
+global.W = 800;
+global.H = 600;
+global.ctx = ctxStub;
 const g = require("../src/Globals.js");
 Object.assign(global, g);
-global.ctx = ctxStub;
+const { Input } = require("../src/input.js");
+global.Input = Input;
+
+const { CollisionSystem } = require("../src/CollisionSystem.js");
+global.CollisionSystem = CollisionSystem;
+
+const { UIRenderer } = require("../src/UIRenderer.js");
+global.UIRenderer = UIRenderer;
 
 // Matter.js stub — keeps entity constructors working without the real physics engine
 const _mkBody = (x = 0, y = 0) => ({
@@ -62,7 +75,10 @@ global.Matter = {
   use: () => {},
   Engine: { create: () => ({ world: {} }), update: () => {} },
   World: { add: () => {}, remove: () => {}, clear: () => {} },
-  Bodies: { circle: (x, y) => _mkBody(x, y) },
+  Bodies: {
+    circle: (x, y) => _mkBody(x, y),
+    fromVertices: (x, y, _verts, opts) => Object.assign(_mkBody(x, y), opts || {}),
+  },
   Body: {
     create: (opts) => {
       const b = _mkBody(0, 0);

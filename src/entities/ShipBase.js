@@ -19,9 +19,8 @@ class ShipBase {
     this.spreadTimer = 0;
     this.heavyTimer = 0;
 
-    // Matter body — sensor by default (mask:0).
-    // Switched to colliding automatically when shield is active + not invulnerable.
-    this._shieldActive = false;
+    // Matter body — always a sensor (mask:0). Ship physics are owned entirely by
+    // entity state; the body is only a passive position shadow for the physics world.
     this.body = Matter.Bodies.circle(this.x, this.y, SHIP_SIZE * SHIP_HULL_FACTOR, {
       friction: 0,
       frictionAir: 0,
@@ -51,14 +50,6 @@ class ShipBase {
     if (this.rapidTimer > 0) this.rapidTimer -= dt;
     if (this.spreadTimer > 0) this.spreadTimer -= dt;
     if (this.heavyTimer > 0) this.heavyTimer -= dt;
-
-    // Enable real Matter collisions only while shield is active and not invulnerable.
-    // Sensor (mask:0) otherwise — prevents Matter from pushing a dying ship.
-    const shielded = this.shieldTimer > 0 && this.invulnerable <= 0;
-    if (shielded !== this._shieldActive) {
-      Matter.Body.set(this.body, "collisionFilter", shielded ? {} : { mask: 0 });
-      this._shieldActive = shielded;
-    }
 
     if (Input.left()) this.angle -= SHIP_ROTATION * dt;
     if (Input.right()) this.angle += SHIP_ROTATION * dt;

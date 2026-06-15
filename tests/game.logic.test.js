@@ -18,7 +18,11 @@ global.Sound = class {
   extraLife() {}
 };
 
-global.VISUAL_MODES = [null];
+global.MetaballMode = class {
+  createShip() {
+    return null;
+  }
+};
 
 // ── Entity globals required by _boom / _spawnDebris / powerup spawn ──────────
 
@@ -65,6 +69,7 @@ function makeAsteroid(x, y, size = 2, children = []) {
     split() {
       return children;
     },
+    onDestroy() {},
   };
 }
 
@@ -162,7 +167,7 @@ describe("Bullet × Asteroid collision", () => {
     const a = makeAsteroid(400, 300, 2);
     g.asteroids = [a];
     g.bullets = [makeBullet(400, 300)];
-    g._updateBulletCollisions();
+    g.collisions.updateBullet();
     expect(g.asteroids).toHaveLength(0);
     expect(g.bullets).toHaveLength(0);
     expect(g.score).toBe(ASTEROID_SCORE[2]);
@@ -174,7 +179,7 @@ describe("Bullet × Asteroid collision", () => {
     const children = [makeAsteroid(390, 300, 1), makeAsteroid(410, 300, 1)];
     g.asteroids = [makeAsteroid(400, 300, 0, children)];
     g.bullets = [makeBullet(400, 300)];
-    g._updateBulletCollisions();
+    g.collisions.updateBullet();
     expect(g.asteroids).toHaveLength(2);
     expect(g.asteroids[0].size).toBe(1);
   });
@@ -183,7 +188,7 @@ describe("Bullet × Asteroid collision", () => {
     const g = makeGame();
     g.asteroids = [makeAsteroid(400, 300, 2)];
     g.bullets = [makeBullet(700, 500)];
-    g._updateBulletCollisions();
+    g.collisions.updateBullet();
     expect(g.asteroids).toHaveLength(1);
     expect(g.bullets).toHaveLength(1);
   });
@@ -193,7 +198,7 @@ describe("Bullet × Asteroid collision", () => {
     const g = makeGame();
     g.asteroids = [makeAsteroid(400, 300, 2)];
     g.bullets = [makeBullet(400, 300)];
-    g._updateBulletCollisions();
+    g.collisions.updateBullet();
     expect(g.powerups).toHaveLength(1);
     expect(g.powerups[0]).toBeInstanceOf(PowerUp);
   });
@@ -204,7 +209,7 @@ describe("Bullet × UFO collision", () => {
     const g = makeGame();
     g.ufos = [makeUfo(400, 300, 1)];
     g.bullets = [makeBullet(400, 300)];
-    g._updateBulletCollisions();
+    g.collisions.updateBullet();
     expect(g.ufos).toHaveLength(0);
     expect(g.bullets).toHaveLength(0);
     expect(g.score).toBe(UFO_SCORE[1]);
@@ -216,7 +221,7 @@ describe("Bullet × Rock collision", () => {
     const g = makeGame();
     g.rocks = [{ x: 400, y: 300, collisionRadius: 25, body: {} }];
     g.bullets = [makeBullet(400, 300)];
-    g._updateBulletCollisions();
+    g.collisions.updateBullet();
     expect(g.bullets).toHaveLength(0);
     expect(g.rocks).toHaveLength(1);
     expect(g.score).toBe(0);

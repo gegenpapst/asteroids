@@ -5,9 +5,6 @@ class ClusterAsteroid extends AsteroidBase {
   static _label = "cluster-asteroid";
   static _rotBase = 1.2;
 
-  // 1 = polygon path (sharp edges, glow), 2 = metaball hex-grid (soft glow)
-  static renderStyle = 1;
-
   // color: optional override; defaults to the standard steel-blue asteroid tint.
   //   Pass a {center, body} object to enable radial gradient fill (e.g. satellite split children).
   constructor(x, y, size = 0, angle = null, maxBumps = 7, color = "rgb(100, 140, 185)") {
@@ -18,12 +15,14 @@ class ClusterAsteroid extends AsteroidBase {
       this._offCanvas = null;
       this._polyVerts = null;
       this._color = null;
+      this._renderStyle = 1;
     } else {
       this._gradientCenter = null;
       this._gradientBody = null;
       this._color = color;
-      this._offCanvas = null; // built lazily for renderStyle 2
-      this._polyVerts = this._buildPolyVerts();
+      this._offCanvas = null;
+      this._renderStyle = Math.random() < 0.5 ? 1 : 2;
+      this._polyVerts = this._computePolyVerts();
     }
   }
 
@@ -50,12 +49,42 @@ class ClusterAsteroid extends AsteroidBase {
     return items.sort((a, b) => a.a - b.a).map((v) => ({ x: v.x, y: v.y }));
   }
 
+  // Returns polygon vertices centered around their centroid.
+  // Called from constructor after super() has populated _bumps and _coreR.
+  _computePolyVerts() {
+    const raw = this._buildPolyVerts();
+    const cx = raw.reduce((s, v) => s + v.x, 0) / raw.length;
+    const cy = raw.reduce((s, v) => s + v.y, 0) / raw.length;
+    return raw.map((v) => ({ x: v.x - cx, y: v.y - cy }));
+  }
+
+  // Polygon physics body — vertices match the visual polygon exactly.
+  // Overrides the compound-circle approach in AsteroidBase.
+  _makeBody(wrap = true) {
+    const r = this.radius;
+    this._coreR = r * (0.85 - (0.5 * Math.min(this.bumpCount, 7)) / 7);
+    this._bumps = this._genBumps();
+    return Matter.Bodies.fromVertices(this.x, this.y, this._buildPolyVerts(), {
+      friction: 0,
+      frictionAir: 0,
+      restitution: 1,
+      label: this.constructor._label,
+      ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } } } : {}),
+    });
+  }
+
+  split(bulletAngle = null) {
+    const children = super.split(bulletAngle);
+    for (const c of children) c._renderStyle = this._renderStyle;
+    return children;
+  }
+
   get collisionRadius() {
     // 0 bumps = full circle, scale down with bump count
     return this.radius * (0.9 - (0.25 * Math.min(this.bumpCount, 7)) / 7);
   }
 
-  draw() {
+  draw(ctx) {
     if (this._gradientCenter) {
       // Radial gradient fill: bright center → dark edge (used by satellite split children)
       ctx.save();
@@ -76,15 +105,15 @@ class ClusterAsteroid extends AsteroidBase {
       return;
     }
 
-    if (ClusterAsteroid.renderStyle === 1) {
-      this._drawPoly();
+    if (this._renderStyle === 1) {
+      this._drawPoly(ctx);
     } else {
       if (!this._offCanvas) this._buildMetaball();
-      this._drawMetaball();
+      this._drawMetaball(ctx);
     }
   }
 
-  _drawPoly() {
+  _drawPoly(ctx) {
     const verts = this._polyVerts;
     ctx.save();
     ctx.translate(this.x, this.y);
@@ -119,7 +148,7 @@ class ClusterAsteroid extends AsteroidBase {
     this._offCanvas = buildMetaballCanvas(cells, this._color, this.radius, cellR, 14, 0.72);
   }
 
-  _drawMetaball() {
+  _drawMetaball(ctx) {
     const sz = this._offCanvas.width;
     ctx.save();
     ctx.globalCompositeOperation = "screen";

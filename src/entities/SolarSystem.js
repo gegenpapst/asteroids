@@ -76,7 +76,7 @@ class SolarSystem {
     return this.alive;
   }
 
-  draw() {
+  draw(ctx) {
     if (!this.alive) return;
 
     const frac = Math.min(1, this.satellites.length / this._total);

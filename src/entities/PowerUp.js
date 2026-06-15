@@ -21,7 +21,7 @@ class PowerUp {
     return this.life > 0;
   }
 
-  draw() {
+  draw(ctx) {
     const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 330);
     const r = this.radius;
 

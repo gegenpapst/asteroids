@@ -56,32 +56,16 @@ describe("SatelliteClusterAsteroid constructor", () => {
   });
 
   test("initial velocity is tangential (perpendicular to the radial direction)", () => {
-    const s = new SatelliteClusterAsteroid(SPAWN_X, SPAWN_Y, AX, AY, parentSystem);
+    const speed = 110;
+    const s = new SatelliteClusterAsteroid(SPAWN_X, SPAWN_Y, AX, AY, parentSystem, 2, 7, speed);
     // Radial direction is +x; tangential velocity must be ±y only.
     expect(Math.abs(s.vx)).toBeLessThan(1e-9);
-    expect(Math.abs(s.vy)).toBeCloseTo(SOLAR_ORBIT_SPEED);
+    expect(Math.abs(s.vy)).toBeCloseTo(speed);
   });
 });
 
 describe("SatelliteClusterAsteroid.split", () => {
-  test("children are plain ClusterAsteroid instances, not satellites", () => {
-    const s = new SatelliteClusterAsteroid(SPAWN_X, SPAWN_Y, AX, AY, parentSystem, 1);
-    const children = s.split();
-    expect(children).toHaveLength(2);
-    for (const c of children) {
-      expect(c).toBeInstanceOf(SatelliteClusterAsteroid);
-      expect(c.size).toBe(2);
-    }
-  });
-
-  test("children remain bound to the same parentSystem", () => {
-    const s = new SatelliteClusterAsteroid(SPAWN_X, SPAWN_Y, AX, AY, parentSystem, 1);
-    for (const c of s.split()) {
-      expect(c.parentSystem).toBe(parentSystem);
-    }
-  });
-
-  test("smallest size does not split", () => {
+  test("satellites never split (always size=2)", () => {
     const s = new SatelliteClusterAsteroid(SPAWN_X, SPAWN_Y, AX, AY, parentSystem, 2);
     expect(s.split()).toHaveLength(0);
   });

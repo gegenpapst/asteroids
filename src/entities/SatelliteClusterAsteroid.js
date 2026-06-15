@@ -1,14 +1,22 @@
 "use strict";
 
-// Metaball variant of the satellite asteroid — inherits cluster rendering from ClusterAsteroid.
-// Always part of a SolarSystem (parentSystem != null, isSatellite=true).
-// Split children are regular free-floating ClusterAsteroid instances (no constraint).
-class SatelliteClusterAsteroid extends ClusterAsteroid {
+// Satellite asteroid — simple circle body, orbits a SolarSystem center via a constraint.
+// Always spawned at size=2 (smallest) — satellites do not split.
+class SatelliteClusterAsteroid extends AsteroidBase {
   static _label = "satellite-cluster-asteroid";
+  static _rotBase = 1.2;
 
-  constructor(x, y, ax, ay, parentSystem = null, size = 1, maxBumps = 7) {
-    // Pass Wraith color directly to ClusterAsteroid — no manual _offCanvas rebuild needed.
-    super(x, y, size, null, maxBumps, SATELLITE_COLORS[4].center);
+  constructor(
+    x,
+    y,
+    ax,
+    ay,
+    parentSystem = null,
+    size = 2,
+    maxBumps = 7,
+    orbitSpeed = SOLAR_ORBIT_SPEED_MIN,
+  ) {
+    super(x, y, size, null, 0);
 
     this.parentSystem = parentSystem;
     this.isSatellite = parentSystem != null;
@@ -20,8 +28,8 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     const dy = y - ay;
     const len = Math.hypot(dx, dy) || 1;
     const sign = Math.random() < 0.5 ? 1 : -1;
-    this.vx = (-dy / len) * sign * (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
-    this.vy = (dx / len) * sign * (parentSystem ? SOLAR_ORBIT_SPEED : PENDULUM_INIT_SPEED);
+    this.vx = (-dy / len) * sign * (parentSystem ? orbitSpeed : PENDULUM_INIT_SPEED);
+    this.vy = (dx / len) * sign * (parentSystem ? orbitSpeed : PENDULUM_INIT_SPEED);
     Matter.Body.setVelocity(this.body, { x: this.vx / 60, y: this.vy / 60 });
 
     const stiffness = parentSystem ? SOLAR_STIFFNESS : PENDULUM_STIFFNESS;
@@ -50,43 +58,25 @@ class SatelliteClusterAsteroid extends ClusterAsteroid {
     }
   }
 
-  // Override: plugin.wrap disabled — constraint would snap on screen wrap
+  onDestroy(game) {
+    super.onDestroy(game);
+    if (this.parentSystem) this.parentSystem.onSatelliteDestroyed(this, game);
+  }
+
+  // Simple circle body — no compound body, no bumps, hitbox matches visual exactly.
+  // wrap=false: no plugin.wrap (constraint would snap on screen wrap).
   _makeBody() {
-    return super._makeBody(false);
+    this._coreR = this.radius;
+    this._bumps = [];
+    return Matter.Bodies.circle(this.x, this.y, this.radius, {
+      friction: 0,
+      frictionAir: 0,
+      restitution: 1,
+      label: this.constructor._label,
+    });
   }
 
-  // Split children stay bound to the same solar system center.
-  split(bulletAngle = null) {
-    if (this.size >= 2) return [];
-    const offset = ASTEROID_RADIUS[this.size + 1];
-    const perp = rand(0, TAU);
-    const ox = Math.cos(perp) * offset;
-    const oy = Math.sin(perp) * offset;
-    const ax = this.parentSystem ? this.parentSystem.x : this.anchorX;
-    const ay = this.parentSystem ? this.parentSystem.y : this.anchorY;
-    return [
-      new SatelliteClusterAsteroid(
-        this.x + ox,
-        this.y + oy,
-        ax,
-        ay,
-        this.parentSystem,
-        this.size + 1,
-        this.maxBumps,
-      ),
-      new SatelliteClusterAsteroid(
-        this.x - ox,
-        this.y - oy,
-        ax,
-        ay,
-        this.parentSystem,
-        this.size + 1,
-        this.maxBumps,
-      ),
-    ];
-  }
-
-  draw() {
+  draw(ctx) {
     // Tether + anchor dot
     const tetherColor = this.parentSystem ? "rgba(255, 140, 60, 0.45)" : "#556";
     const anchorColor = this.parentSystem ? "rgba(255,140,60,0.7)" : "#778";

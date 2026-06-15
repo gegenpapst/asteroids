@@ -2,7 +2,7 @@
 
 // Metaball/cluster variant of the ship — inherits movement/firing from ShipBase, implements only draw().
 class ShipCluster extends ShipBase {
-  draw() {
+  draw(ctx) {
     if (this.invulnerable > 0 && Math.floor(this.invulnerable * 8) % 2 === 0) return;
 
     const s = SHIP_SIZE;
