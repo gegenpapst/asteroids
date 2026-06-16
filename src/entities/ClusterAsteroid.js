@@ -64,13 +64,16 @@ class ClusterAsteroid extends AsteroidBase {
     const r = this.radius;
     this._coreR = r * (0.85 - (0.5 * Math.min(this.bumpCount, 7)) / 7);
     this._bumps = this._genBumps();
-    return Matter.Bodies.fromVertices(this.x, this.y, this._buildPolyVerts(), {
+    const body = Matter.Bodies.fromVertices(this.x, this.y, this._buildPolyVerts(), {
       friction: 0,
       frictionAir: 0,
       restitution: 1,
       label: this.constructor._label,
       ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } } } : {}),
     });
+    // fromVertices returns undefined when poly-decomp rejects a degenerate polygon.
+    // Fall back to compound circles (AsteroidBase) so the game never crashes.
+    return body ?? super._makeBody(wrap);
   }
 
   split(bulletAngle = null) {
