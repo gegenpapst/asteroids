@@ -123,6 +123,7 @@ const SATELLITE_COLORS = [
   { name: "Specter", center: "rgb(182,214,255)", body: "#04080f" }, // cold silver
   { name: "Plasma", center: "rgb(245,48,172)", body: "#14000e" }, // hot magenta
 ];
+const SATELLITE_COLOR_DEFAULT = 4; // Wraith — selected satellite color
 
 // ── Gameplay timing ─────────────────────────────────────────────────────────
 const RESPAWN_DELAY = 2.2; // seconds until ship respawns after death
@@ -171,10 +172,16 @@ bgCanvas.height = H;
   }
 })();
 
+// World dimensions — updated at game start based on config.worldSize
+let WW = W;
+let WH = H;
+
 if (typeof module !== "undefined") {
   module.exports = {
     W,
     H,
+    WW,
+    WH,
     SHIP_SIZE,
     SHIP_THRUST,
     SHIP_MAX_SPEED,
@@ -259,6 +266,7 @@ if (typeof module !== "undefined") {
     BOOM_PARTICLE_COUNTS,
     SAFE_POS_TRIES,
     SATELLITE_COLORS,
+    SATELLITE_COLOR_DEFAULT,
     TURRET_RADIUS,
     TURRET_HP,
     TURRET_FIRE_MIN,
