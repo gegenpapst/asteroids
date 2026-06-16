@@ -66,6 +66,7 @@ class Game {
     this.pumices = [];
     this.debris = [];
     this.solarSystems = [];
+    this.turrets = [];
     this.deadTimer = 0;
     this.nextExtra = EXTRA_LIFE_SCORE;
     this.ufoTimer = UFO_SPAWN_MIN;
@@ -107,6 +108,7 @@ class Game {
     this.ufoBullets = [];
     this.debris = [];
     this.solarSystems = [];
+    this.turrets = [];
     Matter.World.clear(this.engine.world, false);
     const rockCount = randInt(1, this.config.rockCount);
     this.rocks = Array.from({ length: rockCount }, () =>
@@ -199,6 +201,7 @@ class Game {
     this.collisions.updateShip();
     this._tickDebris(dt);
     this.solarSystems = this.solarSystems.filter((s) => s.update(dt));
+    this.turrets.forEach((t) => t.update(dt));
     this._updateDebugStats();
 
     // Level clear (UFOs persist between levels; solar systems must be fully destroyed first)
@@ -246,6 +249,7 @@ class Game {
       return;
     }
 
+    this.turrets.forEach((t) => t.draw(ctx));
     this.rocks.forEach((r) => r.draw(ctx));
     this.pumices.forEach((p) => p.draw(ctx));
     this.solarSystems.forEach((s) => s.draw(ctx)); // centers drawn before satellites
@@ -441,6 +445,19 @@ class Game {
           Matter.World.add(this.engine.world, [sat.body, sat.constraint]);
           Matter.Body.set(sat.body, "collisionFilter", this._asteroidCollisionFilter);
         }
+      }
+    }
+
+    // Turrets: appear from TURRET_START_LEVEL, one additional per level up to TURRET_MAX_COUNT
+    if (this.level >= TURRET_START_LEVEL) {
+      const count = Math.min(this.level - TURRET_START_LEVEL + 1, TURRET_MAX_COUNT);
+      for (let i = 0; i < count; i++) {
+        let tx, ty;
+        do {
+          tx = rand(TURRET_RADIUS * 2, W - TURRET_RADIUS * 2);
+          ty = rand(TURRET_RADIUS * 2, H - TURRET_RADIUS * 2);
+        } while (dist({ x: tx, y: ty }, { x: W / 2, y: H / 2 }) < W * 0.22);
+        this.turrets.push(new Turret(tx, ty, (b) => this.ufoBullets.push(b)));
       }
     }
   }
