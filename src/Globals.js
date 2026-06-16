@@ -83,6 +83,16 @@ const UFO_RADIUS = [22, 11];
 const UFO_SPEED = [90, 130];
 const UFO_SCORE = [200, 1000];
 
+// Turret
+const TURRET_RADIUS = 26;
+const TURRET_HP = 5;
+const TURRET_FIRE_MIN = 1.0;
+const TURRET_FIRE_MAX = 3.0;
+const TURRET_BULLET_SPEED = 180;
+const TURRET_SCORE = 500;
+const TURRET_START_LEVEL = 3;
+const TURRET_MAX_COUNT = 3;
+
 const POWERUP_DURATION = 5.0;
 const POWERUP_SPAWN_CHANCE = 0.12;
 const POWERUP_TYPES = ["shield", "rapid", "spread", "heavy"];
@@ -244,5 +254,13 @@ if (typeof module !== "undefined") {
     BOOM_PARTICLE_COUNTS,
     SAFE_POS_TRIES,
     SATELLITE_COLORS,
+    TURRET_RADIUS,
+    TURRET_HP,
+    TURRET_FIRE_MIN,
+    TURRET_FIRE_MAX,
+    TURRET_BULLET_SPEED,
+    TURRET_SCORE,
+    TURRET_START_LEVEL,
+    TURRET_MAX_COUNT,
   };
 }

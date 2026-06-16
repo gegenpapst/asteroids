@@ -69,6 +69,23 @@ class CollisionSystem {
       }
     }
     g.pumices = g.pumices.filter((p) => p.alive);
+
+    // Bullet × Turret
+    outerTurret: for (let bi = g.bullets.length - 1; bi >= 0; bi--) {
+      const b = g.bullets[bi];
+      for (let ti = g.turrets.length - 1; ti >= 0; ti--) {
+        const t = g.turrets[ti];
+        if (dist(b, t) < t.radius + b.radius) {
+          if (t.hit()) {
+            g._boom(t.x, t.y, 1);
+            g._addScore(TURRET_SCORE);
+            g.turrets.splice(ti, 1);
+          }
+          g.bullets.splice(bi, 1);
+          continue outerTurret;
+        }
+      }
+    }
   }
 
   // All ship × entity collisions + power-up pickup.
@@ -147,6 +164,20 @@ class CollisionSystem {
         if (dist(b, g.ship) < b.radius + g.ship.hitRadius) {
           if (g.ship.shieldTimer > 0) {
             g.ufoBullets.splice(bi, 1);
+          } else {
+            g._killShip();
+          }
+          break;
+        }
+      }
+    }
+
+    // Ship × Turret (no bounce — turrets are immovable hazards)
+    if (g.ship && g.ship.invulnerable <= 0) {
+      for (const t of g.turrets) {
+        if (dist(g.ship, t) < t.radius + g.ship.hitRadius) {
+          if (g.ship.shieldTimer > 0) {
+            g._bounceShip(t.x, t.y);
           } else {
             g._killShip();
           }
