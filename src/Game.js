@@ -269,7 +269,6 @@ class Game {
     // World-space entities
     ctx.save();
     ctx.translate(-this._camX, -this._camY);
-
     this.turrets.forEach((t) => t.draw(ctx));
     this.rocks.forEach((r) => r.draw(ctx));
     this.pumices.forEach((p) => p.draw(ctx));
@@ -282,89 +281,87 @@ class Game {
     this.bullets.forEach((b) => b.draw(ctx));
     this.particles.forEach((p) => p.draw(ctx));
     if (this.ship) this.ship.draw(ctx);
-
-    // Collision debug overlay in world space (Q / F2 to toggle)
-    if (this._debugCollision) {
-      ctx.save();
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = "transparent";
-      ctx.globalAlpha = 0.75;
-      ctx.lineWidth = 2;
-      const drawC = (x, y, r, col) => {
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, TAU);
-        ctx.strokeStyle = col;
-        ctx.stroke();
-      };
-      // Obstacles
-      this.rocks.forEach((r) => drawC(r.x, r.y, r.collisionRadius, "#f44"));
-      this.asteroids.forEach((a) => drawC(a.x, a.y, a.radius, "#f84"));
-      this.pumices.forEach((p) => {
-        if (p.cells) p.cells.filter((c) => c.alive).forEach((c) => drawC(c.x, c.y, c.r, "#f4f"));
-        else if (p.alive) drawC(p.x, p.y, p.radius, "#f4f");
-      });
-      // Enemies
-      this.ufos.forEach((u) => drawC(u.x, u.y, u.radius, "#f00"));
-      this.ufoBullets.forEach((b) => drawC(b.x, b.y, b.radius, "#f60"));
-      // Player
-      this.bullets.forEach((b) => drawC(b.x, b.y, b.radius, "#0f4"));
-      this.powerups.forEach((p) => drawC(p.x, p.y, p.radius, "#ff0"));
-      if (this.ship) {
-        drawC(this.ship.x, this.ship.y, this.ship.radius, "#4ff"); // hull
-        if (this.ship.hitRadius > this.ship.radius)
-          drawC(this.ship.x, this.ship.y, this.ship.hitRadius, "#0cf"); // shield bubble
-      }
-      ctx.restore();
-    }
-
+    if (this._debugCollision) this._drawDebugOverlay();
     ctx.restore(); // back to screen space
 
-    // Screen-space HUD and overlays
     this.ui.drawHUD(ctx);
-
-    // Debug text stats in screen space (uses W/H coords — must be after ctx.restore)
-    if (this._debugCollision) {
-      ctx.save();
-      ctx.globalAlpha = 0.85;
-      ctx.shadowBlur = 0;
-      ctx.font = "11px monospace";
-      ctx.textAlign = "right";
-
-      const fps = Math.round(this._dbgFPS);
-      const ms = this._dbgFrameMs.toFixed(1);
-      const entities =
-        this.asteroids.length +
-        this.rocks.length +
-        this.pumices.length +
-        this.ufos.length +
-        this.ufoBullets.length +
-        this.bullets.length +
-        this.powerups.length +
-        this.debris.length +
-        (this.ship ? 1 : 0);
-
-      const line = (text, col, y) => {
-        ctx.fillStyle = col;
-        ctx.fillText(text, W - 6, y);
-      };
-      line(`Particles: ${this.particles.length}`, "#888", H - 76);
-      line(`Entities:  ${entities}`, "#aaa", H - 62);
-      line(
-        `Collision: ${this._dbgCC} / Peak: ${this._dbgPeakCC}`,
-        this._dbgPeakCC > 200 ? "#f84" : this._dbgPeakCC > 80 ? "#ff4" : "#4f8",
-        H - 48,
-      );
-      line(
-        `Frame:     ${ms} ms`,
-        parseFloat(ms) > 20 ? "#f84" : parseFloat(ms) > 17 ? "#ff4" : "#4f8",
-        H - 34,
-      );
-      line(`FPS:       ${fps}`, fps < 50 ? "#f84" : fps < 58 ? "#ff4" : "#4f8", H - 20);
-      ctx.restore();
-    }
-
+    if (this._debugCollision) this._drawDebugStats();
     if (this.state === STATE.QUIT_CONFIRM) this.ui.drawQuitConfirm(ctx);
     if (this.state === STATE.GAMEOVER) this.ui.drawGameOver(ctx);
+  }
+
+  // Collision debug circles in world space (already inside the camera transform when called).
+  _drawDebugOverlay() {
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = "transparent";
+    ctx.globalAlpha = 0.75;
+    ctx.lineWidth = 2;
+    const drawC = (x, y, r, col) => {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, TAU);
+      ctx.strokeStyle = col;
+      ctx.stroke();
+    };
+    // Obstacles
+    this.rocks.forEach((r) => drawC(r.x, r.y, r.collisionRadius, "#f44"));
+    this.asteroids.forEach((a) => drawC(a.x, a.y, a.radius, "#f84"));
+    this.pumices.forEach((p) => {
+      if (p.cells) p.cells.filter((c) => c.alive).forEach((c) => drawC(c.x, c.y, c.r, "#f4f"));
+      else if (p.alive) drawC(p.x, p.y, p.radius, "#f4f");
+    });
+    // Enemies
+    this.ufos.forEach((u) => drawC(u.x, u.y, u.radius, "#f00"));
+    this.ufoBullets.forEach((b) => drawC(b.x, b.y, b.radius, "#f60"));
+    // Player
+    this.bullets.forEach((b) => drawC(b.x, b.y, b.radius, "#0f4"));
+    this.powerups.forEach((p) => drawC(p.x, p.y, p.radius, "#ff0"));
+    if (this.ship) {
+      drawC(this.ship.x, this.ship.y, this.ship.radius, "#4ff"); // hull
+      if (this.ship.hitRadius > this.ship.radius)
+        drawC(this.ship.x, this.ship.y, this.ship.hitRadius, "#0cf"); // shield bubble
+    }
+    ctx.restore();
+  }
+
+  // Performance and entity-count overlay in screen space (must be called after camera ctx.restore).
+  _drawDebugStats() {
+    const fps = Math.round(this._dbgFPS);
+    const ms = this._dbgFrameMs.toFixed(1);
+    const entities =
+      this.asteroids.length +
+      this.rocks.length +
+      this.pumices.length +
+      this.ufos.length +
+      this.ufoBullets.length +
+      this.bullets.length +
+      this.powerups.length +
+      this.debris.length +
+      (this.ship ? 1 : 0);
+
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.shadowBlur = 0;
+    ctx.font = "11px monospace";
+    ctx.textAlign = "right";
+    const line = (text, col, y) => {
+      ctx.fillStyle = col;
+      ctx.fillText(text, W - 6, y);
+    };
+    line(`Particles: ${this.particles.length}`, "#888", H - 76);
+    line(`Entities:  ${entities}`, "#aaa", H - 62);
+    line(
+      `Collision: ${this._dbgCC} / Peak: ${this._dbgPeakCC}`,
+      this._dbgPeakCC > 200 ? "#f84" : this._dbgPeakCC > 80 ? "#ff4" : "#4f8",
+      H - 48,
+    );
+    line(
+      `Frame:     ${ms} ms`,
+      parseFloat(ms) > 20 ? "#f84" : parseFloat(ms) > 17 ? "#ff4" : "#4f8",
+      H - 34,
+    );
+    line(`FPS:       ${fps}`, fps < 50 ? "#f84" : fps < 58 ? "#ff4" : "#4f8", H - 20);
+    ctx.restore();
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────
@@ -443,7 +440,7 @@ class Game {
       do {
         x = rand(0, WW);
         y = rand(0, WH);
-      } while (dist({ x, y }, { x: cx, y: cy }) < WW * 0.22);
+      } while (dist({ x, y }, { x: cx, y: cy }) < WW * SPAWN_SAFE_RADIUS_FACTOR);
       const a = this.mode.createAsteroid(x, y, 0, null, maxBumps);
       this.asteroids.push(a);
       Matter.World.add(this.engine.world, a.body);
@@ -457,8 +454,8 @@ class Game {
         SOLAR_MAX_COUNT,
       );
       for (let si = 0; si < solarCount; si++) {
-        const ax = rand(WW * 0.2, WW * 0.8);
-        const ay = rand(WH * 0.2, WH * 0.8);
+        const ax = rand(WW * SOLAR_SPAWN_MARGIN, WW * (1 - SOLAR_SPAWN_MARGIN));
+        const ay = rand(WH * SOLAR_SPAWN_MARGIN, WH * (1 - SOLAR_SPAWN_MARGIN));
         const satelliteCount = randInt(SOLAR_SATELLITE_MIN, SOLAR_SATELLITE_MAX);
         const sys = new SolarSystem(ax, ay, satelliteCount);
         this.solarSystems.push(sys);
@@ -486,7 +483,7 @@ class Game {
         do {
           tx = rand(TURRET_RADIUS * 2, WW - TURRET_RADIUS * 2);
           ty = rand(TURRET_RADIUS * 2, WH - TURRET_RADIUS * 2);
-        } while (dist({ x: tx, y: ty }, { x: WW / 2, y: WH / 2 }) < WW * 0.22);
+        } while (dist({ x: tx, y: ty }, { x: WW / 2, y: WH / 2 }) < WW * SPAWN_SAFE_RADIUS_FACTOR);
         this.turrets.push(new Turret(tx, ty, (b) => this.ufoBullets.push(b)));
       }
     }
@@ -766,7 +763,8 @@ class Game {
   _updateUFOs(dt) {
     this.ufoTimer -= dt;
     if (this.ufoTimer <= 0) {
-      const size = this.score >= 5000 && Math.random() < 0.4 ? 1 : 0;
+      const size =
+        this.score >= UFO_SMALL_SCORE_THRESHOLD && Math.random() < UFO_SMALL_CHANCE ? 1 : 0;
       this.ufos.push(this.mode.createUfo(size, (b) => this.ufoBullets.push(b)));
       this.ufoTimer = UFO_SPAWN_MIN + rand(0, UFO_SPAWN_JITTER);
     }
@@ -838,9 +836,9 @@ class Game {
     this.ship.vx -= 2 * dot * nx;
     this.ship.vy -= 2 * dot * ny;
     const spd = Math.hypot(this.ship.vx, this.ship.vy);
-    if (spd < 220) {
-      this.ship.vx = nx * 220;
-      this.ship.vy = ny * 220;
+    if (spd < SHIP_BOUNCE_MIN_SPEED) {
+      this.ship.vx = nx * SHIP_BOUNCE_MIN_SPEED;
+      this.ship.vy = ny * SHIP_BOUNCE_MIN_SPEED;
     }
   }
 

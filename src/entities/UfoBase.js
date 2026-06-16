@@ -33,7 +33,7 @@ class UfoBase {
     this.fireTimer -= dt;
     if (this.fireTimer <= 0) {
       this._fire(ship);
-      this.fireTimer = rand(1.2, 2.5);
+      this.fireTimer = rand(UFO_FIRE_MIN, UFO_FIRE_MAX);
     }
 
     if (this.vx > 0 && this.x > W + this.radius * 2) return false;
@@ -44,7 +44,9 @@ class UfoBase {
   _fire(ship) {
     let angle;
     if (this.size === 1 && ship) {
-      angle = Math.atan2(ship.y - this.y, ship.x - this.x) + rand(-0.26, 0.26);
+      angle =
+        Math.atan2(ship.y - this.y, ship.x - this.x) +
+        rand(-BULLET_SPREAD_ANGLE, BULLET_SPREAD_ANGLE);
     } else {
       angle = rand(0, TAU);
     }

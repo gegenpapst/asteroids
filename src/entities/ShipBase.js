@@ -100,7 +100,7 @@ class ShipBase {
   }
 
   fire(bulletLife = BULLET_LIFE) {
-    this.fireTimer = this.rapidTimer > 0 ? FIRE_RATE / 2 : FIRE_RATE;
+    this.fireTimer = this.rapidTimer > 0 ? FIRE_RATE * RAPID_FIRE_FACTOR : FIRE_RATE;
     const tx = this.x + Math.cos(this.angle) * SHIP_SIZE;
     const ty = this.y + Math.sin(this.angle) * SHIP_SIZE;
     const power = this.heavyTimer > 0 ? 2 : 1;

@@ -1,26 +1,6 @@
 "use strict";
 
-class UfoBullet {
-  constructor(x, y, vx, vy) {
-    this.x = x;
-    this.y = y;
-    this.vx = vx;
-    this.vy = vy;
-    this.life = BULLET_LIFE;
-    this.maxLife = BULLET_LIFE;
-  }
-
-  get radius() {
-    return 3;
-  }
-
-  update(dt) {
-    this.x = wrap(this.x + this.vx * dt, W);
-    this.y = wrap(this.y + this.vy * dt, H);
-    this.life -= dt;
-    return this.life > 0;
-  }
-
+class UfoBullet extends Bullet {
   draw(ctx) {
     const alpha = clamp((this.life / this.maxLife) * 2, 0, 1);
     ctx.beginPath();

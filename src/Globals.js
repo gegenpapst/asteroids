@@ -130,6 +130,15 @@ const RESPAWN_DELAY = 2.2; // seconds until ship respawns after death
 const UFO_SPAWN_MIN = 20; // earliest UFO spawn after level start (s)
 const UFO_SPAWN_JITTER = 15; // additional random offset for UFO spawn (s)
 const UFO_HUM_INTERVAL = 0.3; // interval of the UFO hum sound (s)
+const UFO_FIRE_MIN = 1.2; // min UFO fire interval (s)
+const UFO_FIRE_MAX = 2.5; // max UFO fire interval (s)
+const UFO_SMALL_SCORE_THRESHOLD = 5000; // score at which small UFOs can appear
+const UFO_SMALL_CHANCE = 0.4; // probability of spawning a small UFO above threshold
+
+const SPAWN_SAFE_RADIUS_FACTOR = 0.22; // asteroid/turret safe zone as fraction of WW
+const SOLAR_SPAWN_MARGIN = 0.2; // solar system spawn margin from world edges (fraction)
+const SHIP_BOUNCE_MIN_SPEED = 220; // minimum ship speed after a shield bounce (px/s)
+const RAPID_FIRE_FACTOR = 0.5; // fire rate multiplier in rapid mode
 const BEAT_DENSITY_FACTOR = 0.045; // beat interval shrink per asteroid
 const BEAT_INTERVAL_MIN = 0.12; // shortest beat interval (s)
 const BEAT_INTERVAL_MAX = 1.0; // longest beat interval (s)
@@ -260,6 +269,14 @@ if (typeof module !== "undefined") {
     UFO_SPAWN_MIN,
     UFO_SPAWN_JITTER,
     UFO_HUM_INTERVAL,
+    UFO_FIRE_MIN,
+    UFO_FIRE_MAX,
+    UFO_SMALL_SCORE_THRESHOLD,
+    UFO_SMALL_CHANCE,
+    SPAWN_SAFE_RADIUS_FACTOR,
+    SOLAR_SPAWN_MARGIN,
+    SHIP_BOUNCE_MIN_SPEED,
+    RAPID_FIRE_FACTOR,
     BEAT_DENSITY_FACTOR,
     BEAT_INTERVAL_MIN,
     BEAT_INTERVAL_MAX,

@@ -5,6 +5,7 @@ class Sound {
     try {
       this.ac = new (window.AudioContext || window.webkitAudioContext)();
     } catch (e) {
+      console.warn("Web Audio API unavailable — sound disabled:", e);
       this.ac = null;
     }
     this._ufoPhase = false;
