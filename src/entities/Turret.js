@@ -12,6 +12,9 @@ class Turret {
     this.hp = TURRET_HP;
     this._fireTimer = rand(TURRET_FIRE_MIN, TURRET_FIRE_MAX);
     this._t = 0;
+    this._rot = rand(0, TAU);
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    this._rotSpeed = dir * rand(TURRET_ROT_SPEED * 0.6, TURRET_ROT_SPEED * 1.4);
   }
 
   get radius() {
@@ -26,6 +29,7 @@ class Turret {
 
   update(dt) {
     this._t += dt;
+    this._rot += this._rotSpeed * dt;
     this._fireTimer -= dt;
     if (this._fireTimer <= 0) {
       const angle = rand(0, TAU);
@@ -48,18 +52,20 @@ class Turret {
     const dmgFrac = 1 - this.hp / TURRET_HP;
 
     ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this._rot);
 
     ctx.beginPath();
     for (let i = 0; i < spikes * 2; i++) {
       const a = (i * Math.PI) / spikes - Math.PI / 2;
       const sr = i % 2 === 0 ? r : r * 0.48;
-      const px = this.x + Math.cos(a) * sr;
-      const py = this.y + Math.sin(a) * sr;
+      const px = Math.cos(a) * sr;
+      const py = Math.sin(a) * sr;
       i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.closePath();
 
-    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
     grad.addColorStop(0, "#6b0000");
     grad.addColorStop(1, "#ff7070");
     ctx.fillStyle = grad;
