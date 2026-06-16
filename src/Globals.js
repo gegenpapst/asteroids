@@ -167,10 +167,16 @@ bgCanvas.height = H;
   }
 })();
 
+// World dimensions — updated at game start based on config.worldSize
+let WW = W;
+let WH = H;
+
 if (typeof module !== "undefined") {
   module.exports = {
     W,
     H,
+    WW,
+    WH,
     SHIP_SIZE,
     SHIP_THRUST,
     SHIP_MAX_SPEED,

@@ -16,8 +16,8 @@ class Bullet {
   }
 
   update(dt) {
-    this.x = wrap(this.x + this.vx * dt, W);
-    this.y = wrap(this.y + this.vy * dt, H);
+    this.x = wrap(this.x + this.vx * dt, WW);
+    this.y = wrap(this.y + this.vy * dt, WH);
     this.life -= dt;
     return this.life > 0;
   }
