@@ -362,7 +362,7 @@ class Game {
   }
 
   _safePumicePos(placed) {
-    const margin = 54 + 10;
+    const margin = PUMICE_RADIUS_MAX + 10;
     let x,
       y,
       tries = 0;
