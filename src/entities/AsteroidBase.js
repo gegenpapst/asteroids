@@ -65,7 +65,7 @@ class AsteroidBase {
       frictionAir: 0,
       restitution: 1,
       label: this.constructor._label,
-      ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } } } : {}),
+      ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: WW, y: WH } } } } : {}),
     });
     Matter.Body.setPosition(body, { x: this.x, y: this.y });
     return body;

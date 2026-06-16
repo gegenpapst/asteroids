@@ -108,6 +108,10 @@ const DEBRIS_RADIUS_MIN = 2.5; // smallest debris radius (px)
 const DEBRIS_RADIUS_MAX = 5.0; // largest debris radius (px)
 const DEBRIS_FRICTION_AIR = 0.018; // air friction for Matter body
 
+// World dimensions — updated at game start based on config.worldSize
+let WW = W;
+let WH = H;
+
 // ── Satellite asteroid color proposals ──────────────────────────────────────
 const SATELLITE_COLORS = [
   { name: "Ember", center: "rgb(255,125,18)", body: "#130300" }, // volcanic amber
@@ -264,5 +268,7 @@ if (typeof module !== "undefined") {
     TURRET_SCORE,
     TURRET_START_LEVEL,
     TURRET_MAX_COUNT,
+    WW,
+    WH,
   };
 }

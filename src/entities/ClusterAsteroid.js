@@ -69,7 +69,7 @@ class ClusterAsteroid extends AsteroidBase {
       frictionAir: 0,
       restitution: 1,
       label: this.constructor._label,
-      ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: W, y: H } } } } : {}),
+      ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: WW, y: WH } } } } : {}),
     });
     // fromVertices returns undefined when poly-decomp rejects a degenerate polygon.
     // Fall back to compound circles (AsteroidBase) so the game never crashes.

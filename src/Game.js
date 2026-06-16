@@ -20,6 +20,7 @@ const MODES = [
     rockCount: 1,
     pumiceCount: 1,
     asteroidBounce: 1,
+    worldSize: 1,
   }, // Beginner
   {
     bulletRange: 2,
@@ -27,6 +28,7 @@ const MODES = [
     rockCount: 2,
     pumiceCount: 2,
     asteroidBounce: 1,
+    worldSize: 2,
   }, // Novice
   {
     bulletRange: 1,
@@ -34,6 +36,7 @@ const MODES = [
     rockCount: 3,
     pumiceCount: 3,
     asteroidBounce: 2,
+    worldSize: 3,
   }, // Expert
 ];
 
@@ -77,6 +80,9 @@ class Game {
     this.beatInterval = 1.0;
     this.beatPhase = 0;
 
+    this._camX = 0;
+    this._camY = 0;
+
     this.collisions = new CollisionSystem(this);
     this.ui = new UIRenderer(this);
 
@@ -88,6 +94,7 @@ class Game {
       rockCount: 3,
       pumiceCount: 3,
       asteroidBounce: 2,
+      worldSize: 3, // Expert default matches mode: 3
     };
     this._configCursor = 0;
     this._detailCursor = 0;
@@ -96,6 +103,10 @@ class Game {
   }
 
   start() {
+    WW = W * (this.config.worldSize || 1);
+    WH = H * (this.config.worldSize || 1);
+    this._camX = 0;
+    this._camY = 0;
     this.mode = new MetaballMode();
     this.score = 0;
     this.lives = 3;
@@ -112,7 +123,7 @@ class Game {
     Matter.World.clear(this.engine.world, false);
     const rockCount = randInt(1, this.config.rockCount);
     this.rocks = Array.from({ length: rockCount }, () =>
-      this.mode.createRock(rand(60, W - 60), rand(60, H - 60)),
+      this.mode.createRock(rand(60, WW - 60), rand(60, WH - 60)),
     );
     this.deadTimer = 0;
     this.nextExtra = EXTRA_LIFE_SCORE;
@@ -214,6 +225,12 @@ class Game {
       if (this.ship) this.ship.invulnerable = INVULNERABLE_TIME;
     }
 
+    // Update camera: center on ship, clamp to world bounds
+    if (this.ship) {
+      this._camX = Math.max(0, Math.min(this.ship.x - W / 2, WW - W));
+      this._camY = Math.max(0, Math.min(this.ship.y - H / 2, WH - H));
+    }
+
     Input.flush();
   }
 
@@ -249,6 +266,10 @@ class Game {
       return;
     }
 
+    // World-space entities
+    ctx.save();
+    ctx.translate(-this._camX, -this._camY);
+
     this.turrets.forEach((t) => t.draw(ctx));
     this.rocks.forEach((r) => r.draw(ctx));
     this.pumices.forEach((p) => p.draw(ctx));
@@ -262,7 +283,7 @@ class Game {
     this.particles.forEach((p) => p.draw(ctx));
     if (this.ship) this.ship.draw(ctx);
 
-    // ── Collision debug overlay (Q / F2 to toggle) ──────────────────────
+    // Collision debug overlay in world space (Q / F2 to toggle)
     if (this._debugCollision) {
       ctx.save();
       ctx.shadowBlur = 0;
@@ -293,8 +314,19 @@ class Game {
         if (this.ship.hitRadius > this.ship.radius)
           drawC(this.ship.x, this.ship.y, this.ship.hitRadius, "#0cf"); // shield bubble
       }
-      // Debug-Overlay (bottom-right)
+      ctx.restore();
+    }
+
+    ctx.restore(); // back to screen space
+
+    // Screen-space HUD and overlays
+    this.ui.drawHUD(ctx);
+
+    // Debug text stats in screen space (uses W/H coords — must be after ctx.restore)
+    if (this._debugCollision) {
+      ctx.save();
       ctx.globalAlpha = 0.85;
+      ctx.shadowBlur = 0;
       ctx.font = "11px monospace";
       ctx.textAlign = "right";
 
@@ -331,8 +363,6 @@ class Game {
       ctx.restore();
     }
 
-    this.ui.drawHUD(ctx);
-
     if (this.state === STATE.QUIT_CONFIRM) this.ui.drawQuitConfirm(ctx);
     if (this.state === STATE.GAMEOVER) this.ui.drawGameOver(ctx);
   }
@@ -348,8 +378,8 @@ class Game {
     for (const margin of [sR + 50, sR + 15]) {
       tries = 0;
       do {
-        x = rand(60, W - 60);
-        y = rand(60, H - 60);
+        x = rand(60, WW - 60);
+        y = rand(60, WH - 60);
         tries++;
         const collides =
           this.rocks.some((r) => dist({ x, y }, r) < r.collisionRadius + margin) ||
@@ -367,8 +397,8 @@ class Game {
       y,
       tries = 0;
     do {
-      x = rand(80, W - 80);
-      y = rand(80, H - 80);
+      x = rand(80, WW - 80);
+      y = rand(80, WH - 80);
       tries++;
     } while (
       tries < 200 &&
@@ -405,15 +435,15 @@ class Game {
   _nextLevel() {
     this.level++;
     const count = Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
-    const cx = W / 2,
-      cy = H / 2;
+    const cx = WW / 2,
+      cy = WH / 2;
     const maxBumps = Math.min(Math.max(this.level - 1, 1), 7);
     for (let i = 0; i < count; i++) {
       let x, y;
       do {
-        x = rand(0, W);
-        y = rand(0, H);
-      } while (dist({ x, y }, { x: cx, y: cy }) < W * 0.22);
+        x = rand(0, WW);
+        y = rand(0, WH);
+      } while (dist({ x, y }, { x: cx, y: cy }) < WW * 0.22);
       const a = this.mode.createAsteroid(x, y, 0, null, maxBumps);
       this.asteroids.push(a);
       Matter.World.add(this.engine.world, a.body);
@@ -427,8 +457,8 @@ class Game {
         SOLAR_MAX_COUNT,
       );
       for (let si = 0; si < solarCount; si++) {
-        const ax = rand(W * 0.2, W * 0.8);
-        const ay = rand(H * 0.2, H * 0.8);
+        const ax = rand(WW * 0.2, WW * 0.8);
+        const ay = rand(WH * 0.2, WH * 0.8);
         const satelliteCount = randInt(SOLAR_SATELLITE_MIN, SOLAR_SATELLITE_MAX);
         const sys = new SolarSystem(ax, ay, satelliteCount);
         this.solarSystems.push(sys);
@@ -454,9 +484,9 @@ class Game {
       for (let i = 0; i < count; i++) {
         let tx, ty;
         do {
-          tx = rand(TURRET_RADIUS * 2, W - TURRET_RADIUS * 2);
-          ty = rand(TURRET_RADIUS * 2, H - TURRET_RADIUS * 2);
-        } while (dist({ x: tx, y: ty }, { x: W / 2, y: H / 2 }) < W * 0.22);
+          tx = rand(TURRET_RADIUS * 2, WW - TURRET_RADIUS * 2);
+          ty = rand(TURRET_RADIUS * 2, WH - TURRET_RADIUS * 2);
+        } while (dist({ x: tx, y: ty }, { x: WW / 2, y: WH / 2 }) < WW * 0.22);
         this.turrets.push(new Turret(tx, ty, (b) => this.ufoBullets.push(b)));
       }
     }
@@ -592,13 +622,21 @@ class Game {
 
   _handleConfigDetailInput() {
     const readOnly = this._configPrevState === STATE.PLAYING;
-    const params = ["bulletRange", "powerupFreq", "rockCount", "pumiceCount", "asteroidBounce"];
+    const params = [
+      "bulletRange",
+      "powerupFreq",
+      "rockCount",
+      "pumiceCount",
+      "asteroidBounce",
+      "worldSize",
+    ];
     const paramMax = {
       bulletRange: 3,
       powerupFreq: 3,
       rockCount: 3,
       pumiceCount: 3,
       asteroidBounce: 2,
+      worldSize: 3,
     };
     if (!readOnly) {
       if (Input.wasPressed("ArrowUp"))

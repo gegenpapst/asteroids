@@ -190,6 +190,11 @@ class UIRenderer {
       { key: "rockCount", label: "Anzahl Rocks", opts: ["wenige", "normal", "viele"] },
       { key: "pumiceCount", label: "Bimsstein", opts: ["keine", "wenige", "viele"] },
       { key: "asteroidBounce", label: "Asteroiden-Kollisionen", opts: ["aus", "ein"] },
+      {
+        key: "worldSize",
+        label: "Weltgröße",
+        opts: ["1× (Standard)", "2× (Größer)", "3× (Riesig)"],
+      },
     ];
 
     let y = 68;
