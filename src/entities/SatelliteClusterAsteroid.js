@@ -96,7 +96,7 @@ class SatelliteClusterAsteroid extends AsteroidBase {
     ctx.restore();
 
     // Radial gradient fill: bright Wraith center → dark edge (matches showcase)
-    const { center, body } = SATELLITE_COLORS[4];
+    const { center, body } = SATELLITE_COLORS[SATELLITE_COLOR_DEFAULT];
     ctx.save();
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, TAU);
