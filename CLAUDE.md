@@ -12,14 +12,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Before starting work, identify the category and follow the checklist. Two categories have dedicated
 skills that must be invoked:
 
-| Category                                                   | How to start               |
-| ---------------------------------------------------------- | -------------------------- |
-| **New visual object** (ship, asteroid, enemy, obstacle, pickup) | Run `/new-entity` skill — interviews first, then 4–8 showcase variants, then implementation |
-| **Config screen change**                                   | Run `/config-change` skill |
-| **Bug fix**                                                | See checklist below        |
-| **Refactoring**                                            | See checklist below        |
-| **Visual change**                                          | See checklist below        |
-| **New game mechanic**                                      | See checklist below        |
+| Category                                                        | How to start                                                                               |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **New visual object** (ship, asteroid, enemy, obstacle, pickup) | Run `/new-game-entity` skill — interviews first, then 4–8 showcase variants, then implementation |
+| **Config screen change**                                        | Run `/config-change` skill                                                                 |
+| **Bug fix**                                                     | See checklist below                                                                        |
+| **Refactoring**                                                 | See checklist below                                                                        |
+| **Visual change**                                               | See checklist below                                                                        |
+| **New game mechanic**                                           | See checklist below                                                                        |
 
 ### Bug fix
 
@@ -59,89 +59,136 @@ Controls:
 - **Space / Z** — fire
 - **Enter / Space** — start or restart
 - **H / ESC** — toggle help screen (pauses game)
+- **F2 / Q** — toggle collision debug overlay
 
 ## Architecture
 
 Game logic is split across `src/` (vanilla JS + Canvas 2D). `index.html` loads each file as a plain `<script>` in dependency order. `style.css` handles layout only.
 
-| File                                                  | Role                                                                      |
-| ----------------------------------------------------- | ------------------------------------------------------------------------- |
-| `src/Globals.js`                                      | Constants, utility functions, `Input` singleton, background/star data     |
-| `src/Game.js`                                         | State machine, game loop, collision detection, HUD                        |
-| `src/main.js`                                         | Entry point — `Input.init()`, `new Game()`, `requestAnimationFrame` loop  |
-| `src/VisualMode.js`                                   | `MetaballMode` factory — provides entity classes to `Game`                |
-| `src/entities/ShipBase.js` / `ShipCluster.js`         | Player ship — movement, firing, power-up timers; gradient-sprite render   |
-| `src/entities/AsteroidBase.js` / `ClusterAsteroid.js` | Destructible rocks — splitting on hit; metaball render                    |
-| `src/entities/Bullet.js`                              | Player projectile                                                         |
-| `src/entities/UfoBullet.js`                           | UFO projectile (red, slightly slower)                                     |
-| `src/entities/Particle.js`                            | Explosion / thrust trail sparks                                           |
-| `src/entities/PowerUp.js`                             | Collectible pickups (`shield`, `rapid`, `spread`)                         |
-| `src/entities/UfoBase.js` / `UfoCluster.js`           | Enemy saucer — sinusoidal movement, fires at ship; gradient-sprite render |
-| `src/entities/Sound.js`                               | Web Audio API wrapper — procedural sounds, no files                       |
+| File                                                   | Role                                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `src/Globals.js`                                       | Constants, utility functions, `Input` singleton, background/star data     |
+| `src/Game.js`                                          | State machine, game loop, camera, level progression                       |
+| `src/CollisionSystem.js`                               | All per-frame collision detection — delegates to `Game` helper methods    |
+| `src/UIRenderer.js`                                    | HUD, start/help/config/game-over screens                                  |
+| `src/VisualMode.js`                                    | `MetaballMode` factory — provides entity classes to `Game`                |
+| `src/main.js`                                          | Entry point — `Input.init()`, `new Game()`, `requestAnimationFrame` loop  |
+| `src/entities/ShipBase.js` / `ShipCluster.js`          | Player ship — movement, firing, power-up timers; gradient-sprite render   |
+| `src/entities/AsteroidBase.js` / `ClusterAsteroid.js`  | Destructible rocks — splitting on hit; metaball render                    |
+| `src/entities/SatelliteClusterAsteroid.js`             | Tethered asteroid variant orbiting a `SolarSystem` center                 |
+| `src/entities/RockCluster.js`                          | Static indestructible rock obstacle (metaball render)                     |
+| `src/entities/PumiceCluster.js`                        | Destructible cell-cluster obstacle — cells have individual Matter bodies  |
+| `src/entities/SolarSystem.js`                          | Orbiting center body that anchors satellite asteroids via constraints     |
+| `src/entities/Turret.js`                               | Static enemy that rotates and fires at the ship                           |
+| `src/entities/Bullet.js`                               | Player projectile                                                         |
+| `src/entities/UfoBullet.js`                            | UFO projectile — extends `Bullet`, overrides only `draw()` (red tint)    |
+| `src/entities/Particle.js`                             | Explosion / thrust trail sparks                                           |
+| `src/entities/Debris.js`                               | Physics-backed shards spawned on asteroid death (bounce off walls)        |
+| `src/entities/PowerUp.js`                              | Collectible pickups (`shield`, `rapid`, `spread`, `heavy`)                |
+| `src/entities/UfoBase.js` / `UfoCluster.js`            | Enemy saucer — sinusoidal movement, fires at ship; gradient-sprite render |
+| `src/entities/Sound.js`                                | Web Audio API wrapper — procedural sounds, no files                       |
 
 ### Game state machine
 
 ```
-START → PLAYING → DEAD → PLAYING  (if lives > 0)
+START → PLAYING → DEAD → PLAYING   (if lives > 0)
                        → GAMEOVER → START
 ```
 
-`Game.state` is one of the `STATE` constants. `Game.update(dt)` and `Game.draw()` both branch on state. The main `requestAnimationFrame` loop always calls both regardless of state.
+Additional overlay states (layer on top of the current base state, no transition arrows):
+
+- `HELP` — pause/help screen (H / ESC)
+- `CONFIG` — mode select screen
+- `CONFIG_DETAIL` — per-option detail screen
+- `QUIT_CONFIRM` — confirm-quit dialog
+
+`Game.state` is one of the `STATE` constants. `Game.update(dt)` and `Game.draw()` both branch on state.
 
 ### Entity pattern
 
 Every entity follows the same contract:
 
 - `update(dt)` — advances state; returns `false` (or nothing) when the entity should be removed
-- `draw()` — renders to `ctx`; reads from module-level `canvas`/`ctx` globals
+- `draw(ctx)` — renders to the canvas
 - `radius` getter — used for circular collision detection
 
-Active entities live in `Game` arrays: `bullets`, `asteroids`, `particles`, `powerups`, `ufos`, `ufoBullets`. Each frame they are filtered with `.filter(e => e.update(dt))` and then iterated for draw. The ship is a single nullable field (`this.ship`).
+Active entities live in `Game` arrays: `bullets`, `asteroids`, `particles`, `powerups`, `ufos`,
+`ufoBullets`, `rocks`, `pumices`, `debris`, `solarSystems`, `turrets`. Each frame the main arrays
+are filtered with `.filter(e => e.update(dt))` and then iterated for draw. The ship is a single
+nullable field (`this.ship`).
+
+### Collision detection
+
+`CollisionSystem` handles all per-frame checks. It calls back into `Game` helpers
+(`_destroyAsteroid`, `_bounceShip`, `_killShip`, `_addScore`, `_boom`) rather than modifying
+entity internals directly. `updateBullet()` and `updateShip()` are thin dispatchers — the actual
+logic lives in focused private methods (`_bulletVsAsteroids`, `_shipVsRocks`, etc.).
 
 ### Power-ups
 
-`PowerUp` has three types: `shield` (cyan hexagon), `rapid` (orange arrows), `spread` (yellow rays).
-Spawns at asteroid destruction with 12 % probability (`POWERUP_SPAWN_CHANCE`).
-Drifts slowly, rotates, expires after 8 s. On collection, sets the matching timer on `Ship`
-(`shieldTimer`, `rapidTimer`, `spreadTimer`) to `POWERUP_DURATION` (5 s).
-HUD shows a colour-coded drain bar per active power-up (bottom-right).
+`PowerUp` has four types: `shield` (cyan hexagon), `rapid` (orange arrows), `spread` (yellow rays),
+`heavy` (white circle — heavy shots, power 2). Spawns at asteroid destruction with
+`POWERUP_SPAWN_CHANCE` probability. Drifts slowly, rotates, expires after `POWERUP_DURATION` seconds.
+On collection, sets the matching timer on `Ship` (`shieldTimer`, `rapidTimer`, `spreadTimer`,
+`heavyTimer`). HUD shows a colour-coded drain bar per active power-up (bottom-right).
 
 ### UFO
 
-`Ufo` has two sizes: large (size 0, red, 200 pts) and small (size 1, green, 1000 pts).
-Enters from a random edge, travels horizontally with sinusoidal vertical oscillation.
-Fires every 1.2–2.5 s; small UFOs aim at the ship (±0.26 rad spread), large ones fire randomly.
-Bullets are `UfoBullet` instances (red, radius 3, `BULLET_SPEED * 0.75`).
-A new UFO spawns every 25–40 s; at score ≥ 5000 there is a 40 % chance of the small variant.
-UFOs persist across level transitions; the UFO hum sound plays as long as any UFO is alive.
+`UfoBase` has two sizes: large (size 0, 200 pts) and small (size 1, 1000 pts). Enters from a random
+edge, travels horizontally with sinusoidal vertical oscillation. Fires every `UFO_FIRE_MIN`–`UFO_FIRE_MAX` s;
+small UFOs aim at the ship (±`BULLET_SPREAD_ANGLE` rad spread), large ones fire randomly. Bullets
+are `UfoBullet` instances (red, `BULLET_SPEED * 0.75`). A new UFO spawns every
+`UFO_SPAWN_MIN`–`UFO_SPAWN_MIN + UFO_SPAWN_JITTER` s; at score ≥ `UFO_SMALL_SCORE_THRESHOLD` there
+is a `UFO_SMALL_CHANCE` probability of the small variant. UFOs persist across level transitions.
 
 ### Input system
 
-`Input` is a singleton with two sets: `_held` (keys currently down) and `_pressed` (keys that went down this frame). Call `Input.flush()` at the end of each update frame to clear `_pressed`. Use `wasPressed` for one-shot actions (start/restart); use `isHeld` for continuous actions (thrust, turn, fire).
+`Input` is a singleton with two sets: `_held` (keys currently down) and `_pressed` (keys that went
+down this frame). Call `Input.flush()` at the end of each update frame to clear `_pressed`. Use
+`wasPressed` for one-shot actions (start/restart); use `isHeld` for continuous actions (thrust, turn, fire).
 
 ### Physics
 
-All movement is Euler integration: `pos += vel * dt`. Screen wrapping uses `wrap(v, max)`. Ship friction is applied as `vel *= SHIP_FRICTION^(dt*60)` to make it frame-rate independent.
+All movement is Euler integration: `pos += vel * dt`. Screen wrapping uses `wrap(v, max)`. Ship
+friction is applied as `vel *= SHIP_FRICTION^(dt*60)` to make it frame-rate independent. Matter.js
+handles asteroid rigid-body physics and constraints (solar system tethers, pendulum asteroids).
 
 ### Tuning constants
 
 All balance/physics values are declared in `src/Globals.js`:
 
-| Constant                                                    | What it controls                            |
-| ----------------------------------------------------------- | ------------------------------------------- |
-| `SHIP_THRUST`, `SHIP_MAX_SPEED`, `SHIP_FRICTION`            | Ship feel                                   |
-| `SHIP_ROTATION`                                             | Turn speed (rad/s)                          |
-| `BULLET_SPEED`, `BULLET_LIFE`, `FIRE_RATE`                  | Weapon feel                                 |
-| `ASTEROID_RADIUS`, `ASTEROID_SPEED`, `ASTEROID_SCORE`       | Asteroid balance (indexed by size 0–2)      |
-| `INITIAL_ROCKS`, `MAX_ROCKS_PER_LEVEL`                      | Difficulty ramp                             |
-| `EXTRA_LIFE_SCORE`                                          | Bonus life threshold                        |
-| `UFO_RADIUS`, `UFO_SPEED`, `UFO_SCORE`                      | UFO size/speed/points (indexed by size 0–1) |
-| `POWERUP_DURATION`, `POWERUP_SPAWN_CHANCE`, `POWERUP_TYPES` | Power-up balance                            |
+| Constant                                                    | What it controls                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------- |
+| `SHIP_THRUST`, `SHIP_MAX_SPEED`, `SHIP_FRICTION`            | Ship feel                                               |
+| `SHIP_ROTATION`                                             | Turn speed (rad/s)                                      |
+| `SHIP_BOUNCE_MIN_SPEED`                                     | Minimum speed after a shield bounce                     |
+| `BULLET_SPEED`, `BULLET_LIFE`, `FIRE_RATE`                  | Weapon feel                                             |
+| `RAPID_FIRE_FACTOR`                                         | Fire rate multiplier in rapid mode                      |
+| `BULLET_SPREAD_ANGLE`                                       | Side-bullet spread and UFO aim spread (rad)             |
+| `ASTEROID_RADIUS`, `ASTEROID_SPEED`, `ASTEROID_SCORE`       | Asteroid balance (indexed by size 0–2)                  |
+| `INITIAL_ROCKS`, `MAX_ROCKS_PER_LEVEL`                      | Difficulty ramp                                         |
+| `EXTRA_LIFE_SCORE`                                          | Bonus life threshold                                    |
+| `UFO_RADIUS`, `UFO_SPEED`, `UFO_SCORE`                      | UFO size/speed/points (indexed by size 0–1)             |
+| `UFO_FIRE_MIN`, `UFO_FIRE_MAX`                              | UFO fire interval range (s)                             |
+| `UFO_SMALL_SCORE_THRESHOLD`, `UFO_SMALL_CHANCE`             | When and how often the small UFO variant spawns         |
+| `UFO_SPAWN_MIN`, `UFO_SPAWN_JITTER`                         | Time between UFO spawns                                 |
+| `POWERUP_DURATION`, `POWERUP_SPAWN_CHANCE`, `POWERUP_TYPES` | Power-up balance                                        |
+| `SPAWN_SAFE_RADIUS_FACTOR`                                  | Safe-zone radius for asteroid and turret spawning       |
+| `SOLAR_SPAWN_MARGIN`                                        | Edge margin for solar system spawn positions (fraction) |
+| `SOLAR_*`                                                   | Solar system tether, orbit speed, satellite count       |
+| `PENDULUM_*`                                                | Pendulum asteroid spring/damping/speed                  |
+| `TURRET_*`                                                  | Turret radius, HP, fire rate, score, spawn level        |
+| `DEBRIS_*`                                                  | Debris lifetime, speed, count, size                     |
+| `PUMICE_*`                                                  | Pumice cluster cell size, spacing, blur, collision      |
 
 ### Audio
 
-`Sound` wraps Web Audio API. Each sound is a short oscillator node created on demand — no audio files. The game's "heartbeat" throb (`Sound.throb`) accelerates as asteroid count rises, driven by `Game.beatInterval`.
+`Sound` wraps Web Audio API. Each sound is a short oscillator node created on demand — no audio
+files. The game's "heartbeat" throb (`Sound.throb`) accelerates as asteroid count rises, driven by
+`Game.beatInterval`. If `AudioContext` is unavailable, a warning is logged and audio is silently
+disabled for the session.
 
 ### Scoring and persistence
 
-Hi-score is stored in `localStorage` under the key `ast_hi`. Extra lives are awarded every `EXTRA_LIFE_SCORE` points.
+Hi-score is stored in `localStorage` under the key `ast_hi`. Extra lives are awarded every
+`EXTRA_LIFE_SCORE` points.
