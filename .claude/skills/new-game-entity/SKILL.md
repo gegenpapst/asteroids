@@ -1,5 +1,5 @@
 ---
-name: new-entity
+name: new-game-entity
 description: >
   Design and implement a new visual game object in the Asteroids project —
   ship variant, asteroid style, enemy, obstacle, pickup, or any drawable entity.
