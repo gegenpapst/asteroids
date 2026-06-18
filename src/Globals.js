@@ -14,6 +14,7 @@ const SHIP_SHIELD_FACTOR = 2.2; // hitRadius + shield bubble visual: SHIP_SIZE �
 
 const BULLET_SPEED = 560;
 const BULLET_LIFE = 0.65;
+const BULLET_LIFE_LEVELS = [0.35, 0.65, 1.0]; // by config.bulletRange (1–3)
 const MAX_BULLETS = 8;
 const FIRE_RATE = 0.22;
 const BULLET_SPREAD_ANGLE = 0.26; // 3-shot spread (rad), side bullets
@@ -74,6 +75,11 @@ const PUMICE_BLUR_FACTOR = 0.68; // blur as factor of cellR
 const PUMICE_CONTRAST = 13; // contrast() strength (sharper edge than default 14)
 const PUMICE_NEIGHBOR_FACTOR = 2.5; // cullIsolated threshold = cellR × FACTOR
 const PUMICE_COLLISION_FACTOR = 0.75; // collisionRadius = radius × FACTOR
+const PUMICE_COUNT_RANGES = [
+  [0, 0],
+  [1, 3],
+  [3, 6],
+]; // by config.pumiceCount (1–3): [min, max] spawned per game start
 
 // Rocks (static cluster obstacles)
 const ROCK_CLUSTER_RADIUS_MIN = 25;
@@ -94,7 +100,8 @@ const TURRET_SCORE = 500;
 const TURRET_START_LEVEL = 3;
 const TURRET_MAX_COUNT = 3;
 
-const POWERUP_DURATION = 5.0;
+const POWERUP_DURATION_LEVELS = [5, 7, 10]; // active duration (s) by config.powerupFreq (1–3)
+const POWERUP_CHANCE_LEVELS = [0.05, 0.12, 0.25]; // spawn chance by config.powerupFreq (1–3)
 const POWERUP_SPAWN_CHANCE = 0.12;
 const POWERUP_TYPES = ["shield", "rapid", "spread", "heavy"];
 
@@ -107,6 +114,25 @@ const DEBRIS_COUNT_MAX = 5; // maximum debris count
 const DEBRIS_RADIUS_MIN = 2.5; // smallest debris radius (px)
 const DEBRIS_RADIUS_MAX = 5.0; // largest debris radius (px)
 const DEBRIS_FRICTION_AIR = 0.018; // air friction for Matter body
+
+// ── Difficulty presets ───────────────────────────────────────────────────────
+// Indexed by config.mode - 1 (Beginner=0, Novice=1, Expert=2).
+const GAME_MODES = [
+  { bulletRange: 3, powerupFreq: 3, rockCount: 1, pumiceCount: 1, asteroidBounce: 1, worldSize: 1 }, // Beginner
+  { bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1, worldSize: 2 }, // Novice
+  { bulletRange: 1, powerupFreq: 1, rockCount: 3, pumiceCount: 3, asteroidBounce: 2, worldSize: 3 }, // Expert
+];
+
+// Config parameter schema: keys match config object, max = highest allowed value.
+// Add new config params here — Game.js derives params/paramMax from this object.
+const CONFIG_PARAMS = {
+  bulletRange: { max: 3 },
+  powerupFreq: { max: 3 },
+  rockCount: { max: 3 },
+  pumiceCount: { max: 3 },
+  asteroidBounce: { max: 2 },
+  worldSize: { max: 3 },
+};
 
 // World dimensions — updated at game start based on config.worldSize
 let WW = W;
@@ -211,6 +237,7 @@ if (typeof module !== "undefined") {
     SHIP_SHIELD_FACTOR,
     BULLET_SPEED,
     BULLET_LIFE,
+    BULLET_LIFE_LEVELS,
     MAX_BULLETS,
     FIRE_RATE,
     BULLET_SPREAD_ANGLE,
@@ -242,12 +269,14 @@ if (typeof module !== "undefined") {
     PUMICE_CONTRAST,
     PUMICE_NEIGHBOR_FACTOR,
     PUMICE_COLLISION_FACTOR,
+    PUMICE_COUNT_RANGES,
     ROCK_CLUSTER_RADIUS_MIN,
     ROCK_CLUSTER_RADIUS_MAX,
     UFO_RADIUS,
     UFO_SPEED,
     UFO_SCORE,
-    POWERUP_DURATION,
+    POWERUP_DURATION_LEVELS,
+    POWERUP_CHANCE_LEVELS,
     POWERUP_SPAWN_CHANCE,
     POWERUP_TYPES,
     DEBRIS_LIFE,
@@ -311,6 +340,8 @@ if (typeof module !== "undefined") {
     TURRET_SCORE,
     TURRET_START_LEVEL,
     TURRET_MAX_COUNT,
+    GAME_MODES,
+    CONFIG_PARAMS,
     WW,
     WH,
   };

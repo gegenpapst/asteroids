@@ -12,34 +12,6 @@ const STATE = Object.freeze({
   QUIT_CONFIRM: 7,
 });
 
-// Presets for Beginner / Novice / Expert (index = mode - 1)
-const MODES = [
-  {
-    bulletRange: 3,
-    powerupFreq: 3,
-    rockCount: 1,
-    pumiceCount: 1,
-    asteroidBounce: 1,
-    worldSize: 1,
-  }, // Beginner
-  {
-    bulletRange: 2,
-    powerupFreq: 2,
-    rockCount: 2,
-    pumiceCount: 2,
-    asteroidBounce: 1,
-    worldSize: 2,
-  }, // Novice
-  {
-    bulletRange: 1,
-    powerupFreq: 1,
-    rockCount: 3,
-    pumiceCount: 3,
-    asteroidBounce: 2,
-    worldSize: 3,
-  }, // Expert
-];
-
 class Game {
   constructor() {
     Matter.use(MatterWrap);
@@ -592,7 +564,7 @@ class Game {
       if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
       if (Input.wasPressed("ArrowRight")) this.config.mode = Math.min(3, this.config.mode + 1);
       if (this.config.mode !== prevMode) {
-        Object.assign(this.config, MODES[this.config.mode - 1]);
+        Object.assign(this.config, GAME_MODES[this.config.mode - 1]);
         this._applyAsteroidFilter();
       }
     }
@@ -625,22 +597,7 @@ class Game {
 
   _handleConfigDetailInput() {
     const readOnly = this._configPrevState === STATE.PLAYING;
-    const params = [
-      "bulletRange",
-      "powerupFreq",
-      "rockCount",
-      "pumiceCount",
-      "asteroidBounce",
-      "worldSize",
-    ];
-    const paramMax = {
-      bulletRange: 3,
-      powerupFreq: 3,
-      rockCount: 3,
-      pumiceCount: 3,
-      asteroidBounce: 2,
-      worldSize: 3,
-    };
+    const params = Object.keys(CONFIG_PARAMS);
     if (!readOnly) {
       if (Input.wasPressed("ArrowUp"))
         this._detailCursor = (this._detailCursor + params.length - 1) % params.length;
@@ -649,7 +606,7 @@ class Game {
       const key = params[this._detailCursor];
       if (Input.wasPressed("ArrowLeft")) this.config[key] = Math.max(1, this.config[key] - 1);
       if (Input.wasPressed("ArrowRight"))
-        this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
+        this.config[key] = Math.min(CONFIG_PARAMS[key].max, this.config[key] + 1);
       if (key === "asteroidBounce") this._applyAsteroidFilter();
     }
     if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
@@ -806,20 +763,16 @@ class Game {
   }
 
   get _bulletLife() {
-    return [0.35, 0.65, 1.0][this.config.bulletRange - 1];
+    return BULLET_LIFE_LEVELS[this.config.bulletRange - 1];
   }
   get _powerupChance() {
-    return [0.05, 0.12, 0.25][this.config.powerupFreq - 1];
+    return POWERUP_CHANCE_LEVELS[this.config.powerupFreq - 1];
   }
   get _powerupDuration() {
-    return [5, 7, 10][this.config.powerupFreq - 1];
+    return POWERUP_DURATION_LEVELS[this.config.powerupFreq - 1];
   }
   get _pumiceCountRange() {
-    return [
-      [0, 0],
-      [1, 3],
-      [3, 6],
-    ][this.config.pumiceCount - 1];
+    return PUMICE_COUNT_RANGES[this.config.pumiceCount - 1];
   }
   get isConfigReadOnly() {
     return this._configPrevState === STATE.PLAYING;
