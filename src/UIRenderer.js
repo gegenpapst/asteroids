@@ -255,62 +255,21 @@ class UIRenderer {
     ctx.fillText("ASTEROIDS", cx, 58);
     ctx.shadowBlur = 0;
 
-    if (!this._showcaseReady) this._initShowcase();
-
-    const rot = (Date.now() / 1000) * 0.22;
-    const lx = W / 4;
-    const rx = (3 * W) / 4;
-    const ay = 300;
-
-    ctx.save();
-    ctx.strokeStyle = "rgba(255,255,255,0.10)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(W / 2, 80);
-    ctx.lineTo(W / 2, 555);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.fillStyle = "rgba(120,200,255,0.90)";
-    ctx.font = "bold 13px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("A — POLYGON", lx, 107);
-    ctx.fillText("B — METABALL", rx, 107);
-
-    ctx.fillStyle = "rgba(160,160,160,0.65)";
-    ctx.font = "11px monospace";
-    ctx.fillText("Canvas-Pfad · scharfe Kanten", lx, 123);
-    ctx.fillText("Hex-Grid geclippt · weiches Leuchten", rx, 123);
-
-    this._drawPolyShowcase(ctx, lx, ay, rot);
-
-    ctx.save();
-    ctx.translate(rx, ay);
-    ctx.rotate(rot);
-    ctx.globalCompositeOperation = "screen";
-    const sw = this._showcaseCanvasB.width;
-    ctx.drawImage(this._showcaseCanvasB, -sw / 2, -sw / 2);
-    ctx.restore();
-
-    ctx.fillStyle = "rgba(120,120,120,0.55)";
-    ctx.font = "10px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("Sehr unregelmäßig · klassisch", lx, 450);
-    ctx.fillText("Organisch · Science-Fiction", rx, 450);
-
     // --- NEW ENTITY SHOWCASE: BackgroundSaturn ---
     // Variants 1–5 — purely decorative background planet, no collision
     {
-      const _t = Date.now() / 1000;
-      const _sr = 30;
-      const _cy = 508;
+      const _sr = 35;
+      const _cy = 310;
       const _xs = [80, 240, 400, 560, 720];
       const _names = ["CLASSIC", "DUAL", "NEON", "ATMO", "ICY"];
 
-      ctx.fillStyle = "rgba(210,175,80,0.6)";
-      ctx.font = "bold 10px monospace";
+      ctx.fillStyle = "rgba(210,175,80,0.65)";
+      ctx.font = "bold 13px monospace";
       ctx.textAlign = "center";
-      ctx.fillText("SATURN BACKGROUND — PICK A STYLE (1–5)", W / 2, 466);
+      ctx.fillText("SATURN — BACKGROUND DECORATION", cx, 130);
+      ctx.fillStyle = "rgba(160,140,60,0.45)";
+      ctx.font = "11px monospace";
+      ctx.fillText("purely visual · no collision · pick a style (1–5)", cx, 150);
 
       const _variants = [
         // 1: Classic single amber ring
