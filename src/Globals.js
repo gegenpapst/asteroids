@@ -169,6 +169,7 @@ const BEAT_DENSITY_FACTOR = 0.045; // beat interval shrink per asteroid
 const BEAT_INTERVAL_MIN = 0.12; // shortest beat interval (s)
 const BEAT_INTERVAL_MAX = 1.0; // longest beat interval (s)
 const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // explosion particles per asteroid size (0–2)
+const SHIP_DEATH_PARTICLES = 22; // particles spawned when the player ship is destroyed
 const SAFE_POS_TRIES = 300; // max. attempts for a safe spawn position
 const STAR_PARALLAX = 0.15; // star scroll factor relative to camera (0 = static, 1 = world-space)
 
@@ -318,6 +319,7 @@ if (typeof module !== "undefined") {
     BEAT_INTERVAL_MIN,
     BEAT_INTERVAL_MAX,
     BOOM_PARTICLE_COUNTS,
+    SHIP_DEATH_PARTICLES,
     SAFE_POS_TRIES,
     STAR_PARALLAX,
     SATURN_RADIUS,

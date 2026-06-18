@@ -12,6 +12,12 @@ const STATE = Object.freeze({
   QUIT_CONFIRM: 7,
 });
 
+// Derived from CONFIG_PARAMS — stable across all _handleConfigDetailInput calls.
+const _CONFIG_PARAM_KEYS = Object.keys(CONFIG_PARAMS);
+
+// Sound method names indexed by asteroid size — avoids allocating closures in _boom().
+const _BOOM_SOUNDS = ["explodeLarge", "explodeMed", "explodeSmall"];
+
 class Game {
   constructor() {
     Matter.use(MatterWrap);
@@ -482,9 +488,7 @@ class Game {
 
   _boom(x, y, size) {
     for (let i = 0; i < BOOM_PARTICLE_COUNTS[size]; i++) this.particles.push(new Particle(x, y));
-    [() => this.snd.explodeLarge(), () => this.snd.explodeMed(), () => this.snd.explodeSmall()][
-      size
-    ]();
+    this.snd[_BOOM_SOUNDS[size]]();
   }
 
   // Shared asteroid-destruction sequence used by both bullet and shield collisions.
@@ -500,7 +504,7 @@ class Game {
   }
 
   _killShip() {
-    for (let i = 0; i < 22; i++)
+    for (let i = 0; i < SHIP_DEATH_PARTICLES; i++)
       this.particles.push(new Particle(this.ship.x, this.ship.y, "#8ef"));
     this.snd.shipDie();
     this.lives--;
@@ -597,7 +601,7 @@ class Game {
 
   _handleConfigDetailInput() {
     const readOnly = this._configPrevState === STATE.PLAYING;
-    const params = Object.keys(CONFIG_PARAMS);
+    const params = _CONFIG_PARAM_KEYS;
     if (!readOnly) {
       if (Input.wasPressed("ArrowUp"))
         this._detailCursor = (this._detailCursor + params.length - 1) % params.length;
