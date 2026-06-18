@@ -4,11 +4,13 @@ class BackgroundSaturn {
   constructor(x, y) {
     this.x = x;
     this.y = y;
+    this._t = 0;
     this._angle = 0;
   }
 
   update(dt) {
-    this._angle += SATURN_RING_SPEED * dt;
+    this._t += dt;
+    this._angle = Math.sin(this._t * SATURN_SWING_SPEED) * SATURN_SWING_AMP;
     return true;
   }
 
