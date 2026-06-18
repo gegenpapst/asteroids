@@ -146,6 +146,16 @@ const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // explosion particles per asteroid si
 const SAFE_POS_TRIES = 300; // max. attempts for a safe spawn position
 const STAR_PARALLAX = 0.15; // star scroll factor relative to camera (0 = static, 1 = world-space)
 
+// ── Background Saturn ────────────────────────────────────────────────────────
+const SATURN_RADIUS = 150; // planet body radius (px)
+const SATURN_RING1_INNER = 188; // inner gold ring — inner edge (px)
+const SATURN_RING1_OUTER = 213; // inner gold ring — outer edge (px)
+const SATURN_RING2_INNER = 233; // outer orange ring — inner edge (px)
+const SATURN_RING2_OUTER = 296; // outer orange ring — outer edge (px)
+const SATURN_RING_TILT = 0.28; // vertical scale factor (perspective)
+const SATURN_RING_SPEED = 0.06; // ring rotation speed (rad/s)
+const SATURN_ALPHA = 0.45; // overall opacity — muted to signal non-interactive
+
 // ─── Static star field ───────────────────────────────────────────────────────
 const STARS = Array.from({ length: 90 }, () => ({
   x: rand(0, W),
@@ -280,6 +290,14 @@ if (typeof module !== "undefined") {
     BOOM_PARTICLE_COUNTS,
     SAFE_POS_TRIES,
     STAR_PARALLAX,
+    SATURN_RADIUS,
+    SATURN_RING1_INNER,
+    SATURN_RING1_OUTER,
+    SATURN_RING2_INNER,
+    SATURN_RING2_OUTER,
+    SATURN_RING_TILT,
+    SATURN_RING_SPEED,
+    SATURN_ALPHA,
     SATELLITE_COLORS,
     SATELLITE_COLOR_DEFAULT,
     TURRET_RADIUS,

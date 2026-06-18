@@ -83,6 +83,7 @@ class Game {
     this._camX = 0;
     this._camY = 0;
 
+    this.saturn = null;
     this.collisions = new CollisionSystem(this);
     this.ui = new UIRenderer(this);
 
@@ -105,6 +106,7 @@ class Game {
   start() {
     WW = W * (this.config.worldSize || 1);
     WH = H * (this.config.worldSize || 1);
+    this.saturn = new BackgroundSaturn(WW / 2, WH / 2);
     this._camX = 0;
     this._camY = 0;
     this.mode = new MetaballMode();
@@ -192,6 +194,7 @@ class Game {
     }
 
     // Update universally (all non-START states)
+    if (this.saturn) this.saturn.update(dt);
     this.particles = this.particles.filter((p) => p.update(dt));
     this.powerups = this.powerups.filter((p) => p.update(dt));
     this.ufoBullets = this.ufoBullets.filter((b) => b.update(dt));
@@ -271,6 +274,7 @@ class Game {
     // World-space entities
     ctx.save();
     ctx.translate(-this._camX, -this._camY);
+    if (this.saturn) this.saturn.draw(ctx);
     this.turrets.forEach((t) => t.draw(ctx));
     this.rocks.forEach((r) => r.draw(ctx));
     this.pumices.forEach((p) => p.draw(ctx));
