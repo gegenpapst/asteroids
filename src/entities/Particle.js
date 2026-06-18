@@ -15,8 +15,8 @@ class Particle {
   }
 
   update(dt) {
-    this.x = wrap(this.x + this.vx * dt, W);
-    this.y = wrap(this.y + this.vy * dt, H);
+    this.x = wrap(this.x + this.vx * dt, WW);
+    this.y = wrap(this.y + this.vy * dt, WH);
     const drag = Math.pow(0.97, dt * 60);
     this.vx *= drag;
     this.vy *= drag;
