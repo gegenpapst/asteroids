@@ -278,3 +278,159 @@ describe("Shield × Pumice collision", () => {
     expect(g.ship).toBeNull();
   });
 });
+
+// ── Helpers for Turret and PowerUp ───────────────────────────────────────────
+
+/** Minimal turret stub with a jest.fn() hit() that returns false by default. */
+function makeTurret(x, y, r = TURRET_RADIUS) {
+  return {
+    x,
+    y,
+    get radius() {
+      return r;
+    },
+    hit: jest.fn(() => false),
+  };
+}
+
+/** Minimal powerup stub at the given position. */
+function makePowerUp(x, y, type) {
+  return { x, y, type, radius: 12 };
+}
+
+// ── Bullet × Turret ───────────────────────────────────────────────────────────
+
+describe("Bullet × Turret collision", () => {
+  test("bullet is consumed on turret hit", () => {
+    const g = makeGame();
+    const bullet = { x: 400, y: 300, vx: 0, vy: 0, radius: 3 };
+    g.bullets = [bullet];
+    g.turrets = [makeTurret(402, 300)]; // within radius + 3
+    g.collisions.updateBullet();
+    expect(g.bullets).toHaveLength(0);
+  });
+
+  test("turret.hit() is called when bullet overlaps turret", () => {
+    const g = makeGame();
+    const turret = makeTurret(402, 300);
+    g.bullets = [{ x: 400, y: 300, vx: 0, vy: 0, radius: 3 }];
+    g.turrets = [turret];
+    g.collisions.updateBullet();
+    expect(turret.hit).toHaveBeenCalledTimes(1);
+  });
+
+  test("turret is removed and score added when hit() returns true (killing blow)", () => {
+    const g = makeGame();
+    const turret = { ...makeTurret(402, 300), hit: jest.fn(() => true) };
+    const scoreBefore = g.score;
+    g.bullets = [{ x: 400, y: 300, vx: 0, vy: 0, radius: 3 }];
+    g.turrets = [turret];
+    g.collisions.updateBullet();
+    expect(g.turrets).toHaveLength(0);
+    expect(g.score).toBe(scoreBefore + TURRET_SCORE);
+  });
+
+  test("turret survives when hit() returns false (HP > 0)", () => {
+    const g = makeGame();
+    g.bullets = [{ x: 400, y: 300, vx: 0, vy: 0, radius: 3 }];
+    g.turrets = [makeTurret(402, 300)]; // hit() → false by default
+    g.collisions.updateBullet();
+    expect(g.turrets).toHaveLength(1);
+  });
+
+  test("out-of-range bullet does not hit turret", () => {
+    const g = makeGame();
+    const turret = makeTurret(600, 300);
+    g.bullets = [{ x: 400, y: 300, vx: 0, vy: 0, radius: 3 }];
+    g.turrets = [turret];
+    g.collisions.updateBullet();
+    expect(turret.hit).not.toHaveBeenCalled();
+    expect(g.bullets).toHaveLength(1);
+  });
+});
+
+// ── Ship × Turret ─────────────────────────────────────────────────────────────
+
+describe("Ship × Turret collision", () => {
+  test("ship with shield bounces off turret", () => {
+    const g = makeGame();
+    const shieldR = SHIP_SIZE * SHIP_SHIELD_FACTOR;
+    const turret = makeTurret(400 + shieldR - 5, 300, 5);
+    g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 5 });
+    const vxBefore = g.ship.vx;
+    g.turrets = [turret];
+    g.collisions.updateShip();
+    expect(g.ship).not.toBeNull();
+    expect(g.ship.vx).not.toBe(vxBefore);
+  });
+
+  test("ship without shield is killed on turret contact", () => {
+    const g = makeGame();
+    const turret = makeTurret(410, 300, 20); // well inside hull range
+    g.ship = makeShip({ x: 400, y: 300, vx: 100, vy: 0, shieldTimer: 0 });
+    g.turrets = [turret];
+    g.collisions.updateShip();
+    expect(g.ship).toBeNull();
+  });
+});
+
+// ── PowerUp pickup ────────────────────────────────────────────────────────────
+
+describe("PowerUp pickup", () => {
+  test("collecting shield powerup sets ship.shieldTimer", () => {
+    const g = makeGame();
+    g.ship = makeShip({ x: 400, y: 300, shieldTimer: 0 });
+    g.powerups = [makePowerUp(400, 300, "shield")];
+    g.collisions.updateShip();
+    expect(g.ship.shieldTimer).toBe(g._powerupDuration);
+  });
+
+  test("collecting rapid powerup sets ship.rapidTimer", () => {
+    const g = makeGame();
+    g.ship = makeShip({ x: 400, y: 300 });
+    g.powerups = [makePowerUp(400, 300, "rapid")];
+    g.collisions.updateShip();
+    expect(g.ship.rapidTimer).toBe(g._powerupDuration);
+  });
+
+  test("collecting spread powerup sets ship.spreadTimer", () => {
+    const g = makeGame();
+    g.ship = makeShip({ x: 400, y: 300 });
+    g.powerups = [makePowerUp(400, 300, "spread")];
+    g.collisions.updateShip();
+    expect(g.ship.spreadTimer).toBe(g._powerupDuration);
+  });
+
+  test("collecting heavy powerup sets ship.heavyTimer", () => {
+    const g = makeGame();
+    g.ship = makeShip({ x: 400, y: 300 });
+    g.powerups = [makePowerUp(400, 300, "heavy")];
+    g.collisions.updateShip();
+    expect(g.ship.heavyTimer).toBe(g._powerupDuration);
+  });
+
+  test("powerup is removed from game.powerups after pickup", () => {
+    const g = makeGame();
+    g.ship = makeShip({ x: 400, y: 300 });
+    g.powerups = [makePowerUp(400, 300, "shield")];
+    g.collisions.updateShip();
+    expect(g.powerups).toHaveLength(0);
+  });
+
+  test("out-of-range powerup is not collected", () => {
+    const g = makeGame();
+    g.ship = makeShip({ x: 400, y: 300, shieldTimer: 0 });
+    g.powerups = [makePowerUp(600, 300, "shield")];
+    g.collisions.updateShip();
+    expect(g.powerups).toHaveLength(1);
+    expect(g.ship.shieldTimer).toBe(0);
+  });
+
+  test("_powerupDuration scales with config.powerupFreq", () => {
+    const g = makeGame();
+    g.config.powerupFreq = 1;
+    expect(g._powerupDuration).toBe(POWERUP_DURATION_LEVELS[0]);
+    g.config.powerupFreq = 3;
+    expect(g._powerupDuration).toBe(POWERUP_DURATION_LEVELS[2]);
+  });
+});
