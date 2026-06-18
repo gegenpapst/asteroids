@@ -237,14 +237,16 @@ class Game {
   draw() {
     ctx.drawImage(bgCanvas, 0, 0);
 
-    // Twinkling stars
+    // Twinkling stars — parallax-scrolled relative to camera
     ctx.shadowBlur = 0;
     for (const s of STARS) {
+      const sx = (((s.x - this._camX * STAR_PARALLAX) % W) + W) % W;
+      const sy = (((s.y - this._camY * STAR_PARALLAX) % H) + H) % H;
       const alpha = s.a * (0.55 + 0.45 * Math.sin(this.t * 1.4 + s.phase));
       ctx.globalAlpha = alpha;
       ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, TAU);
+      ctx.arc(sx, sy, s.r, 0, TAU);
       ctx.fill();
     }
     ctx.globalAlpha = 1;

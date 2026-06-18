@@ -144,6 +144,7 @@ const BEAT_INTERVAL_MIN = 0.12; // shortest beat interval (s)
 const BEAT_INTERVAL_MAX = 1.0; // longest beat interval (s)
 const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // explosion particles per asteroid size (0–2)
 const SAFE_POS_TRIES = 300; // max. attempts for a safe spawn position
+const STAR_PARALLAX = 0.15; // star scroll factor relative to camera (0 = static, 1 = world-space)
 
 // ─── Static star field ───────────────────────────────────────────────────────
 const STARS = Array.from({ length: 90 }, () => ({
@@ -278,6 +279,7 @@ if (typeof module !== "undefined") {
     BEAT_INTERVAL_MAX,
     BOOM_PARTICLE_COUNTS,
     SAFE_POS_TRIES,
+    STAR_PARALLAX,
     SATELLITE_COLORS,
     SATELLITE_COLOR_DEFAULT,
     TURRET_RADIUS,
