@@ -153,7 +153,7 @@ const SATURN_RING1_OUTER = 213; // inner gold ring — outer edge (px)
 const SATURN_RING2_INNER = 233; // outer orange ring — inner edge (px)
 const SATURN_RING2_OUTER = 296; // outer orange ring — outer edge (px)
 const SATURN_RING_TILT = 0.28; // vertical scale factor (perspective)
-const SATURN_SWING_SPEED = 0.18; // ring sway oscillation speed (rad/s of sin argument)
+const SATURN_SWING_SPEED = 0.08; // ring sway oscillation speed (rad/s of sin argument)
 const SATURN_SWING_AMP = Math.PI / 6; // ±30° — swings between 8/2 o'clock and 10/4 o'clock
 const SATURN_ALPHA = 0.45; // overall opacity — muted to signal non-interactive
 
