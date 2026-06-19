@@ -1,4 +1,12 @@
-import { W, H } from "./utils.js";
+import { W, H, TAU } from "./utils.js";
+import { WW, WH } from "./Globals.js";
+
+// Radar / minimap layout (screen-space, bottom-right corner).
+const RADAR_W = 140; // world is always 4:3 → height derives from uniform scale
+const RADAR_MARGIN = 12;
+const RADAR_DOT = 1.6; // asteroid / pumice dot radius
+const RADAR_THREAT_DOT = 2.2; // UFO / turret dot radius
+const RADAR_SHIP_SIZE = 4; // ship heading-arrow length
 
 // Renders all HUD and screen overlays (start, help, config, game-over, HUD bars).
 // Reads game state via this._g; never mutates game state directly.
@@ -67,6 +75,83 @@ export class UIRenderer {
         ctx.fillText(ind.label, bx + 8, by + barH - 4);
       });
     }
+
+    this.drawRadar(ctx);
+  }
+
+  // Minimap in the bottom-right corner. Only useful when the world is larger
+  // than the viewport (worldSize > 1) — otherwise world == view and it is
+  // redundant. Shows what lurks off-screen: threats (red), obstacles (grey),
+  // bounty centers (gold), neutral rocks (white) and the ship's heading.
+  drawRadar(ctx) {
+    const g = this._g;
+    if (!(WW > W || WH > H)) return; // world fits on screen → no radar
+
+    const scale = RADAR_W / WW;
+    const radarH = WH * scale; // uniform scale, no distortion
+    const ox = W - RADAR_MARGIN - RADAR_W; // origin x (top-left of the radar box)
+    const oy = H - RADAR_MARGIN - radarH; // origin y
+    const sx = (wx) => ox + wx * scale;
+    const sy = (wy) => oy + wy * scale;
+
+    ctx.save();
+
+    // Panel background + frame.
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(ox, oy, RADAR_W, radarH);
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ox + 0.5, oy + 0.5, RADAR_W - 1, radarH - 1);
+
+    // Clip so off-by-a-pixel positions never bleed outside the panel.
+    ctx.beginPath();
+    ctx.rect(ox, oy, RADAR_W, radarH);
+    ctx.clip();
+
+    const dot = (e, r, color) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx(e.x), sy(e.y), r, 0, TAU);
+      ctx.fill();
+    };
+
+    // Indestructible rocks — dim grey navigation hazards (drawn first, lowest).
+    for (const e of g.rocks) dot(e, RADAR_DOT, "rgba(150,150,150,0.7)");
+    // Neutral targets — asteroids (all sizes) and pumice clusters.
+    for (const e of g.asteroids) dot(e, RADAR_DOT, "#fff");
+    for (const e of g.pumices) dot(e, RADAR_DOT, "#fff");
+    // Bounty — solar-system centers.
+    for (const e of g.solarSystems) dot(e, RADAR_THREAT_DOT, "#fc0");
+    // Active threats — UFOs and turrets.
+    for (const e of g.ufos) dot(e, RADAR_THREAT_DOT, "#f44");
+    for (const e of g.turrets) dot(e, RADAR_THREAT_DOT, "#f44");
+
+    // Viewport rectangle — the slice the player currently sees.
+    ctx.strokeStyle = "rgba(120,200,255,0.8)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx(g._camX), sy(g._camY), W * scale, H * scale);
+
+    // Ship — bright heading arrow (north-up, world-aligned).
+    if (g.ship) {
+      const px = sx(g.ship.x),
+        py = sy(g.ship.y),
+        a = g.ship.angle;
+      ctx.fillStyle = "#8cf";
+      ctx.beginPath();
+      ctx.moveTo(px + Math.cos(a) * RADAR_SHIP_SIZE, py + Math.sin(a) * RADAR_SHIP_SIZE);
+      ctx.lineTo(
+        px + Math.cos(a + 2.5) * RADAR_SHIP_SIZE * 0.7,
+        py + Math.sin(a + 2.5) * RADAR_SHIP_SIZE * 0.7,
+      );
+      ctx.lineTo(
+        px + Math.cos(a - 2.5) * RADAR_SHIP_SIZE * 0.7,
+        py + Math.sin(a - 2.5) * RADAR_SHIP_SIZE * 0.7,
+      );
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 
   drawConfig(ctx) {
