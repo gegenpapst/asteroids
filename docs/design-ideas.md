@@ -109,7 +109,7 @@ als Trefferfeedback.
 Camera-Shake bei großen Explosionen / Ship-Tod (Kamera existiert in `Game.js`), roter
 Vignette-Puls bei Ship-Treffer, heller Flash beim Zerstören von Solar-Zentrum/UFO.
 
-## 4. HUD / UI: Radar (Minimap)
+## 4. HUD / UI: Radar (Minimap) — ✅ umgesetzt
 
 Verkleinertes Welt-Rechteck im HUD, das Position, sichtbaren Ausschnitt und Objekte zeigt.
 **Kein Entity** (keine Kollision/Physik) — gehört in `UIRenderer.js`, nicht in
@@ -122,6 +122,12 @@ komplett redundant. Wertversprechen ist nicht „wo bin ich" (Ship ist immer in 
 sondern **„was lauert außerhalb des Sichtfelds"** — stellt Fairness her, da Off-Screen-UFOs
 und -Turrets sonst ungesehen feuern. Hilft auch beim Finden der letzten Level-Asteroiden und
 synergiert mit dem Wurmlochpaar (2D).
+
+**Umgesetzt** in `src/UIRenderer.js` (`drawRadar`, aufgerufen aus `drawHUD`). Abweichung
+gegenüber der Spec: Platzierung **unten rechts** statt unten links — Lives und Power-up-Bars
+liegen im echten Code beide unten links, daher ist unten rechts die kollisionsfreie Ecke.
+Entschieden: keine Power-up-Punkte, kein Config-Schalter (fest aktiv), alle Asteroidengrößen
+(kein Splitter-Filter).
 
 **Spezifikation (entschieden):**
 
@@ -150,5 +156,5 @@ Clutter in späten Levels (durch kleine Punkte / Splitter-Filter mildern).
 
 1. **1A Combo-System** + **3C Camera-Shake/Hit-Flash** — minimaler Eingriff, sofort spürbar.
 2. **2A Gravitationsbrunnen** — stärkstes neues Feature, über `/new-game-entity`.
-3. **4 Radar** — reines HUD, geringer Aufwand, macht die großen Welten (`worldSize` 2–3) erst
+3. ~~**4 Radar**~~ — ✅ umgesetzt; reines HUD, macht die großen Welten (`worldSize` 2–3) erst
    richtig spielbar.
