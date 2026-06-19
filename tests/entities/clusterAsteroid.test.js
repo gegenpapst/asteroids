@@ -1,19 +1,4 @@
-"use strict";
-
-const { AsteroidBase } = require("../../src/entities/AsteroidBase.js");
-global.AsteroidBase = AsteroidBase;
-
-const {
-  generateHexCells,
-  buildMetaballCanvas,
-  renderMetaballFrame,
-} = require("../../src/entities/Metaball.js");
-global.generateHexCells = generateHexCells;
-global.buildMetaballCanvas = buildMetaballCanvas;
-global.renderMetaballFrame = renderMetaballFrame;
-
-const { ClusterAsteroid } = require("../../src/entities/ClusterAsteroid.js");
-global.ClusterAsteroid = ClusterAsteroid;
+import { ClusterAsteroid } from "../../src/entities/ClusterAsteroid.js";
 
 describe("ClusterAsteroid constructor", () => {
   test("radius and score come from size tables", () => {

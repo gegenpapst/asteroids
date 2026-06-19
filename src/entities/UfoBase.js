@@ -1,9 +1,19 @@
-"use strict";
+import { rand, TAU, clamp, W, H } from "../utils.js";
+import {
+  UFO_RADIUS,
+  UFO_SPEED,
+  UFO_SCORE,
+  UFO_FIRE_MIN,
+  UFO_FIRE_MAX,
+  BULLET_SPREAD_ANGLE,
+  BULLET_SPEED,
+} from "../Globals.js";
+import { UfoBullet } from "./UfoBullet.js";
 
 // Shared base for UFO variants (e.g. UfoCluster).
 // Handles movement (sinusoidal vertical), firing (size-dependent: aimed vs. random).
 // Subclasses implement only draw().
-class UfoBase {
+export class UfoBase {
   constructor(size, onBullet) {
     this.size = size;
     this.radius = UFO_RADIUS[size];
@@ -54,5 +64,3 @@ class UfoBase {
     this._onBullet(new UfoBullet(this.x, this.y, Math.cos(angle) * spd, Math.sin(angle) * spd));
   }
 }
-
-if (typeof module !== "undefined") module.exports = { UfoBase };

@@ -1,41 +1,5 @@
-"use strict";
-
-// ── Stubs ────────────────────────────────────────────────────────────────────
-
-global.localStorage = { getItem: () => null, setItem: () => {} };
-
-global.Sound = class {
-  constructor() {}
-  throb() {}
-  shoot() {}
-  shipDie() {}
-  powerUp() {}
-  explodeLarge() {}
-  explodeMed() {}
-  explodeSmall() {}
-  ufoHum() {}
-  levelUp() {}
-  extraLife() {}
-};
-
-global.MetaballMode = class {
-  createShip() {
-    return null;
-  }
-};
-
-const { Particle } = require("../src/entities/Particle.js");
-global.Particle = Particle;
-const { Debris } = require("../src/entities/Debris.js");
-global.Debris = Debris;
-const { Bullet } = require("../src/entities/Bullet.js");
-global.Bullet = Bullet;
-const { PowerUp } = require("../src/entities/PowerUp.js");
-global.PowerUp = PowerUp;
-
-const { Game, STATE } = require("../src/Game.js");
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
+import { jest } from "@jest/globals";
+import { Game, STATE } from "../src/Game.js";
 
 function makeGame(state = STATE.PLAYING) {
   const g = new Game();

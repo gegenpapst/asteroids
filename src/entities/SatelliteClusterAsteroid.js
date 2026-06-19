@@ -1,8 +1,20 @@
-"use strict";
+import { TAU } from "../utils.js";
+import {
+  SOLAR_STIFFNESS,
+  SOLAR_DAMPING,
+  PENDULUM_STIFFNESS,
+  PENDULUM_DAMPING,
+  PENDULUM_INIT_SPEED,
+  SATELLITE_COLORS,
+  SATELLITE_COLOR_DEFAULT,
+  SOLAR_ORBIT_SPEED_MIN,
+} from "../Globals.js";
+import { AsteroidBase } from "./AsteroidBase.js";
+import { Matter } from "../physics.js";
 
 // Satellite asteroid — simple circle body, orbits a SolarSystem center via a constraint.
 // Always spawned at size=2 (smallest) — satellites do not split.
-class SatelliteClusterAsteroid extends AsteroidBase {
+export class SatelliteClusterAsteroid extends AsteroidBase {
   static _label = "satellite-cluster-asteroid";
   static _rotBase = 1.2;
 
@@ -23,7 +35,6 @@ class SatelliteClusterAsteroid extends AsteroidBase {
     this.anchorX = ax;
     this.anchorY = ay;
 
-    // Tangential velocity perpendicular to the radial direction anchor→asteroid
     const dx = x - ax;
     const dy = y - ay;
     const len = Math.hypot(dx, dy) || 1;
@@ -35,7 +46,6 @@ class SatelliteClusterAsteroid extends AsteroidBase {
     const stiffness = parentSystem ? SOLAR_STIFFNESS : PENDULUM_STIFFNESS;
     const damping = parentSystem ? SOLAR_DAMPING : PENDULUM_DAMPING;
     if (parentSystem) {
-      // Anchor to the solar system's moving body — bodyB tracks correctly in Matter.js.
       this.constraint = Matter.Constraint.create({
         bodyA: this.body,
         pointA: { x: 0, y: 0 },
@@ -46,7 +56,6 @@ class SatelliteClusterAsteroid extends AsteroidBase {
         damping,
       });
     } else {
-      // Pendulum: fixed world-space anchor point.
       this.constraint = Matter.Constraint.create({
         bodyA: this.body,
         pointA: { x: 0, y: 0 },
@@ -63,8 +72,6 @@ class SatelliteClusterAsteroid extends AsteroidBase {
     if (this.parentSystem) this.parentSystem.onSatelliteDestroyed(this, game);
   }
 
-  // Simple circle body — no compound body, no bumps, hitbox matches visual exactly.
-  // wrap=false: no plugin.wrap (constraint would snap on screen wrap).
   _makeBody() {
     this._coreR = this.radius;
     this._bumps = [];
@@ -77,7 +84,6 @@ class SatelliteClusterAsteroid extends AsteroidBase {
   }
 
   draw(ctx) {
-    // Tether + anchor dot
     const tetherColor = this.parentSystem ? "rgba(255, 140, 60, 0.45)" : "#556";
     const anchorColor = this.parentSystem ? "rgba(255,140,60,0.7)" : "#778";
     ctx.save();
@@ -95,7 +101,6 @@ class SatelliteClusterAsteroid extends AsteroidBase {
     ctx.fill();
     ctx.restore();
 
-    // Radial gradient fill: bright Wraith center → dark edge (matches showcase)
     const { center, body } = SATELLITE_COLORS[SATELLITE_COLOR_DEFAULT];
     ctx.save();
     ctx.beginPath();
@@ -114,5 +119,3 @@ class SatelliteClusterAsteroid extends AsteroidBase {
     ctx.restore();
   }
 }
-
-if (typeof module !== "undefined") module.exports = { SatelliteClusterAsteroid };

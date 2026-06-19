@@ -1,6 +1,5 @@
-"use strict";
-
-const { wrap, clamp, dist, rand, randInt, safeSplitAngle } = require("../src/utils.js");
+import { jest } from "@jest/globals";
+import { wrap, clamp, dist, rand, randInt, safeSplitAngle } from "../src/utils.js";
 
 afterEach(() => jest.restoreAllMocks());
 

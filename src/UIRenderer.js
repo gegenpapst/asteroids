@@ -1,8 +1,8 @@
-"use strict";
+import { W, H } from "./utils.js";
 
 // Renders all HUD and screen overlays (start, help, config, game-over, HUD bars).
 // Reads game state via this._g; never mutates game state directly.
-class UIRenderer {
+export class UIRenderer {
   constructor(game) {
     this._g = game;
     this._showcaseReady = false;
@@ -20,7 +20,6 @@ class UIRenderer {
     ctx.textAlign = "center";
     ctx.fillText(`LVL ${g.level}`, W / 2, 28);
 
-    // Life icons (bottom-left, below the power-up bars)
     for (let i = 0; i < g.lives; i++) {
       ctx.save();
       ctx.translate(14 + i * 21, H - 10);
@@ -38,7 +37,6 @@ class UIRenderer {
       ctx.restore();
     }
 
-    // Power-up status bars (bottom-left, above the life icons)
     if (g.ship) {
       const indicators = [];
       if (g.ship.shieldTimer > 0)
@@ -413,5 +411,3 @@ class UIRenderer {
     }
   }
 }
-
-if (typeof module !== "undefined") module.exports = { UIRenderer };

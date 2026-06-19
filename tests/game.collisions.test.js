@@ -1,47 +1,6 @@
-"use strict";
-
-// ── Stubs required before Game.js is loaded ──────────────────────────────────
-
-global.localStorage = { getItem: () => null, setItem: () => {} };
-
-global.Sound = class {
-  constructor() {}
-  throb() {}
-  shoot() {}
-  shipDie() {}
-  powerUp() {}
-  explodeLarge() {}
-  explodeMed() {}
-  explodeSmall() {}
-  ufoHum() {}
-  levelUp() {}
-  extraLife() {}
-};
-
-global.MetaballMode = class {
-  createShip() {
-    return null;
-  }
-};
-
-// ── Entity globals required by _boom / _spawnDebris ──────────────────────────
-
-const { ShipBase } = require("../src/entities/ShipBase.js");
-
-const { Particle } = require("../src/entities/Particle.js");
-global.Particle = Particle;
-
-const { Debris } = require("../src/entities/Debris.js");
-global.Debris = Debris;
-
-const { Bullet } = require("../src/entities/Bullet.js");
-global.Bullet = Bullet;
-
-// ── Game ─────────────────────────────────────────────────────────────────────
-
-const { Game } = require("../src/Game.js");
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+import { jest } from "@jest/globals";
+import { ShipBase } from "../src/entities/ShipBase.js";
+import { Game } from "../src/Game.js";
 
 /** Ship stub — behaves like ShipBase (getters for radius/hitRadius, real bounceOff). */
 function makeShip(overrides = {}) {

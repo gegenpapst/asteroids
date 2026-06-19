@@ -1,6 +1,7 @@
-"use strict";
+import "./canvas.js";
+import { Input } from "./input.js";
+import { Game } from "./Game.js";
 
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
 Input.init();
 const game = new Game();
 
@@ -9,10 +10,8 @@ function loop(t) {
   if (lastT === null) lastT = t;
   const dt = (t - lastT) / 1000;
   lastT = t;
-
   game.update(dt);
   game.draw();
-
   requestAnimationFrame(loop);
 }
 

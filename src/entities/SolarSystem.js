@@ -1,11 +1,19 @@
-"use strict";
+import { rand, TAU, W, H } from "../utils.js";
+import {
+  SOLAR_CENTER_SCORE,
+  SOLAR_CENTER_SPEED,
+  SOLAR_TETHER_MAX,
+  ASTEROID_RADIUS,
+} from "../Globals.js";
+import { Particle } from "./Particle.js";
+import { Matter } from "../physics.js";
 
 // Central anchor of a solar system.
 // Moves across the screen at SOLAR_CENTER_SPEED, bouncing off edges.
 // Holds a static Matter.Body so satellite constraints can use bodyB — the reliable
 // way to track a moving anchor in Matter.js (mutating constraint.pointB is not stable).
 // When all satellites are destroyed, the center explodes and scores SOLAR_CENTER_SCORE.
-class SolarSystem {
+export class SolarSystem {
   constructor(x, y, totalCount) {
     this.x = x;
     this.y = y;
@@ -13,15 +21,12 @@ class SolarSystem {
     this._total = totalCount;
     this._t = 0;
 
-    // Live list of bound satellite asteroids — populated by Game.js after spawn.
     this.satellites = [];
 
     const angle = Math.random() * TAU;
     this.vx = Math.cos(angle) * SOLAR_CENTER_SPEED;
     this.vy = Math.sin(angle) * SOLAR_CENTER_SPEED;
 
-    // Static body used as bodyB anchor for all satellite constraints.
-    // isStatic so physics forces don't move it; we reposition it manually each frame.
     this.body = Matter.Body.create({
       isStatic: true,
       collisionFilter: { mask: 0, category: 0 },
@@ -30,8 +35,6 @@ class SolarSystem {
     Matter.Body.setPosition(this.body, { x, y });
   }
 
-  // Called by Game.js after split children are registered: removes the satellite
-  // from the live list and explodes when the last one is gone.
   onSatelliteDestroyed(sat, game) {
     const idx = this.satellites.indexOf(sat);
     if (idx !== -1) this.satellites.splice(idx, 1);
@@ -53,7 +56,6 @@ class SolarSystem {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
-    // Bounce so that no satellite can leave the screen.
     const margin = SOLAR_TETHER_MAX + ASTEROID_RADIUS[0];
     if (this.x < margin || this.x > W - margin) {
       this.vx *= -1;
@@ -64,10 +66,8 @@ class SolarSystem {
       this.y = Math.max(margin, Math.min(H - margin, this.y));
     }
 
-    // Reposition the static body — satellite constraints follow automatically via bodyB.
     Matter.Body.setPosition(this.body, { x: this.x, y: this.y });
 
-    // Keep anchorX/Y in sync for tether drawing.
     for (const sat of this.satellites) {
       sat.anchorX = this.x;
       sat.anchorY = this.y;
@@ -80,7 +80,6 @@ class SolarSystem {
     if (!this.alive) return;
 
     const frac = Math.min(1, this.satellites.length / this._total);
-    // Pulse rate and size increase as satellites are destroyed.
     const pulse = 1 + 0.25 * Math.sin(this._t * (8 + (1 - frac) * 12));
     const r = 5 * pulse;
     const g = Math.round(160 * frac);
@@ -94,7 +93,6 @@ class SolarSystem {
     ctx.shadowBlur = 12 + (1 - frac) * 18;
     ctx.fill();
 
-    // Inner bright core
     ctx.beginPath();
     ctx.arc(this.x, this.y, r * 0.45, 0, TAU);
     ctx.fillStyle = "#fff";
@@ -103,5 +101,3 @@ class SolarSystem {
     ctx.restore();
   }
 }
-
-if (typeof module !== "undefined") module.exports = { SolarSystem };

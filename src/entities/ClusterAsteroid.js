@@ -1,12 +1,14 @@
-"use strict";
+import { rand, TAU } from "../utils.js";
+import { WW, WH } from "../Globals.js";
+import { AsteroidBase } from "./AsteroidBase.js";
+import { generatePolyCells, buildMetaballCanvas } from "./Metaball.js";
+import { Matter } from "../physics.js";
 
 // Metaball variant of the asteroid — inherits lifecycle from AsteroidBase, adds cells + metaball render.
-class ClusterAsteroid extends AsteroidBase {
+export class ClusterAsteroid extends AsteroidBase {
   static _label = "cluster-asteroid";
   static _rotBase = 1.2;
 
-  // color: optional override; defaults to the standard steel-blue asteroid tint.
-  //   Pass a {center, body} object to enable radial gradient fill (e.g. satellite split children).
   constructor(x, y, size = 0, angle = null, maxBumps = 7, color = "rgb(100, 140, 185)") {
     super(x, y, size, angle, maxBumps);
     if (color && typeof color === "object") {
@@ -26,8 +28,6 @@ class ClusterAsteroid extends AsteroidBase {
     }
   }
 
-  // Polygon vertices sorted by angle. Supplements with synthetic points when
-  // bump count < 3 so the polygon always has at least 5 vertices.
   _buildPolyVerts() {
     if (this._bumps.length >= 3) {
       return this._bumps
@@ -49,8 +49,6 @@ class ClusterAsteroid extends AsteroidBase {
     return items.sort((a, b) => a.a - b.a).map((v) => ({ x: v.x, y: v.y }));
   }
 
-  // Returns polygon vertices centered around their centroid.
-  // Called from constructor after super() has populated _bumps and _coreR.
   _computePolyVerts() {
     const raw = this._buildPolyVerts();
     const cx = raw.reduce((s, v) => s + v.x, 0) / raw.length;
@@ -58,9 +56,7 @@ class ClusterAsteroid extends AsteroidBase {
     return raw.map((v) => ({ x: v.x - cx, y: v.y - cy }));
   }
 
-  // Polygon physics body — vertices match the visual polygon exactly.
-  // Overrides the compound-circle approach in AsteroidBase.
-  _makeBody(wrap = true) {
+  _makeBody(doWrap = true) {
     const r = this.radius;
     this._coreR = r * (0.85 - (0.5 * Math.min(this.bumpCount, 7)) / 7);
     this._bumps = this._genBumps();
@@ -69,11 +65,9 @@ class ClusterAsteroid extends AsteroidBase {
       frictionAir: 0,
       restitution: 1,
       label: this.constructor._label,
-      ...(wrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: WW, y: WH } } } } : {}),
+      ...(doWrap ? { plugin: { wrap: { min: { x: 0, y: 0 }, max: { x: WW, y: WH } } } } : {}),
     });
-    // fromVertices returns undefined when poly-decomp rejects a degenerate polygon.
-    // Fall back to compound circles (AsteroidBase) so the game never crashes.
-    return body ?? super._makeBody(wrap);
+    return body ?? super._makeBody(doWrap);
   }
 
   split(bulletAngle = null) {
@@ -83,13 +77,11 @@ class ClusterAsteroid extends AsteroidBase {
   }
 
   get collisionRadius() {
-    // 0 bumps = full circle, scale down with bump count
     return this.radius * (0.9 - (0.25 * Math.min(this.bumpCount, 7)) / 7);
   }
 
   draw(ctx) {
     if (this._gradientCenter) {
-      // Radial gradient fill: bright center → dark edge (used by satellite split children)
       ctx.save();
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, TAU);
@@ -161,5 +153,3 @@ class ClusterAsteroid extends AsteroidBase {
     ctx.restore();
   }
 }
-
-if (typeof module !== "undefined") module.exports = { ClusterAsteroid };

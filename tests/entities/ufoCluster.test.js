@@ -1,12 +1,5 @@
-"use strict";
-
-const { UfoBase } = require("../../src/entities/UfoBase.js");
-global.UfoBase = UfoBase;
-
-const { UfoBullet } = require("../../src/entities/UfoBullet.js");
-global.UfoBullet = UfoBullet;
-
-const { UfoCluster } = require("../../src/entities/UfoCluster.js");
+import { UfoBullet } from "../../src/entities/UfoBullet.js";
+import { UfoCluster } from "../../src/entities/UfoCluster.js";
 
 const noBullet = () => {};
 

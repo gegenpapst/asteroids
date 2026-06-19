@@ -1,4 +1,6 @@
-"use strict";
+import { dist, randInt } from "./utils.js";
+import { POWERUP_TYPES, TURRET_SCORE } from "./Globals.js";
+import { PowerUp } from "./entities/PowerUp.js";
 
 // Handles all per-frame collision detection for the game.
 // Reads Game entity arrays directly and calls back into the following Game/entity interface:
@@ -12,13 +14,11 @@ function _overlaps(a, b, rA, rB) {
   return dist(a, b) < rA + rB;
 }
 
-class CollisionSystem {
+export class CollisionSystem {
   constructor(game) {
     this._g = game;
   }
 
-  // All bullet × entity collisions.
-  // Asteroid/Rock/Pumice use unified arrays — mode implicitly determines entity types.
   updateBullet() {
     this._bulletVsAsteroids();
     this._bulletVsUfos();
@@ -27,8 +27,6 @@ class CollisionSystem {
     this._bulletVsTurrets();
   }
 
-  // All ship × entity collisions + power-up pickup.
-  // With shield: bounce + optionally split asteroid. Without shield: _killShip().
   updateShip() {
     this._shipVsAsteroids();
     this._shipVsRocks();
@@ -39,7 +37,12 @@ class CollisionSystem {
     this._shipVsPowerups();
   }
 
-  // ── Bullet sub-checks ───────────────────────────────────────────────────
+  _scanBullets(testFn) {
+    const bullets = this._g.bullets;
+    for (let bi = bullets.length - 1; bi >= 0; bi--) {
+      if (testFn(bullets[bi], bi)) bullets.splice(bi, 1);
+    }
+  }
 
   // Iterates bullets in reverse; removes each bullet for which testFn returns true.
   _scanBullets(testFn) {
@@ -118,14 +121,12 @@ class CollisionSystem {
             g._addScore(TURRET_SCORE);
             g.turrets.splice(ti, 1);
           }
-          return true; // bullet consumed on any turret hit, regardless of HP
+          return true;
         }
       }
       return false;
     });
   }
-
-  // ── Ship sub-checks ─────────────────────────────────────────────────────
 
   _shipVsAsteroids() {
     const g = this._g;
@@ -228,5 +229,3 @@ class CollisionSystem {
     }
   }
 }
-
-if (typeof module !== "undefined") module.exports = { CollisionSystem };

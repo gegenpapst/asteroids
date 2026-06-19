@@ -1,5 +1,3 @@
-"use strict";
-
 const noOp = () => {};
 const ctxStub = Object.fromEntries(
   [
@@ -35,34 +33,17 @@ const canvasStub = {
   style: {},
 };
 
-global.document = {
+globalThis.document = {
   getElementById: () => canvasStub,
   createElement: () => canvasStub,
+  lastModified: "",
 };
-global.window = {
+globalThis.window = {
   addEventListener: noOp,
   innerWidth: 800,
   innerHeight: 600,
 };
-
-// Entities reference globals (rand, wrap, W, H, ASTEROID_RADIUS …) as bare names
-// rather than imports — mirroring the browser's shared script scope.
-const u = require("../src/utils.js");
-Object.assign(global, u);
-// canvas.js is not required in tests (DOM side-effects); set its exports manually.
-global.W = 800;
-global.H = 600;
-global.ctx = ctxStub;
-const g = require("../src/Globals.js");
-Object.assign(global, g);
-const { Input } = require("../src/input.js");
-global.Input = Input;
-
-const { CollisionSystem } = require("../src/CollisionSystem.js");
-global.CollisionSystem = CollisionSystem;
-
-const { UIRenderer } = require("../src/UIRenderer.js");
-global.UIRenderer = UIRenderer;
+globalThis.localStorage = { getItem: () => null, setItem: () => {} };
 
 // Matter.js stub — keeps entity constructors working without the real physics engine
 const _mkBody = (x = 0, y = 0) => ({
@@ -71,7 +52,7 @@ const _mkBody = (x = 0, y = 0) => ({
   angle: 0,
   plugin: {},
 });
-global.Matter = {
+globalThis.Matter = {
   use: () => {},
   Engine: { create: () => ({ world: {} }), update: () => {} },
   World: { add: () => {}, remove: () => {}, clear: () => {} },
@@ -103,4 +84,15 @@ global.Matter = {
   Constraint: { create: (opts) => ({ ...opts }) },
   Events: { on: () => {} },
 };
-global.MatterWrap = {};
+globalThis.MatterWrap = {};
+globalThis.ctx = ctxStub;
+
+// Spread utils and Globals onto globalThis so test code can access bare names
+// (W, H, rand, wrap, ASTEROID_RADIUS, BULLET_LIFE, etc.) without explicit imports.
+// canvas.js is not loaded in tests; W/H come from utils.js directly.
+const utils = await import("../src/utils.js");
+Object.assign(globalThis, utils);
+const globals = await import("../src/Globals.js");
+Object.assign(globalThis, globals);
+const { Input } = await import("../src/input.js");
+globalThis.Input = Input;

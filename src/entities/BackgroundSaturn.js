@@ -1,6 +1,17 @@
-"use strict";
+import { TAU } from "../utils.js";
+import {
+  SATURN_RADIUS,
+  SATURN_RING1_INNER,
+  SATURN_RING1_OUTER,
+  SATURN_RING2_INNER,
+  SATURN_RING2_OUTER,
+  SATURN_RING_TILT,
+  SATURN_SWING_SPEED,
+  SATURN_SWING_AMP,
+  SATURN_ALPHA,
+} from "../Globals.js";
 
-class BackgroundSaturn {
+export class BackgroundSaturn {
   constructor(x, y) {
     this.x = x;
     this.y = y;
@@ -43,7 +54,6 @@ class BackgroundSaturn {
   }
 
   _drawRingHalf(ctx, startA, endA) {
-    // Inner ring — thin, gold
     ctx.save();
     ctx.rotate(this._angle);
     ctx.scale(1, SATURN_RING_TILT);
@@ -57,7 +67,6 @@ class BackgroundSaturn {
     ctx.shadowBlur = 0;
     ctx.restore();
 
-    // Outer ring — wider, orange
     ctx.save();
     ctx.rotate(this._angle);
     ctx.scale(1, SATURN_RING_TILT);
@@ -72,5 +81,3 @@ class BackgroundSaturn {
     ctx.restore();
   }
 }
-
-if (typeof module !== "undefined") module.exports = { BackgroundSaturn };

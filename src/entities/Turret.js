@@ -1,10 +1,20 @@
-"use strict";
+import { rand, TAU } from "../utils.js";
+import {
+  TURRET_RADIUS,
+  TURRET_HP,
+  TURRET_FIRE_MIN,
+  TURRET_FIRE_MAX,
+  TURRET_ROT_SPEED,
+  TURRET_BULLET_SPEED,
+} from "../Globals.js";
+import { UfoBullet } from "./UfoBullet.js";
 
 // Stationary enemy turret.
 // Fires UfoBullets in random directions at irregular intervals.
 // Takes TURRET_HP hits to destroy; shrinks visually with each hit.
 // Kills the ship on contact.
-class Turret {
+// draw() uses bare `ctx` from global scope (Phase 1 constraint — no ctx parameter).
+export class Turret {
   constructor(x, y, onBullet) {
     this.x = x;
     this.y = y;
@@ -21,7 +31,6 @@ class Turret {
     return TURRET_RADIUS * (this.hp / TURRET_HP);
   }
 
-  // Returns true when the turret is destroyed by this hit.
   hit() {
     this.hp = Math.max(0, this.hp - 1);
     return this.hp === 0;
@@ -71,7 +80,6 @@ class Turret {
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Glow intensifies as hp drops
     ctx.shadowColor = "#ff2020";
     ctx.shadowBlur = 4 + dmgFrac * 20;
     ctx.strokeStyle = `rgba(255,120,120,${0.4 + dmgFrac * 0.5})`;
@@ -81,5 +89,3 @@ class Turret {
     ctx.restore();
   }
 }
-
-if (typeof module !== "undefined") module.exports = { Turret };

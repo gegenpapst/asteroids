@@ -1,13 +1,14 @@
-"use strict";
+import { TAU } from "../utils.js";
+import { SHIP_SIZE, SHIP_SHIELD_FACTOR } from "../Globals.js";
+import { ShipBase } from "./ShipBase.js";
 
 // Metaball/cluster variant of the ship — inherits movement/firing from ShipBase, implements only draw().
-class ShipCluster extends ShipBase {
+export class ShipCluster extends ShipBase {
   draw(ctx) {
     if (this.invulnerable > 0 && Math.floor(this.invulnerable * 8) % 2 === 0) return;
 
     const s = SHIP_SIZE;
 
-    // Shield bubble
     if (this.shieldTimer > 0) {
       const pulse = 0.55 + 0.45 * Math.sin(Date.now() / 140);
       ctx.save();
@@ -22,7 +23,6 @@ class ShipCluster extends ShipBase {
       ctx.restore();
     }
 
-    // Hull — gradient fill
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
@@ -47,7 +47,6 @@ class ShipCluster extends ShipBase {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Wing panel traces
     ctx.globalAlpha = 0.3;
     ctx.strokeStyle = "#8df";
     ctx.shadowBlur = 0;
@@ -60,7 +59,6 @@ class ShipCluster extends ShipBase {
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // Cockpit highlight
     const cg = ctx.createRadialGradient(s * 0.14, -s * 0.04, 0, s * 0.22, 0, s * 0.2);
     cg.addColorStop(0, "rgba(200,245,255,0.95)");
     cg.addColorStop(1, "rgba(30,100,180,0.2)");
@@ -71,7 +69,6 @@ class ShipCluster extends ShipBase {
     ctx.shadowBlur = 8;
     ctx.fill();
 
-    // Engine arc
     ctx.beginPath();
     ctx.arc(-s * 0.35, 0, s * 0.18, Math.PI * 0.5, Math.PI * 1.5);
     ctx.strokeStyle = "#f90";
@@ -82,7 +79,6 @@ class ShipCluster extends ShipBase {
 
     ctx.restore();
 
-    // Thruster flame
     if (this.thrusting) {
       const flicker = 0.5 + 0.5 * Math.sin(this.flameT);
       const flameLen = s * (0.45 + flicker * 0.55);
@@ -104,5 +100,3 @@ class ShipCluster extends ShipBase {
     }
   }
 }
-
-if (typeof module !== "undefined") module.exports = { ShipCluster };

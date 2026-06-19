@@ -1,6 +1,4 @@
-"use strict";
-
-class Sound {
+export class Sound {
   constructor() {
     try {
       this.ac = new (window.AudioContext || window.webkitAudioContext)();

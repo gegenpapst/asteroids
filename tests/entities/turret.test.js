@@ -1,16 +1,4 @@
-"use strict";
-
-// UfoBullet stub — Turret.update() constructs one when firing
-global.UfoBullet = class {
-  constructor(x, y, vx, vy) {
-    this.x = x;
-    this.y = y;
-    this.vx = vx;
-    this.vy = vy;
-  }
-};
-
-const { Turret } = require("../../src/entities/Turret.js");
+import { Turret } from "../../src/entities/Turret.js";
 
 describe("Turret constructor", () => {
   test("starts at full HP", () => {
