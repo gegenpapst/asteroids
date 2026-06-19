@@ -321,16 +321,7 @@ export class Game {
     this._transitionTo(STATE.PLAYING);
   }
 
-  update(dt) {
-    dt = Math.min(dt, 1 / 20);
-    this.t += dt;
-    if (dt > 0) {
-      this._dbgFPS += (1 / dt - this._dbgFPS) * 0.1;
-      this._dbgFrameMs += (dt * 1000 - this._dbgFrameMs) * 0.1;
-    }
-
-    if (this._updateStateInput()) return;
-
+  _updateAudio(dt) {
     this.beatTimer -= dt;
     if (this.beatTimer <= 0) {
       this.beatInterval = clamp(
@@ -342,7 +333,6 @@ export class Game {
       this.beatPhase ^= 1;
       this.snd.throb(this.beatPhase);
     }
-
     if (this.ufos.length > 0) {
       this.ufoHumTimer -= dt;
       if (this.ufoHumTimer <= 0) {
@@ -352,18 +342,8 @@ export class Game {
     }
   }
 
-    if (this.saturn) this.saturn.update(dt);
-    this.particles = this.particles.filter((p) => p.update(dt));
-    this.powerups = this.powerups.filter((p) => p.update(dt));
-    this.ufoBullets = this.ufoBullets.filter((b) => b.update(dt));
-
-    if (this.state === STATE.DEAD) {
-      this._updateDeadState(dt);
-      return;
-    }
-
-    // ── PLAYING ──
-
+  // All logic that runs only in STATE.PLAYING.
+  _updatePlayingState(dt) {
     if (Input.wasPressed("F2") || Input.wasPressed("KeyQ"))
       this._debugCollision = !this._debugCollision;
 
@@ -794,22 +774,20 @@ export class Game {
     return true;
   }
 
-  _handleConfigInput() {
-    const readOnly = this._configPrevState === STATE.PLAYING;
-
+  _cfgFocusNav() {
     if (Input.wasPressed("ArrowDown") && this._configFocus === "mode")
       this._configFocus = "details";
     if (Input.wasPressed("ArrowUp") && this._configFocus === "details") this._configFocus = "mode";
   }
 
-    if (!readOnly) {
-      const prevMode = this.config.mode;
-      if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
-      if (Input.wasPressed("ArrowRight")) this.config.mode = Math.min(3, this.config.mode + 1);
-      if (this.config.mode !== prevMode) {
-        Object.assign(this.config, GAME_MODES[this.config.mode - 1]);
-        this._applyAsteroidFilter();
-      }
+  _cfgModeChange(readOnly) {
+    if (readOnly) return;
+    const prevMode = this.config.mode;
+    if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
+    if (Input.wasPressed("ArrowRight")) this.config.mode = Math.min(3, this.config.mode + 1);
+    if (this.config.mode !== prevMode) {
+      Object.assign(this.config, GAME_MODES[this.config.mode - 1]);
+      this._applyAsteroidFilter();
     }
   }
 

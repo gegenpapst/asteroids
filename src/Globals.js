@@ -129,25 +129,6 @@ export const CONFIG_PARAMS = {
   worldSize: { max: 3 },
 };
 
-// ── Difficulty presets ───────────────────────────────────────────────────────
-// Indexed by config.mode - 1 (Beginner=0, Novice=1, Expert=2).
-const GAME_MODES = [
-  { bulletRange: 3, powerupFreq: 3, rockCount: 1, pumiceCount: 1, asteroidBounce: 1, worldSize: 1 }, // Beginner
-  { bulletRange: 2, powerupFreq: 2, rockCount: 2, pumiceCount: 2, asteroidBounce: 1, worldSize: 2 }, // Novice
-  { bulletRange: 1, powerupFreq: 1, rockCount: 3, pumiceCount: 3, asteroidBounce: 2, worldSize: 3 }, // Expert
-];
-
-// Config parameter schema: keys match config object, max = highest allowed value.
-// Add new config params here — Game.js derives params/paramMax from this object.
-const CONFIG_PARAMS = {
-  bulletRange: { max: 3 }, // bullet travel distance (1 = short, 3 = long)
-  powerupFreq: { max: 3 }, // power-up spawn chance and duration (1 = rare/brief, 3 = common/long)
-  rockCount: { max: 3 }, // indestructible rock clusters per level
-  pumiceCount: { max: 3 }, // destructible pumice clusters per level
-  asteroidBounce: { max: 2 }, // asteroid collision response (1 = pass-through, 2 = bounce)
-  worldSize: { max: 3 }, // play-field size (1 = screen-sized, 3 = large scrolling world)
-};
-
 // World dimensions — updated at game start based on config.worldSize
 export let WW = W;
 export let WH = H;
@@ -199,14 +180,6 @@ export const DBG_FRAME_WARN_MS = 17;
 export const DBG_FRAME_CRIT_MS = 20;
 export const DBG_FPS_WARN = 58;
 export const DBG_FPS_CRIT = 50;
-
-// ── Debug overlay thresholds ─────────────────────────────────────────────────
-const DBG_COLLISION_WARN = 80; // peak collision checks/frame — yellow above this
-const DBG_COLLISION_CRIT = 200; // peak collision checks/frame — red above this
-const DBG_FRAME_WARN_MS = 17; // frame time (ms) — yellow above this
-const DBG_FRAME_CRIT_MS = 20; // frame time (ms) — red above this
-const DBG_FPS_WARN = 58; // FPS — yellow below this
-const DBG_FPS_CRIT = 50; // FPS — red below this
 
 // ── Background Saturn ────────────────────────────────────────────────────────
 export const SATURN_RADIUS = 150;

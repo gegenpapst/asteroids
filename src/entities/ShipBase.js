@@ -65,17 +65,7 @@ export class ShipBase {
     this.invulnerable = 1.5;
   }
 
-  update(dt) {
-    for (const k of [
-      "invulnerable",
-      "fireTimer",
-      "shieldTimer",
-      "rapidTimer",
-      "spreadTimer",
-      "heavyTimer",
-    ])
-      if (this[k] > 0) this[k] -= dt;
-
+  _handleSteering(dt) {
     if (Input.left()) this.angle -= SHIP_ROTATION * dt;
     if (Input.right()) this.angle += SHIP_ROTATION * dt;
 
