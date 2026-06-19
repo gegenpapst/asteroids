@@ -43,17 +43,8 @@ class ShipBase {
     this.invulnerable = 1.5;
   }
 
-  update(dt) {
-    for (const k of [
-      "invulnerable",
-      "fireTimer",
-      "shieldTimer",
-      "rapidTimer",
-      "spreadTimer",
-      "heavyTimer",
-    ])
-      if (this[k] > 0) this[k] -= dt;
-
+  // Rotation, strafe, and thrust — all direct input responses.
+  _handleSteering(dt) {
     if (Input.left()) this.angle -= SHIP_ROTATION * dt;
     if (Input.right()) this.angle += SHIP_ROTATION * dt;
 
@@ -74,14 +65,16 @@ class ShipBase {
       this.vx += Math.cos(this.angle) * SHIP_THRUST * dt;
       this.vy += Math.sin(this.angle) * SHIP_THRUST * dt;
     }
+  }
 
+  // Speed cap, frame-rate-independent friction, and minimum-speed floor.
+  _applyPhysics(dt) {
     const speed = Math.hypot(this.vx, this.vy);
     if (speed > SHIP_MAX_SPEED) {
       const s = SHIP_MAX_SPEED / speed;
       this.vx *= s;
       this.vy *= s;
     }
-
     // dt*60 normalises exponential decay to be frame-rate independent
     const friction = Math.pow(SHIP_FRICTION, dt * 60);
     this.vx *= friction;
@@ -92,10 +85,22 @@ class ShipBase {
       this.vx *= s;
       this.vy *= s;
     }
+  }
 
+  update(dt) {
+    for (const k of [
+      "invulnerable",
+      "fireTimer",
+      "shieldTimer",
+      "rapidTimer",
+      "spreadTimer",
+      "heavyTimer",
+    ])
+      if (this[k] > 0) this[k] -= dt;
+    this._handleSteering(dt);
+    this._applyPhysics(dt);
     this.x = wrap(this.x + this.vx * dt, WW);
     this.y = wrap(this.y + this.vy * dt, WH);
-
     this.flameT += dt * 18;
   }
 
