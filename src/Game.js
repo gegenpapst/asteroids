@@ -1,4 +1,4 @@
-import { W, H, rand, randInt, TAU, dist, clamp } from "./utils.js";
+import { W, H, rand, randInt, TAU, dist } from "./utils.js";
 import {
   WW,
   WH,
@@ -7,19 +7,8 @@ import {
   GAME_MODES,
   EXTRA_LIFE_SCORE,
   UFO_SPAWN_MIN,
-  UFO_HUM_INTERVAL,
   INVULNERABLE_TIME,
-  BEAT_INTERVAL_MAX,
-  BEAT_INTERVAL_MIN,
-  BEAT_DENSITY_FACTOR,
-  ASTEROID_SPEED,
   ASTEROID_SPIN_FACTOR,
-  SHIP_SIZE,
-  SHIP_HULL_FACTOR,
-  MAX_BULLETS,
-  UFO_SMALL_SCORE_THRESHOLD,
-  UFO_SMALL_CHANCE,
-  UFO_SPAWN_JITTER,
   SOLAR_START_LEVEL,
   SOLAR_MAX_COUNT,
   SOLAR_SATELLITE_MIN,
@@ -301,10 +290,7 @@ export class Game {
       pumices.push(this.mode.createPumice(px, py));
     }
     this.pumices = pumices;
-    this.ship = this.mode.createShip();
-    [this.ship.x, this.ship.y] = this._safeShipPos();
-    Matter.Body.setPosition(this.ship.body, { x: this.ship.x, y: this.ship.y });
-    Matter.World.add(this.engine.world, this.ship.body);
+    this.world.spawnShip();
     Matter.World.add(
       this.engine.world,
       this.rocks.map((r) => r.body),
@@ -321,37 +307,39 @@ export class Game {
     this._transitionTo(STATE.PLAYING);
   }
 
-  _updateAudio(dt) {
-    this.beatTimer -= dt;
-    if (this.beatTimer <= 0) {
-      this.beatInterval = clamp(
-        BEAT_INTERVAL_MAX - this.asteroids.length * BEAT_DENSITY_FACTOR,
-        BEAT_INTERVAL_MIN,
-        BEAT_INTERVAL_MAX,
-      );
-      this.beatTimer = this.beatInterval;
-      this.beatPhase ^= 1;
-      this.snd.throb(this.beatPhase);
+  update(dt) {
+    dt = Math.min(dt, 1 / 20);
+    this.t += dt;
+    if (dt > 0) {
+      this._dbgFPS += (1 / dt - this._dbgFPS) * 0.1;
+      this._dbgFrameMs += (dt * 1000 - this._dbgFrameMs) * 0.1;
     }
-    if (this.ufos.length > 0) {
-      this.ufoHumTimer -= dt;
-      if (this.ufoHumTimer <= 0) {
-        this.snd.ufoHum();
-        this.ufoHumTimer = UFO_HUM_INTERVAL;
-      }
-    }
-  }
 
-  // All logic that runs only in STATE.PLAYING.
-  _updatePlayingState(dt) {
+    if (this._updateStateInput()) return;
+
+    this.world.tickAudio(dt);
+    this.world.tickUniversal(dt);
+
+    if (this.state === STATE.DEAD) {
+      if (this.world.tickDead(dt)) {
+        if (this.lives > 0) {
+          this.world.spawnShip();
+          this._transitionTo(STATE.PLAYING);
+        } else {
+          this._transitionTo(STATE.GAMEOVER);
+        }
+      }
+      Input.flush();
+      return;
+    }
+
+    // ── PLAYING ──
     if (Input.wasPressed("F2") || Input.wasPressed("KeyQ"))
       this._debugCollision = !this._debugCollision;
 
-    this._updateShipAndBullets(dt);
-    this._updateUFOs(dt);
+    this.world.tickPlaying(dt, { score: this.score, bulletLife: this._bulletLife });
     this.collisions.updateBullet();
     this.collisions.updateShip();
-    this._tickDebris(dt);
     this.solarSystems = this.solarSystems.filter((s) => s.update(dt));
     this.turrets = this.turrets.filter((t) => t.update(dt));
     this._updateDebugStats();
@@ -371,32 +359,6 @@ export class Game {
     }
 
     Input.flush();
-  }
-
-  update(dt) {
-    dt = Math.min(dt, 1 / 20);
-    this.t += dt;
-    if (dt > 0) {
-      this._dbgFPS += (1 / dt - this._dbgFPS) * 0.1;
-      this._dbgFrameMs += (dt * 1000 - this._dbgFrameMs) * 0.1;
-    }
-
-    if (this._updateStateInput()) return;
-
-    this._updateAudio(dt);
-
-    // Update universally (all non-START states)
-    if (this.saturn) this.saturn.update(dt);
-    this.particles = this.particles.filter((p) => p.update(dt));
-    this.powerups = this.powerups.filter((p) => p.update(dt));
-    this.ufoBullets = this.ufoBullets.filter((b) => b.update(dt));
-
-    if (this.state === STATE.DEAD) {
-      this._updateDeadState(dt);
-      return;
-    }
-
-    this._updatePlayingState(dt);
   }
 
   // All world-space entity drawing, inside the camera transform.
@@ -560,27 +522,6 @@ export class Game {
 
   // ── Private helpers ─────────────────────────────────────────────────────
 
-  _safeShipPos() {
-    const sR = SHIP_SIZE * SHIP_HULL_FACTOR;
-    let x,
-      y,
-      tries = 0;
-    for (const margin of [sR + 50, sR + 15]) {
-      tries = 0;
-      do {
-        x = rand(60, WW - 60);
-        y = rand(60, WH - 60);
-        tries++;
-        const collides =
-          this.rocks.some((r) => dist({ x, y }, r) < r.collisionRadius + margin) ||
-          this.asteroids.some((a) => dist({ x, y }, a) < a.collisionRadius + margin) ||
-          this.pumices.some((p) => p.pointInsideMargin(x, y, margin));
-        if (!collides) return [x, y];
-      } while (tries < 300);
-    }
-    return [x, y];
-  }
-
   _safePumicePos(placed) {
     const margin = PUMICE_RADIUS_MAX + 10;
     let x,
@@ -596,28 +537,6 @@ export class Game {
         placed.some((p) => dist({ x, y }, p) < p.radius + margin))
     );
     return [x, y];
-  }
-
-  _syncBodies() {
-    for (const a of this.asteroids) {
-      a.x = a.body.position.x;
-      a.y = a.body.position.y;
-      a.rot = a.body.angle;
-    }
-  }
-
-  _capAsteroidSpeeds() {
-    for (const a of this.asteroids) {
-      const v = a.body.velocity;
-      const spd = Math.hypot(v.x, v.y);
-      const maxSpd = (ASTEROID_SPEED[a.size] * 2.5) / 60;
-      if (spd > maxSpd) {
-        Matter.Body.setVelocity(a.body, {
-          x: (v.x / spd) * maxSpd,
-          y: (v.y / spd) * maxSpd,
-        });
-      }
-    }
   }
 
   _asteroidsForLevel() {
@@ -887,85 +806,6 @@ export class Game {
     return false;
   }
 
-  _updateDeadState(dt) {
-    this.deadTimer -= dt;
-    this.asteroids.forEach((a) => a.update(dt));
-    this.ufos = this.ufos.filter((u) => u.update(dt, null));
-    this.solarSystems = this.solarSystems.filter((s) => s.update(dt));
-    Matter.Engine.update(this.engine, dt * 1000);
-    this._syncBodies();
-    this._capAsteroidSpeeds();
-    this._tickDebris(dt);
-    if (this.deadTimer <= 0) {
-      if (this.lives > 0) {
-        this.ship = this.mode.createShip();
-        [this.ship.x, this.ship.y] = this._safeShipPos();
-        Matter.Body.setPosition(this.ship.body, {
-          x: this.ship.x,
-          y: this.ship.y,
-        });
-        Matter.World.add(this.engine.world, this.ship.body);
-        this._transitionTo(STATE.PLAYING);
-      } else {
-        this._transitionTo(STATE.GAMEOVER);
-      }
-    }
-    Input.flush();
-  }
-
-  _updateShipAndBullets(dt) {
-    this.ship.update(dt);
-
-    if (this.ship.thrusting) {
-      for (let i = 0; i < 2; i++) {
-        const ex = this.ship.x - Math.cos(this.ship.angle) * SHIP_SIZE * 0.35;
-        const ey = this.ship.y - Math.sin(this.ship.angle) * SHIP_SIZE * 0.35;
-        const p = new Particle(ex, ey, `hsl(${rand(20, 50)},100%,60%)`);
-        p.vx = -Math.cos(this.ship.angle) * rand(40, 100) + rand(-25, 25);
-        p.vy = -Math.sin(this.ship.angle) * rand(40, 100) + rand(-25, 25);
-        p.life = rand(0.1, 0.28);
-        p.maxLife = p.life;
-        p.size = rand(0.8, 2.0);
-        this.particles.push(p);
-      }
-    }
-
-    if (Input.teleport() && this.ship.invulnerable <= 0) {
-      const [tx, ty] = this._safeShipPos();
-      this.ship.teleport(tx, ty);
-      this.snd.powerUp("shield");
-    }
-
-    if (this.bullets.length < MAX_BULLETS && this.ship.canFire()) {
-      this.bullets.push(...this.ship.fire(this._bulletLife));
-      this.snd.shoot();
-    }
-
-    this.bullets = this.bullets.filter((b) => b.update(dt));
-    this.asteroids.forEach((a) => a.update(dt));
-
-    Matter.Body.setPosition(this.ship.body, { x: this.ship.x, y: this.ship.y });
-    Matter.Body.setVelocity(this.ship.body, {
-      x: this.ship.vx / 60,
-      y: this.ship.vy / 60,
-    });
-
-    Matter.Engine.update(this.engine, dt * 1000);
-    this._syncBodies();
-    this._capAsteroidSpeeds();
-  }
-
-  _updateUFOs(dt) {
-    this.ufoTimer -= dt;
-    if (this.ufoTimer <= 0) {
-      const size =
-        this.score >= UFO_SMALL_SCORE_THRESHOLD && Math.random() < UFO_SMALL_CHANCE ? 1 : 0;
-      this.ufos.push(this.mode.createUfo(size, (b) => this.ufoBullets.push(b)));
-      this.ufoTimer = UFO_SPAWN_MIN + rand(0, UFO_SPAWN_JITTER);
-    }
-    this.ufos = this.ufos.filter((u) => u.update(dt, this.ship));
-  }
-
   _updateDebugStats() {
     if (!this._debugCollision) return;
     const pumiceUnits = this.pumices.reduce(
@@ -1050,15 +890,5 @@ export class Game {
       Matter.World.add(this.engine.world, d.body);
       this.debris.push(d);
     }
-  }
-
-  _tickDebris(dt) {
-    this.debris = this.debris.filter((d) => {
-      if (!d.update(dt)) {
-        Matter.World.remove(this.engine.world, d.body);
-        return false;
-      }
-      return true;
-    });
   }
 }
