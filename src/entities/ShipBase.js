@@ -148,6 +148,24 @@ class ShipBase {
       ),
     ];
   }
+
+  // Reflects the ship's velocity off a surface whose outward normal points from (ox,oy) to ship.
+  bounceOff(ox, oy) {
+    const dx = this.x - ox,
+      dy = this.y - oy;
+    const d = Math.hypot(dx, dy) || 1;
+    const nx = dx / d,
+      ny = dy / d;
+    const dot = this.vx * nx + this.vy * ny;
+    if (dot > 0) return; // already moving away — skip re-bounce
+    this.vx -= 2 * dot * nx;
+    this.vy -= 2 * dot * ny;
+    const spd = Math.hypot(this.vx, this.vy);
+    if (spd < SHIP_BOUNCE_MIN_SPEED) {
+      this.vx = nx * SHIP_BOUNCE_MIN_SPEED;
+      this.vy = ny * SHIP_BOUNCE_MIN_SPEED;
+    }
+  }
 }
 
 if (typeof module !== "undefined") module.exports = { ShipBase };

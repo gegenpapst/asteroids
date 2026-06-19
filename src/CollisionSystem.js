@@ -1,8 +1,12 @@
 "use strict";
 
 // Handles all per-frame collision detection for the game.
-// Reads entity arrays and calls Game helper methods (_destroyAsteroid, _bounceShip, etc.)
-// rather than manipulating entity internals directly.
+// Reads Game entity arrays directly and calls back into the following Game/entity interface:
+//   g._destroyAsteroid(a, angle, vx, vy, cross) → children[]
+//   g._killShip()
+//   g._addScore(pts)
+//   g._boom(x, y, size)
+//   g.ship.bounceOff(ox, oy)  ← defined on ShipBase
 
 function _overlaps(a, b, rA, rB) {
   return dist(a, b) < rA + rB;
@@ -137,7 +141,7 @@ class CollisionSystem {
           const cross = hitDx * (g.ship.vy / sLen) - hitDy * (g.ship.vx / sLen);
           const children = g._destroyAsteroid(a, null, g.ship.vx, g.ship.vy, cross);
           g.asteroids.splice(ai, 1, ...children);
-          g._bounceShip(a.x, a.y);
+          g.ship.bounceOff(a.x, a.y);
         } else {
           g._killShip();
         }
@@ -152,7 +156,7 @@ class CollisionSystem {
     for (const r of g.rocks) {
       if (_overlaps(g.ship, r, g.ship.hitRadius, r.collisionRadius)) {
         if (g.ship.shieldTimer <= 0) g._killShip();
-        else g._bounceShip(r.x, r.y);
+        else g.ship.bounceOff(r.x, r.y);
         break;
       }
     }
@@ -165,7 +169,7 @@ class CollisionSystem {
       if (!p.alive) continue;
       if (p.handleShipHit(g.ship)) {
         if (g.ship.shieldTimer <= 0) g._killShip();
-        else g._bounceShip(p.x, p.y);
+        else g.ship.bounceOff(p.x, p.y);
         break;
       }
     }
@@ -176,7 +180,7 @@ class CollisionSystem {
     if (!g.ship || g.ship.invulnerable > 0) return;
     for (const u of g.ufos) {
       if (_overlaps(g.ship, u, g.ship.hitRadius, u.radius)) {
-        if (g.ship.shieldTimer > 0) g._bounceShip(u.x, u.y);
+        if (g.ship.shieldTimer > 0) g.ship.bounceOff(u.x, u.y);
         else g._killShip();
         break;
       }
@@ -201,7 +205,7 @@ class CollisionSystem {
     if (!g.ship || g.ship.invulnerable > 0) return;
     for (const t of g.turrets) {
       if (_overlaps(g.ship, t, g.ship.hitRadius, t.radius)) {
-        if (g.ship.shieldTimer > 0) g._bounceShip(t.x, t.y);
+        if (g.ship.shieldTimer > 0) g.ship.bounceOff(t.x, t.y);
         else g._killShip();
         break;
       }

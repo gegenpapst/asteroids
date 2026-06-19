@@ -12,6 +12,19 @@ const STATE = Object.freeze({
   QUIT_CONFIRM: 7,
 });
 
+// Valid state transitions: source state → allowed target states.
+// Checked in _transitionTo() when _debugCollision is on.
+const _VALID_TRANSITIONS = {
+  [STATE.START]: [STATE.CONFIG],
+  [STATE.GAMEOVER]: [STATE.CONFIG],
+  [STATE.CONFIG]: [STATE.START, STATE.GAMEOVER, STATE.PLAYING, STATE.CONFIG_DETAIL],
+  [STATE.CONFIG_DETAIL]: [STATE.CONFIG],
+  [STATE.PLAYING]: [STATE.CONFIG, STATE.DEAD, STATE.HELP, STATE.QUIT_CONFIRM],
+  [STATE.DEAD]: [STATE.PLAYING, STATE.GAMEOVER],
+  [STATE.HELP]: [STATE.PLAYING],
+  [STATE.QUIT_CONFIRM]: [STATE.PLAYING, STATE.GAMEOVER],
+};
+
 // Derived from CONFIG_PARAMS — stable across all _handleConfigDetailInput calls.
 const _CONFIG_PARAM_KEYS = Object.keys(CONFIG_PARAMS);
 
@@ -136,7 +149,7 @@ class Game {
       else if (p.body) Matter.World.add(this.engine.world, p.body);
     }
     this._nextLevel();
-    this.state = STATE.PLAYING;
+    this._transitionTo(STATE.PLAYING);
   }
 
   update(dt) {
@@ -515,6 +528,17 @@ class Game {
     this.snd[_BOOM_SOUNDS[size]]();
   }
 
+  // Transitions to a new game state. Logs a warning in debug mode for unexpected edges.
+  _transitionTo(newState) {
+    if (this._debugCollision) {
+      const allowed = _VALID_TRANSITIONS[this.state] ?? [];
+      if (!allowed.includes(newState)) {
+        console.warn(`[state] unexpected transition ${this.state} → ${newState}`);
+      }
+    }
+    this.state = newState;
+  }
+
   // Shared asteroid-destruction sequence used by both bullet and shield collisions.
   // Returns the split children (already added to the world).
   _destroyAsteroid(asteroid, bulletAngle, debrisVx, debrisVy, spinCross) {
@@ -534,7 +558,7 @@ class Game {
     this.lives--;
     Matter.World.remove(this.engine.world, this.ship.body);
     this.ship = null;
-    this.state = STATE.DEAD;
+    this._transitionTo(STATE.DEAD);
     this.deadTimer = RESPAWN_DELAY;
     this.bullets = [];
     this.ufoBullets = [];
@@ -566,14 +590,14 @@ class Game {
     if (Input.start() || Input.config()) {
       this._configPrevState = this.state;
       this._configFocus = "mode";
-      this.state = STATE.CONFIG;
+      this._transitionTo(STATE.CONFIG);
     }
     Input.flush();
     return true;
   }
 
   _handleHelpInput() {
-    if (Input.help() || Input.wasPressed("Escape")) this.state = STATE.PLAYING;
+    if (Input.help() || Input.wasPressed("Escape")) this._transitionTo(STATE.PLAYING);
     Input.flush();
     return true;
   }
@@ -603,20 +627,20 @@ class Game {
       (Input.wasPressed("Enter") && this._configFocus === "details")
     ) {
       this._detailCursor = 0;
-      this.state = STATE.CONFIG_DETAIL;
+      this._transitionTo(STATE.CONFIG_DETAIL);
       Input.flush();
       return true;
     }
 
     if (Input.wasPressed("Escape")) {
-      this.state = this._configPrevState;
+      this._transitionTo(this._configPrevState);
       Input.flush();
       return true;
     }
 
     // Start game: Enter when mode tiles are focused, or C key
     if ((Input.wasPressed("Enter") && this._configFocus === "mode") || Input.config()) {
-      if (readOnly) this.state = STATE.PLAYING;
+      if (readOnly) this._transitionTo(STATE.PLAYING);
       else this.start();
     }
     Input.flush();
@@ -639,7 +663,7 @@ class Game {
     }
     if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
       this._configFocus = "mode";
-      this.state = STATE.CONFIG;
+      this._transitionTo(STATE.CONFIG);
     }
     Input.flush();
     return true;
@@ -647,9 +671,9 @@ class Game {
 
   _handleQuitConfirmInput() {
     if (Input.wasPressed("KeyY") || Input.wasPressed("KeyZ")) {
-      this.state = STATE.GAMEOVER;
+      this._transitionTo(STATE.GAMEOVER);
     } else if (Input.wasPressed("KeyN") || Input.wasPressed("Escape")) {
-      this.state = STATE.PLAYING;
+      this._transitionTo(STATE.PLAYING);
     }
     Input.flush();
     return true;
@@ -657,19 +681,19 @@ class Game {
 
   _handlePlayingInput() {
     if (Input.wasPressed("Escape")) {
-      this.state = STATE.QUIT_CONFIRM;
+      this._transitionTo(STATE.QUIT_CONFIRM);
       Input.flush();
       return true;
     }
     if (Input.help()) {
-      this.state = STATE.HELP;
+      this._transitionTo(STATE.HELP);
       Input.flush();
       return true;
     }
     if (Input.config()) {
       this._configPrevState = STATE.PLAYING;
       this._configFocus = "mode";
-      this.state = STATE.CONFIG;
+      this._transitionTo(STATE.CONFIG);
       Input.flush();
       return true;
     }
@@ -696,9 +720,9 @@ class Game {
           y: this.ship.y,
         });
         Matter.World.add(this.engine.world, this.ship.body);
-        this.state = STATE.PLAYING;
+        this._transitionTo(STATE.PLAYING);
       } else {
-        this.state = STATE.GAMEOVER;
+        this._transitionTo(STATE.GAMEOVER);
       }
     }
     Input.flush();
@@ -813,20 +837,7 @@ class Game {
   }
 
   _bounceShip(ox, oy) {
-    const dx = this.ship.x - ox,
-      dy = this.ship.y - oy;
-    const d = Math.hypot(dx, dy) || 1;
-    const nx = dx / d,
-      ny = dy / d;
-    const dot = this.ship.vx * nx + this.ship.vy * ny;
-    if (dot > 0) return; // already moving away — skip re-bounce
-    this.ship.vx -= 2 * dot * nx;
-    this.ship.vy -= 2 * dot * ny;
-    const spd = Math.hypot(this.ship.vx, this.ship.vy);
-    if (spd < SHIP_BOUNCE_MIN_SPEED) {
-      this.ship.vx = nx * SHIP_BOUNCE_MIN_SPEED;
-      this.ship.vy = ny * SHIP_BOUNCE_MIN_SPEED;
-    }
+    this.ship.bounceOff(ox, oy);
   }
 
   _applyAsteroidFilter() {

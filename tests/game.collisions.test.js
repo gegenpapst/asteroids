@@ -26,6 +26,8 @@ global.MetaballMode = class {
 
 // ── Entity globals required by _boom / _spawnDebris ──────────────────────────
 
+const { ShipBase } = require("../src/entities/ShipBase.js");
+
 const { Particle } = require("../src/entities/Particle.js");
 global.Particle = Particle;
 
@@ -41,7 +43,7 @@ const { Game } = require("../src/Game.js");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Ship stub — behaves like ShipBase (getters for radius/hitRadius). */
+/** Ship stub — behaves like ShipBase (getters for radius/hitRadius, real bounceOff). */
 function makeShip(overrides = {}) {
   const s = {
     x: 400,
@@ -51,6 +53,7 @@ function makeShip(overrides = {}) {
     invulnerable: 0,
     shieldTimer: 0,
     body: {},
+    bounceOff: ShipBase.prototype.bounceOff,
   };
   Object.defineProperty(s, "radius", {
     get() {
