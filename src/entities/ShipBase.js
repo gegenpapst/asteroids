@@ -44,12 +44,15 @@ class ShipBase {
   }
 
   update(dt) {
-    if (this.invulnerable > 0) this.invulnerable -= dt;
-    if (this.fireTimer > 0) this.fireTimer -= dt;
-    if (this.shieldTimer > 0) this.shieldTimer -= dt;
-    if (this.rapidTimer > 0) this.rapidTimer -= dt;
-    if (this.spreadTimer > 0) this.spreadTimer -= dt;
-    if (this.heavyTimer > 0) this.heavyTimer -= dt;
+    for (const k of [
+      "invulnerable",
+      "fireTimer",
+      "shieldTimer",
+      "rapidTimer",
+      "spreadTimer",
+      "heavyTimer",
+    ])
+      if (this[k] > 0) this[k] -= dt;
 
     if (Input.left()) this.angle -= SHIP_ROTATION * dt;
     if (Input.right()) this.angle += SHIP_ROTATION * dt;
@@ -79,6 +82,7 @@ class ShipBase {
       this.vy *= s;
     }
 
+    // dt*60 normalises exponential decay to be frame-rate independent
     const friction = Math.pow(SHIP_FRICTION, dt * 60);
     this.vx *= friction;
     this.vy *= friction;
@@ -143,6 +147,24 @@ class ShipBase {
         power,
       ),
     ];
+  }
+
+  // Reflects the ship's velocity off a surface whose outward normal points from (ox,oy) to ship.
+  bounceOff(ox, oy) {
+    const dx = this.x - ox,
+      dy = this.y - oy;
+    const d = Math.hypot(dx, dy) || 1;
+    const nx = dx / d,
+      ny = dy / d;
+    const dot = this.vx * nx + this.vy * ny;
+    if (dot > 0) return; // already moving away — skip re-bounce
+    this.vx -= 2 * dot * nx;
+    this.vy -= 2 * dot * ny;
+    const spd = Math.hypot(this.vx, this.vy);
+    if (spd < SHIP_BOUNCE_MIN_SPEED) {
+      this.vx = nx * SHIP_BOUNCE_MIN_SPEED;
+      this.vy = ny * SHIP_BOUNCE_MIN_SPEED;
+    }
   }
 }
 

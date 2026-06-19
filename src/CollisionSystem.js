@@ -1,8 +1,12 @@
 "use strict";
 
 // Handles all per-frame collision detection for the game.
-// Reads entity arrays and calls Game helper methods (_destroyAsteroid, _bounceShip, etc.)
-// rather than manipulating entity internals directly.
+// Reads Game entity arrays directly and calls back into the following Game/entity interface:
+//   g._destroyAsteroid(a, angle, vx, vy, cross) → children[]
+//   g._killShip()
+//   g._addScore(pts)
+//   g._boom(x, y, size)
+//   g.ship.bounceOff(ox, oy)  ← defined on ShipBase
 
 function _overlaps(a, b, rA, rB) {
   return dist(a, b) < rA + rB;
@@ -37,16 +41,24 @@ class CollisionSystem {
 
   // ── Bullet sub-checks ───────────────────────────────────────────────────
 
+  // Iterates bullets in reverse; removes each bullet for which testFn returns true.
+  _scanBullets(testFn) {
+    const bullets = this._g.bullets;
+    for (let bi = bullets.length - 1; bi >= 0; bi--) {
+      if (testFn(bullets[bi], bi)) bullets.splice(bi, 1);
+    }
+  }
+
   _bulletVsAsteroids() {
     const g = this._g;
-    outer: for (let bi = g.bullets.length - 1; bi >= 0; bi--) {
-      const b = g.bullets[bi];
+    this._scanBullets((b) => {
       for (let ai = g.asteroids.length - 1; ai >= 0; ai--) {
         const a = g.asteroids[ai];
         if (_overlaps(b, a, b.radius, a.collisionRadius)) {
           const hitDx = b.x - a.x,
             hitDy = b.y - a.y;
           const bLen = Math.hypot(b.vx, b.vy) || 1;
+          // signed 2D cross product: lever-arm from hit point to bullet axis → angular impulse
           const cross = hitDx * (b.vy / bLen) - hitDy * (b.vx / bLen);
           g._addScore(a.score);
           if (Math.random() < g._powerupChance)
@@ -55,59 +67,49 @@ class CollisionSystem {
             );
           const children = g._destroyAsteroid(a, Math.atan2(b.vy, b.vx), b.vx, b.vy, cross);
           g.asteroids.splice(ai, 1, ...children);
-          g.bullets.splice(bi, 1);
-          continue outer;
+          return true;
         }
       }
-    }
+      return false;
+    });
   }
 
   _bulletVsUfos() {
     const g = this._g;
-    outer: for (let bi = g.bullets.length - 1; bi >= 0; bi--) {
-      const b = g.bullets[bi];
+    this._scanBullets((b) => {
       for (let ui = g.ufos.length - 1; ui >= 0; ui--) {
         const u = g.ufos[ui];
         if (_overlaps(b, u, b.radius, u.radius)) {
           g._addScore(u.score);
           g._boom(u.x, u.y, 1);
           g.ufos.splice(ui, 1);
-          g.bullets.splice(bi, 1);
-          continue outer;
+          return true;
         }
       }
-    }
+      return false;
+    });
   }
 
   _bulletVsRocks() {
     const g = this._g;
-    for (let bi = g.bullets.length - 1; bi >= 0; bi--) {
-      const b = g.bullets[bi];
-      if (g.rocks.some((r) => _overlaps(b, r, b.radius, r.collisionRadius))) {
-        g.bullets.splice(bi, 1);
-      }
-    }
+    this._scanBullets((b) => g.rocks.some((r) => _overlaps(b, r, b.radius, r.collisionRadius)));
   }
 
   _bulletVsPumices() {
     const g = this._g;
-    outer: for (let bi = g.bullets.length - 1; bi >= 0; bi--) {
-      const b = g.bullets[bi];
+    this._scanBullets((b) => {
       for (const p of g.pumices) {
         if (!p.alive) continue;
-        if (p.handleBulletHit(b, g.engine.world, g)) {
-          g.bullets.splice(bi, 1);
-          continue outer;
-        }
+        if (p.handleBulletHit(b, g.engine.world, g)) return true;
       }
-    }
+      return false;
+    });
     g.pumices = g.pumices.filter((p) => p.alive);
   }
 
   _bulletVsTurrets() {
     const g = this._g;
-    outer: for (let bi = g.bullets.length - 1; bi >= 0; bi--) {
-      const b = g.bullets[bi];
+    this._scanBullets((b) => {
       for (let ti = g.turrets.length - 1; ti >= 0; ti--) {
         const t = g.turrets[ti];
         if (_overlaps(b, t, b.radius, t.radius)) {
@@ -116,11 +118,11 @@ class CollisionSystem {
             g._addScore(TURRET_SCORE);
             g.turrets.splice(ti, 1);
           }
-          g.bullets.splice(bi, 1);
-          continue outer;
+          return true; // bullet consumed on any turret hit, regardless of HP
         }
       }
-    }
+      return false;
+    });
   }
 
   // ── Ship sub-checks ─────────────────────────────────────────────────────
@@ -135,10 +137,11 @@ class CollisionSystem {
           const sLen = Math.hypot(g.ship.vx, g.ship.vy) || 1;
           const hitDx = a.x - g.ship.x,
             hitDy = a.y - g.ship.y;
+          // signed 2D cross product: lever-arm from contact point to ship velocity axis → angular impulse
           const cross = hitDx * (g.ship.vy / sLen) - hitDy * (g.ship.vx / sLen);
           const children = g._destroyAsteroid(a, null, g.ship.vx, g.ship.vy, cross);
           g.asteroids.splice(ai, 1, ...children);
-          g._bounceShip(a.x, a.y);
+          g.ship.bounceOff(a.x, a.y);
         } else {
           g._killShip();
         }
@@ -153,7 +156,7 @@ class CollisionSystem {
     for (const r of g.rocks) {
       if (_overlaps(g.ship, r, g.ship.hitRadius, r.collisionRadius)) {
         if (g.ship.shieldTimer <= 0) g._killShip();
-        else g._bounceShip(r.x, r.y);
+        else g.ship.bounceOff(r.x, r.y);
         break;
       }
     }
@@ -166,7 +169,7 @@ class CollisionSystem {
       if (!p.alive) continue;
       if (p.handleShipHit(g.ship)) {
         if (g.ship.shieldTimer <= 0) g._killShip();
-        else g._bounceShip(p.x, p.y);
+        else g.ship.bounceOff(p.x, p.y);
         break;
       }
     }
@@ -177,7 +180,7 @@ class CollisionSystem {
     if (!g.ship || g.ship.invulnerable > 0) return;
     for (const u of g.ufos) {
       if (_overlaps(g.ship, u, g.ship.hitRadius, u.radius)) {
-        if (g.ship.shieldTimer > 0) g._bounceShip(u.x, u.y);
+        if (g.ship.shieldTimer > 0) g.ship.bounceOff(u.x, u.y);
         else g._killShip();
         break;
       }
@@ -202,7 +205,7 @@ class CollisionSystem {
     if (!g.ship || g.ship.invulnerable > 0) return;
     for (const t of g.turrets) {
       if (_overlaps(g.ship, t, g.ship.hitRadius, t.radius)) {
-        if (g.ship.shieldTimer > 0) g._bounceShip(t.x, t.y);
+        if (g.ship.shieldTimer > 0) g.ship.bounceOff(t.x, t.y);
         else g._killShip();
         break;
       }

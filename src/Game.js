@@ -12,33 +12,24 @@ const STATE = Object.freeze({
   QUIT_CONFIRM: 7,
 });
 
-// Presets for Beginner / Novice / Expert (index = mode - 1)
-const MODES = [
-  {
-    bulletRange: 3,
-    powerupFreq: 3,
-    rockCount: 1,
-    pumiceCount: 1,
-    asteroidBounce: 1,
-    worldSize: 1,
-  }, // Beginner
-  {
-    bulletRange: 2,
-    powerupFreq: 2,
-    rockCount: 2,
-    pumiceCount: 2,
-    asteroidBounce: 1,
-    worldSize: 2,
-  }, // Novice
-  {
-    bulletRange: 1,
-    powerupFreq: 1,
-    rockCount: 3,
-    pumiceCount: 3,
-    asteroidBounce: 2,
-    worldSize: 3,
-  }, // Expert
-];
+// Valid state transitions: source state → allowed target states.
+// Checked in _transitionTo() when _debugCollision is on.
+const _VALID_TRANSITIONS = {
+  [STATE.START]: [STATE.CONFIG],
+  [STATE.GAMEOVER]: [STATE.CONFIG],
+  [STATE.CONFIG]: [STATE.START, STATE.GAMEOVER, STATE.PLAYING, STATE.CONFIG_DETAIL],
+  [STATE.CONFIG_DETAIL]: [STATE.CONFIG],
+  [STATE.PLAYING]: [STATE.CONFIG, STATE.DEAD, STATE.HELP, STATE.QUIT_CONFIRM],
+  [STATE.DEAD]: [STATE.PLAYING, STATE.GAMEOVER],
+  [STATE.HELP]: [STATE.PLAYING],
+  [STATE.QUIT_CONFIRM]: [STATE.PLAYING, STATE.GAMEOVER],
+};
+
+// Derived from CONFIG_PARAMS — stable across all _handleConfigDetailInput calls.
+const _CONFIG_PARAM_KEYS = Object.keys(CONFIG_PARAMS);
+
+// Sound method names indexed by asteroid size — avoids allocating closures in _boom().
+const _BOOM_SOUNDS = ["explodeLarge", "explodeMed", "explodeSmall"];
 
 class Game {
   constructor() {
@@ -158,7 +149,7 @@ class Game {
       else if (p.body) Matter.World.add(this.engine.world, p.body);
     }
     this._nextLevel();
-    this.state = STATE.PLAYING;
+    this._transitionTo(STATE.PLAYING);
   }
 
   update(dt) {
@@ -215,7 +206,7 @@ class Game {
     this.collisions.updateShip();
     this._tickDebris(dt);
     this.solarSystems = this.solarSystems.filter((s) => s.update(dt));
-    this.turrets.forEach((t) => t.update(dt));
+    this.turrets = this.turrets.filter((t) => t.update(dt));
     this._updateDebugStats();
 
     // Level clear (UFOs persist between levels; solar systems must be fully destroyed first)
@@ -358,15 +349,27 @@ class Game {
     line(`Entities:  ${entities}`, "#aaa", H - 62);
     line(
       `Collision: ${this._dbgCC} / Peak: ${this._dbgPeakCC}`,
-      this._dbgPeakCC > 200 ? "#f84" : this._dbgPeakCC > 80 ? "#ff4" : "#4f8",
+      this._dbgPeakCC > DBG_COLLISION_CRIT
+        ? "#f84"
+        : this._dbgPeakCC > DBG_COLLISION_WARN
+          ? "#ff4"
+          : "#4f8",
       H - 48,
     );
     line(
       `Frame:     ${ms} ms`,
-      parseFloat(ms) > 20 ? "#f84" : parseFloat(ms) > 17 ? "#ff4" : "#4f8",
+      parseFloat(ms) > DBG_FRAME_CRIT_MS
+        ? "#f84"
+        : parseFloat(ms) > DBG_FRAME_WARN_MS
+          ? "#ff4"
+          : "#4f8",
       H - 34,
     );
-    line(`FPS:       ${fps}`, fps < 50 ? "#f84" : fps < 58 ? "#ff4" : "#4f8", H - 20);
+    line(
+      `FPS:       ${fps}`,
+      fps < DBG_FPS_CRIT ? "#f84" : fps < DBG_FPS_WARN ? "#ff4" : "#4f8",
+      H - 20,
+    );
     ctx.restore();
   }
 
@@ -435,9 +438,24 @@ class Game {
     }
   }
 
+  // How many asteroids to spawn for the current level (ramps up, then caps).
+  _asteroidsForLevel() {
+    return Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
+  }
+
+  // How many solar systems to place at the current level (+1 every 2 levels after start).
+  _solarCountForLevel() {
+    return Math.min(Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1, SOLAR_MAX_COUNT);
+  }
+
+  // How many turrets to place at the current level (+1 per level after start, then caps).
+  _turretCountForLevel() {
+    return Math.min(this.level - TURRET_START_LEVEL + 1, TURRET_MAX_COUNT);
+  }
+
   _nextLevel() {
     this.level++;
-    const count = Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
+    const count = this._asteroidsForLevel();
     const cx = WW / 2,
       cy = WH / 2;
     const maxBumps = Math.min(Math.max(this.level - 1, 1), 7);
@@ -455,10 +473,7 @@ class Game {
 
     // Solar systems: appear from level SOLAR_START_LEVEL, max SOLAR_MAX_COUNT at a time
     if (this.level >= SOLAR_START_LEVEL) {
-      const solarCount = Math.min(
-        Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1,
-        SOLAR_MAX_COUNT,
-      );
+      const solarCount = this._solarCountForLevel();
       for (let si = 0; si < solarCount; si++) {
         const ax = rand(WW * SOLAR_SPAWN_MARGIN, WW * (1 - SOLAR_SPAWN_MARGIN));
         const ay = rand(WH * SOLAR_SPAWN_MARGIN, WH * (1 - SOLAR_SPAWN_MARGIN));
@@ -483,8 +498,8 @@ class Game {
 
     // Turrets: appear from TURRET_START_LEVEL, one additional per level up to TURRET_MAX_COUNT
     if (this.level >= TURRET_START_LEVEL) {
-      const count = Math.min(this.level - TURRET_START_LEVEL + 1, TURRET_MAX_COUNT);
-      for (let i = 0; i < count; i++) {
+      const turretCount = this._turretCountForLevel();
+      for (let i = 0; i < turretCount; i++) {
         let tx, ty;
         do {
           tx = rand(TURRET_RADIUS * 2, WW - TURRET_RADIUS * 2);
@@ -510,9 +525,18 @@ class Game {
 
   _boom(x, y, size) {
     for (let i = 0; i < BOOM_PARTICLE_COUNTS[size]; i++) this.particles.push(new Particle(x, y));
-    [() => this.snd.explodeLarge(), () => this.snd.explodeMed(), () => this.snd.explodeSmall()][
-      size
-    ]();
+    this.snd[_BOOM_SOUNDS[size]]();
+  }
+
+  // Transitions to a new game state. Logs a warning in debug mode for unexpected edges.
+  _transitionTo(newState) {
+    if (this._debugCollision) {
+      const allowed = _VALID_TRANSITIONS[this.state] ?? [];
+      if (!allowed.includes(newState)) {
+        console.warn(`[state] unexpected transition ${this.state} → ${newState}`);
+      }
+    }
+    this.state = newState;
   }
 
   // Shared asteroid-destruction sequence used by both bullet and shield collisions.
@@ -528,13 +552,13 @@ class Game {
   }
 
   _killShip() {
-    for (let i = 0; i < 22; i++)
+    for (let i = 0; i < SHIP_DEATH_PARTICLES; i++)
       this.particles.push(new Particle(this.ship.x, this.ship.y, "#8ef"));
     this.snd.shipDie();
     this.lives--;
     Matter.World.remove(this.engine.world, this.ship.body);
     this.ship = null;
-    this.state = STATE.DEAD;
+    this._transitionTo(STATE.DEAD);
     this.deadTimer = RESPAWN_DELAY;
     this.bullets = [];
     this.ufoBullets = [];
@@ -566,14 +590,14 @@ class Game {
     if (Input.start() || Input.config()) {
       this._configPrevState = this.state;
       this._configFocus = "mode";
-      this.state = STATE.CONFIG;
+      this._transitionTo(STATE.CONFIG);
     }
     Input.flush();
     return true;
   }
 
   _handleHelpInput() {
-    if (Input.help() || Input.wasPressed("Escape")) this.state = STATE.PLAYING;
+    if (Input.help() || Input.wasPressed("Escape")) this._transitionTo(STATE.PLAYING);
     Input.flush();
     return true;
   }
@@ -592,7 +616,7 @@ class Game {
       if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
       if (Input.wasPressed("ArrowRight")) this.config.mode = Math.min(3, this.config.mode + 1);
       if (this.config.mode !== prevMode) {
-        Object.assign(this.config, MODES[this.config.mode - 1]);
+        Object.assign(this.config, GAME_MODES[this.config.mode - 1]);
         this._applyAsteroidFilter();
       }
     }
@@ -603,20 +627,20 @@ class Game {
       (Input.wasPressed("Enter") && this._configFocus === "details")
     ) {
       this._detailCursor = 0;
-      this.state = STATE.CONFIG_DETAIL;
+      this._transitionTo(STATE.CONFIG_DETAIL);
       Input.flush();
       return true;
     }
 
     if (Input.wasPressed("Escape")) {
-      this.state = this._configPrevState;
+      this._transitionTo(this._configPrevState);
       Input.flush();
       return true;
     }
 
     // Start game: Enter when mode tiles are focused, or C key
     if ((Input.wasPressed("Enter") && this._configFocus === "mode") || Input.config()) {
-      if (readOnly) this.state = STATE.PLAYING;
+      if (readOnly) this._transitionTo(STATE.PLAYING);
       else this.start();
     }
     Input.flush();
@@ -625,22 +649,7 @@ class Game {
 
   _handleConfigDetailInput() {
     const readOnly = this._configPrevState === STATE.PLAYING;
-    const params = [
-      "bulletRange",
-      "powerupFreq",
-      "rockCount",
-      "pumiceCount",
-      "asteroidBounce",
-      "worldSize",
-    ];
-    const paramMax = {
-      bulletRange: 3,
-      powerupFreq: 3,
-      rockCount: 3,
-      pumiceCount: 3,
-      asteroidBounce: 2,
-      worldSize: 3,
-    };
+    const params = _CONFIG_PARAM_KEYS;
     if (!readOnly) {
       if (Input.wasPressed("ArrowUp"))
         this._detailCursor = (this._detailCursor + params.length - 1) % params.length;
@@ -649,12 +658,12 @@ class Game {
       const key = params[this._detailCursor];
       if (Input.wasPressed("ArrowLeft")) this.config[key] = Math.max(1, this.config[key] - 1);
       if (Input.wasPressed("ArrowRight"))
-        this.config[key] = Math.min(paramMax[key], this.config[key] + 1);
+        this.config[key] = Math.min(CONFIG_PARAMS[key].max, this.config[key] + 1);
       if (key === "asteroidBounce") this._applyAsteroidFilter();
     }
     if (Input.wasPressed("Escape") || Input.wasPressed("KeyD") || Input.wasPressed("Enter")) {
       this._configFocus = "mode";
-      this.state = STATE.CONFIG;
+      this._transitionTo(STATE.CONFIG);
     }
     Input.flush();
     return true;
@@ -662,9 +671,9 @@ class Game {
 
   _handleQuitConfirmInput() {
     if (Input.wasPressed("KeyY") || Input.wasPressed("KeyZ")) {
-      this.state = STATE.GAMEOVER;
+      this._transitionTo(STATE.GAMEOVER);
     } else if (Input.wasPressed("KeyN") || Input.wasPressed("Escape")) {
-      this.state = STATE.PLAYING;
+      this._transitionTo(STATE.PLAYING);
     }
     Input.flush();
     return true;
@@ -672,19 +681,19 @@ class Game {
 
   _handlePlayingInput() {
     if (Input.wasPressed("Escape")) {
-      this.state = STATE.QUIT_CONFIRM;
+      this._transitionTo(STATE.QUIT_CONFIRM);
       Input.flush();
       return true;
     }
     if (Input.help()) {
-      this.state = STATE.HELP;
+      this._transitionTo(STATE.HELP);
       Input.flush();
       return true;
     }
     if (Input.config()) {
       this._configPrevState = STATE.PLAYING;
       this._configFocus = "mode";
-      this.state = STATE.CONFIG;
+      this._transitionTo(STATE.CONFIG);
       Input.flush();
       return true;
     }
@@ -711,9 +720,9 @@ class Game {
           y: this.ship.y,
         });
         Matter.World.add(this.engine.world, this.ship.body);
-        this.state = STATE.PLAYING;
+        this._transitionTo(STATE.PLAYING);
       } else {
-        this.state = STATE.GAMEOVER;
+        this._transitionTo(STATE.GAMEOVER);
       }
     }
     Input.flush();
@@ -806,20 +815,16 @@ class Game {
   }
 
   get _bulletLife() {
-    return [0.35, 0.65, 1.0][this.config.bulletRange - 1];
+    return BULLET_LIFE_LEVELS[this.config.bulletRange - 1];
   }
   get _powerupChance() {
-    return [0.05, 0.12, 0.25][this.config.powerupFreq - 1];
+    return POWERUP_CHANCE_LEVELS[this.config.powerupFreq - 1];
   }
   get _powerupDuration() {
-    return [5, 7, 10][this.config.powerupFreq - 1];
+    return POWERUP_DURATION_LEVELS[this.config.powerupFreq - 1];
   }
   get _pumiceCountRange() {
-    return [
-      [0, 0],
-      [1, 3],
-      [3, 6],
-    ][this.config.pumiceCount - 1];
+    return PUMICE_COUNT_RANGES[this.config.pumiceCount - 1];
   }
   get isConfigReadOnly() {
     return this._configPrevState === STATE.PLAYING;
@@ -832,20 +837,7 @@ class Game {
   }
 
   _bounceShip(ox, oy) {
-    const dx = this.ship.x - ox,
-      dy = this.ship.y - oy;
-    const d = Math.hypot(dx, dy) || 1;
-    const nx = dx / d,
-      ny = dy / d;
-    const dot = this.ship.vx * nx + this.ship.vy * ny;
-    if (dot > 0) return; // already moving away — skip re-bounce
-    this.ship.vx -= 2 * dot * nx;
-    this.ship.vy -= 2 * dot * ny;
-    const spd = Math.hypot(this.ship.vx, this.ship.vy);
-    if (spd < SHIP_BOUNCE_MIN_SPEED) {
-      this.ship.vx = nx * SHIP_BOUNCE_MIN_SPEED;
-      this.ship.vy = ny * SHIP_BOUNCE_MIN_SPEED;
-    }
+    this.ship.bounceOff(ox, oy);
   }
 
   _applyAsteroidFilter() {
