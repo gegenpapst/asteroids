@@ -58,8 +58,8 @@ import {
   DBG_FPS_CRIT,
 } from "./Globals.js";
 import { Input } from "./input.js";
-import { Matter, MatterWrap } from "./physics.js";
-import { Sound } from "./entities/Sound.js";
+import { Matter } from "./physics.js";
+import { World } from "./World.js";
 import { Particle } from "./entities/Particle.js";
 import { Debris } from "./entities/Debris.js";
 import { Turret } from "./entities/Turret.js";
@@ -97,11 +97,137 @@ const _CONFIG_PARAM_KEYS = Object.keys(CONFIG_PARAMS);
 const _BOOM_SOUNDS = ["explodeLarge", "explodeMed", "explodeSmall"];
 
 export class Game {
-  constructor() {
-    Matter.use(MatterWrap);
-    this.engine = Matter.Engine.create({ gravity: { x: 0, y: 0 } });
+  // ─── World proxies ──────────────────────────────────────────────────────────
+  get engine() {
+    return this.world.engine;
+  }
+  get snd() {
+    return this.world.snd;
+  }
+  get mode() {
+    return this.world.mode;
+  }
+  set mode(v) {
+    this.world.mode = v;
+  }
+  get saturn() {
+    return this.world.saturn;
+  }
+  set saturn(v) {
+    this.world.saturn = v;
+  }
+  get ship() {
+    return this.world.ship;
+  }
+  set ship(v) {
+    this.world.ship = v;
+  }
+  get bullets() {
+    return this.world.bullets;
+  }
+  set bullets(v) {
+    this.world.bullets = v;
+  }
+  get asteroids() {
+    return this.world.asteroids;
+  }
+  set asteroids(v) {
+    this.world.asteroids = v;
+  }
+  get particles() {
+    return this.world.particles;
+  }
+  set particles(v) {
+    this.world.particles = v;
+  }
+  get powerups() {
+    return this.world.powerups;
+  }
+  set powerups(v) {
+    this.world.powerups = v;
+  }
+  get ufos() {
+    return this.world.ufos;
+  }
+  set ufos(v) {
+    this.world.ufos = v;
+  }
+  get ufoBullets() {
+    return this.world.ufoBullets;
+  }
+  set ufoBullets(v) {
+    this.world.ufoBullets = v;
+  }
+  get rocks() {
+    return this.world.rocks;
+  }
+  set rocks(v) {
+    this.world.rocks = v;
+  }
+  get pumices() {
+    return this.world.pumices;
+  }
+  set pumices(v) {
+    this.world.pumices = v;
+  }
+  get debris() {
+    return this.world.debris;
+  }
+  set debris(v) {
+    this.world.debris = v;
+  }
+  get solarSystems() {
+    return this.world.solarSystems;
+  }
+  set solarSystems(v) {
+    this.world.solarSystems = v;
+  }
+  get turrets() {
+    return this.world.turrets;
+  }
+  set turrets(v) {
+    this.world.turrets = v;
+  }
+  get deadTimer() {
+    return this.world.deadTimer;
+  }
+  set deadTimer(v) {
+    this.world.deadTimer = v;
+  }
+  get ufoTimer() {
+    return this.world.ufoTimer;
+  }
+  set ufoTimer(v) {
+    this.world.ufoTimer = v;
+  }
+  get ufoHumTimer() {
+    return this.world.ufoHumTimer;
+  }
+  set ufoHumTimer(v) {
+    this.world.ufoHumTimer = v;
+  }
+  get beatTimer() {
+    return this.world.beatTimer;
+  }
+  set beatTimer(v) {
+    this.world.beatTimer = v;
+  }
+  get beatInterval() {
+    return this.world.beatInterval;
+  }
+  set beatInterval(v) {
+    this.world.beatInterval = v;
+  }
+  get beatPhase() {
+    return this.world.beatPhase;
+  }
+  set beatPhase(v) {
+    this.world.beatPhase = v;
+  }
 
-    this.snd = new Sound();
+  constructor() {
+    this.world = new World();
+
     this.hiScore = parseInt(localStorage.getItem("ast_hi") || "0");
     this.state = STATE.START;
     this._debugCollision = false;
@@ -114,32 +240,12 @@ export class Game {
     this.score = 0;
     this.lives = 3;
     this.level = 0;
-    this.ship = null;
-    this.bullets = [];
-    this.asteroids = [];
-    this.particles = [];
-    this.powerups = [];
-    this.ufos = [];
-    this.ufoBullets = [];
-    this.rocks = [];
-    this.pumices = [];
-    this.debris = [];
-    this.solarSystems = [];
-    this.turrets = [];
-    this.deadTimer = 0;
     this.nextExtra = EXTRA_LIFE_SCORE;
-    this.ufoTimer = UFO_SPAWN_MIN;
-    this.ufoHumTimer = 0;
     this.t = 0;
-
-    this.beatTimer = 1.0;
-    this.beatInterval = 1.0;
-    this.beatPhase = 0;
 
     this._camX = 0;
     this._camY = 0;
 
-    this.saturn = null;
     this.collisions = new CollisionSystem(this);
     this.ui = new UIRenderer(this);
 
