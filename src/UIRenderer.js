@@ -412,59 +412,6 @@ class UIRenderer {
       ctx.fillText("PRESS ENTER OR SPACE TO PLAY AGAIN", cx, cy + 115);
     }
   }
-
-  _initShowcase() {
-    const sr = 80;
-    this._showcaseSr = sr;
-    const rawBumps = [
-      { a: -1.47, d: 0.7 },
-      { a: -0.48, d: 0.76 },
-      { a: 0.72, d: 0.68 },
-      { a: 1.8, d: 0.73 },
-      { a: -2.45, d: 0.74 },
-      { a: 3.0, d: 0.66 },
-    ].map(({ a, d }) => ({ dx: Math.cos(a) * d * sr, dy: Math.sin(a) * d * sr }));
-
-    this._showcaseSorted = rawBumps
-      .slice()
-      .sort((a, b) => Math.atan2(a.dy, a.dx) - Math.atan2(b.dy, b.dx));
-
-    const verts = this._showcaseSorted.map((b) => ({ x: b.dx, y: b.dy }));
-    const cellR = sr * 0.13;
-    const cells = generatePolyCells(verts, cellR);
-    this._showcaseCanvasB = buildMetaballCanvas(cells, "rgb(100, 140, 185)", sr, cellR, 14, 0.72);
-    this._showcaseReady = true;
-  }
-
-  _drawPolyShowcase(ctx, x, y, rot) {
-    const verts = this._showcaseSorted;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rot);
-
-    ctx.shadowColor = "rgb(120, 190, 255)";
-    ctx.shadowBlur = 28;
-
-    const sr = this._showcaseSr;
-    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, sr);
-    grad.addColorStop(0, "rgb(190, 225, 255)");
-    grad.addColorStop(0.45, "rgb(100, 155, 215)");
-    grad.addColorStop(1, "rgb(28, 60, 120)");
-
-    ctx.beginPath();
-    ctx.moveTo(verts[0].dx, verts[0].dy);
-    for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].dx, verts[i].dy);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = "rgba(180, 230, 255, 0.85)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.restore();
-  }
 }
 
 if (typeof module !== "undefined") module.exports = { UIRenderer };

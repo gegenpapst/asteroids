@@ -126,12 +126,12 @@ const GAME_MODES = [
 // Config parameter schema: keys match config object, max = highest allowed value.
 // Add new config params here — Game.js derives params/paramMax from this object.
 const CONFIG_PARAMS = {
-  bulletRange: { max: 3 },
-  powerupFreq: { max: 3 },
-  rockCount: { max: 3 },
-  pumiceCount: { max: 3 },
-  asteroidBounce: { max: 2 },
-  worldSize: { max: 3 },
+  bulletRange: { max: 3 }, // bullet travel distance (1 = short, 3 = long)
+  powerupFreq: { max: 3 }, // power-up spawn chance and duration (1 = rare/brief, 3 = common/long)
+  rockCount: { max: 3 }, // indestructible rock clusters per level
+  pumiceCount: { max: 3 }, // destructible pumice clusters per level
+  asteroidBounce: { max: 2 }, // asteroid collision response (1 = pass-through, 2 = bounce)
+  worldSize: { max: 3 }, // play-field size (1 = screen-sized, 3 = large scrolling world)
 };
 
 // World dimensions — updated at game start based on config.worldSize
@@ -172,6 +172,14 @@ const BOOM_PARTICLE_COUNTS = [22, 14, 7]; // explosion particles per asteroid si
 const SHIP_DEATH_PARTICLES = 22; // particles spawned when the player ship is destroyed
 const SAFE_POS_TRIES = 300; // max. attempts for a safe spawn position
 const STAR_PARALLAX = 0.15; // star scroll factor relative to camera (0 = static, 1 = world-space)
+
+// ── Debug overlay thresholds ─────────────────────────────────────────────────
+const DBG_COLLISION_WARN = 80; // peak collision checks/frame — yellow above this
+const DBG_COLLISION_CRIT = 200; // peak collision checks/frame — red above this
+const DBG_FRAME_WARN_MS = 17; // frame time (ms) — yellow above this
+const DBG_FRAME_CRIT_MS = 20; // frame time (ms) — red above this
+const DBG_FPS_WARN = 58; // FPS — yellow below this
+const DBG_FPS_CRIT = 50; // FPS — red below this
 
 // ── Background Saturn ────────────────────────────────────────────────────────
 const SATURN_RADIUS = 150; // planet body radius (px)
@@ -322,6 +330,12 @@ if (typeof module !== "undefined") {
     SHIP_DEATH_PARTICLES,
     SAFE_POS_TRIES,
     STAR_PARALLAX,
+    DBG_COLLISION_WARN,
+    DBG_COLLISION_CRIT,
+    DBG_FRAME_WARN_MS,
+    DBG_FRAME_CRIT_MS,
+    DBG_FPS_WARN,
+    DBG_FPS_CRIT,
     SATURN_RADIUS,
     SATURN_RING1_INNER,
     SATURN_RING1_OUTER,

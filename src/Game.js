@@ -193,7 +193,7 @@ class Game {
     this.collisions.updateShip();
     this._tickDebris(dt);
     this.solarSystems = this.solarSystems.filter((s) => s.update(dt));
-    this.turrets.forEach((t) => t.update(dt));
+    this.turrets = this.turrets.filter((t) => t.update(dt));
     this._updateDebugStats();
 
     // Level clear (UFOs persist between levels; solar systems must be fully destroyed first)
@@ -336,15 +336,27 @@ class Game {
     line(`Entities:  ${entities}`, "#aaa", H - 62);
     line(
       `Collision: ${this._dbgCC} / Peak: ${this._dbgPeakCC}`,
-      this._dbgPeakCC > 200 ? "#f84" : this._dbgPeakCC > 80 ? "#ff4" : "#4f8",
+      this._dbgPeakCC > DBG_COLLISION_CRIT
+        ? "#f84"
+        : this._dbgPeakCC > DBG_COLLISION_WARN
+          ? "#ff4"
+          : "#4f8",
       H - 48,
     );
     line(
       `Frame:     ${ms} ms`,
-      parseFloat(ms) > 20 ? "#f84" : parseFloat(ms) > 17 ? "#ff4" : "#4f8",
+      parseFloat(ms) > DBG_FRAME_CRIT_MS
+        ? "#f84"
+        : parseFloat(ms) > DBG_FRAME_WARN_MS
+          ? "#ff4"
+          : "#4f8",
       H - 34,
     );
-    line(`FPS:       ${fps}`, fps < 50 ? "#f84" : fps < 58 ? "#ff4" : "#4f8", H - 20);
+    line(
+      `FPS:       ${fps}`,
+      fps < DBG_FPS_CRIT ? "#f84" : fps < DBG_FPS_WARN ? "#ff4" : "#4f8",
+      H - 20,
+    );
     ctx.restore();
   }
 
