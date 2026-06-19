@@ -44,6 +44,14 @@ export class CollisionSystem {
     }
   }
 
+  // Iterates bullets in reverse; removes each bullet for which testFn returns true.
+  _scanBullets(testFn) {
+    const bullets = this._g.bullets;
+    for (let bi = bullets.length - 1; bi >= 0; bi--) {
+      if (testFn(bullets[bi], bi)) bullets.splice(bi, 1);
+    }
+  }
+
   _bulletVsAsteroids() {
     const g = this._g;
     this._scanBullets((b) => {
@@ -53,6 +61,7 @@ export class CollisionSystem {
           const hitDx = b.x - a.x,
             hitDy = b.y - a.y;
           const bLen = Math.hypot(b.vx, b.vy) || 1;
+          // signed 2D cross product: lever-arm from hit point to bullet axis → angular impulse
           const cross = hitDx * (b.vy / bLen) - hitDy * (b.vx / bLen);
           g._addScore(a.score);
           if (Math.random() < g._powerupChance)
@@ -129,6 +138,7 @@ export class CollisionSystem {
           const sLen = Math.hypot(g.ship.vx, g.ship.vy) || 1;
           const hitDx = a.x - g.ship.x,
             hitDy = a.y - g.ship.y;
+          // signed 2D cross product: lever-arm from contact point to ship velocity axis → angular impulse
           const cross = hitDx * (g.ship.vy / sLen) - hitDy * (g.ship.vx / sLen);
           const children = g._destroyAsteroid(a, null, g.ship.vx, g.ship.vy, cross);
           g.asteroids.splice(ai, 1, ...children);

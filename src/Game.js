@@ -350,6 +350,7 @@ export class Game {
         this.ufoHumTimer = UFO_HUM_INTERVAL;
       }
     }
+  }
 
     if (this.saturn) this.saturn.update(dt);
     this.particles = this.particles.filter((p) => p.update(dt));
@@ -390,6 +391,53 @@ export class Game {
     }
 
     Input.flush();
+  }
+
+  update(dt) {
+    dt = Math.min(dt, 1 / 20);
+    this.t += dt;
+    if (dt > 0) {
+      this._dbgFPS += (1 / dt - this._dbgFPS) * 0.1;
+      this._dbgFrameMs += (dt * 1000 - this._dbgFrameMs) * 0.1;
+    }
+
+    if (this._updateStateInput()) return;
+
+    this._updateAudio(dt);
+
+    // Update universally (all non-START states)
+    if (this.saturn) this.saturn.update(dt);
+    this.particles = this.particles.filter((p) => p.update(dt));
+    this.powerups = this.powerups.filter((p) => p.update(dt));
+    this.ufoBullets = this.ufoBullets.filter((b) => b.update(dt));
+
+    if (this.state === STATE.DEAD) {
+      this._updateDeadState(dt);
+      return;
+    }
+
+    this._updatePlayingState(dt);
+  }
+
+  // All world-space entity drawing, inside the camera transform.
+  _drawEntities() {
+    ctx.save();
+    ctx.translate(-this._camX, -this._camY);
+    if (this.saturn) this.saturn.draw(ctx);
+    this.turrets.forEach((t) => t.draw(ctx));
+    this.rocks.forEach((r) => r.draw(ctx));
+    this.pumices.forEach((p) => p.draw(ctx));
+    this.solarSystems.forEach((s) => s.draw(ctx)); // centers drawn before satellites
+    this.asteroids.forEach((a) => a.draw(ctx));
+    this.debris.forEach((d) => d.draw(ctx));
+    this.powerups.forEach((p) => p.draw(ctx));
+    this.ufos.forEach((u) => u.draw(ctx));
+    this.ufoBullets.forEach((b) => b.draw(ctx));
+    this.bullets.forEach((b) => b.draw(ctx));
+    this.particles.forEach((p) => p.draw(ctx));
+    if (this.ship) this.ship.draw(ctx);
+    if (this._debugCollision) this._drawDebugOverlay();
+    ctx.restore(); // back to screen space
   }
 
   draw() {
@@ -752,6 +800,7 @@ export class Game {
     if (Input.wasPressed("ArrowDown") && this._configFocus === "mode")
       this._configFocus = "details";
     if (Input.wasPressed("ArrowUp") && this._configFocus === "details") this._configFocus = "mode";
+  }
 
     if (!readOnly) {
       const prevMode = this.config.mode;
@@ -762,6 +811,12 @@ export class Game {
         this._applyAsteroidFilter();
       }
     }
+  }
+
+  _handleConfigInput() {
+    const readOnly = this._configPrevState === STATE.PLAYING;
+    this._cfgFocusNav();
+    this._cfgModeChange(readOnly);
 
     if (
       Input.wasPressed("KeyD") ||
@@ -785,6 +840,20 @@ export class Game {
     }
     Input.flush();
     return true;
+  }
+
+  _cfgDetailNav(readOnly) {
+    if (readOnly) return;
+    const params = _CONFIG_PARAM_KEYS;
+    if (Input.wasPressed("ArrowUp"))
+      this._detailCursor = (this._detailCursor + params.length - 1) % params.length;
+    if (Input.wasPressed("ArrowDown"))
+      this._detailCursor = (this._detailCursor + 1) % params.length;
+    const key = params[this._detailCursor];
+    if (Input.wasPressed("ArrowLeft")) this.config[key] = Math.max(1, this.config[key] - 1);
+    if (Input.wasPressed("ArrowRight"))
+      this.config[key] = Math.min(CONFIG_PARAMS[key].max, this.config[key] + 1);
+    if (key === "asteroidBounce") this._applyAsteroidFilter();
   }
 
   _handleConfigDetailInput() {
