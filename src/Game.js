@@ -425,9 +425,24 @@ class Game {
     }
   }
 
+  // How many asteroids to spawn for the current level (ramps up, then caps).
+  _asteroidsForLevel() {
+    return Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
+  }
+
+  // How many solar systems to place at the current level (+1 every 2 levels after start).
+  _solarCountForLevel() {
+    return Math.min(Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1, SOLAR_MAX_COUNT);
+  }
+
+  // How many turrets to place at the current level (+1 per level after start, then caps).
+  _turretCountForLevel() {
+    return Math.min(this.level - TURRET_START_LEVEL + 1, TURRET_MAX_COUNT);
+  }
+
   _nextLevel() {
     this.level++;
-    const count = Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
+    const count = this._asteroidsForLevel();
     const cx = WW / 2,
       cy = WH / 2;
     const maxBumps = Math.min(Math.max(this.level - 1, 1), 7);
@@ -445,10 +460,7 @@ class Game {
 
     // Solar systems: appear from level SOLAR_START_LEVEL, max SOLAR_MAX_COUNT at a time
     if (this.level >= SOLAR_START_LEVEL) {
-      const solarCount = Math.min(
-        Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1,
-        SOLAR_MAX_COUNT,
-      );
+      const solarCount = this._solarCountForLevel();
       for (let si = 0; si < solarCount; si++) {
         const ax = rand(WW * SOLAR_SPAWN_MARGIN, WW * (1 - SOLAR_SPAWN_MARGIN));
         const ay = rand(WH * SOLAR_SPAWN_MARGIN, WH * (1 - SOLAR_SPAWN_MARGIN));
@@ -473,8 +485,8 @@ class Game {
 
     // Turrets: appear from TURRET_START_LEVEL, one additional per level up to TURRET_MAX_COUNT
     if (this.level >= TURRET_START_LEVEL) {
-      const count = Math.min(this.level - TURRET_START_LEVEL + 1, TURRET_MAX_COUNT);
-      for (let i = 0; i < count; i++) {
+      const turretCount = this._turretCountForLevel();
+      for (let i = 0; i < turretCount; i++) {
         let tx, ty;
         do {
           tx = rand(TURRET_RADIUS * 2, WW - TURRET_RADIUS * 2);

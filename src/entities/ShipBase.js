@@ -44,12 +44,15 @@ class ShipBase {
   }
 
   update(dt) {
-    if (this.invulnerable > 0) this.invulnerable -= dt;
-    if (this.fireTimer > 0) this.fireTimer -= dt;
-    if (this.shieldTimer > 0) this.shieldTimer -= dt;
-    if (this.rapidTimer > 0) this.rapidTimer -= dt;
-    if (this.spreadTimer > 0) this.spreadTimer -= dt;
-    if (this.heavyTimer > 0) this.heavyTimer -= dt;
+    for (const k of [
+      "invulnerable",
+      "fireTimer",
+      "shieldTimer",
+      "rapidTimer",
+      "spreadTimer",
+      "heavyTimer",
+    ])
+      if (this[k] > 0) this[k] -= dt;
 
     if (Input.left()) this.angle -= SHIP_ROTATION * dt;
     if (Input.right()) this.angle += SHIP_ROTATION * dt;
@@ -79,6 +82,7 @@ class ShipBase {
       this.vy *= s;
     }
 
+    // dt*60 normalises exponential decay to be frame-rate independent
     const friction = Math.pow(SHIP_FRICTION, dt * 60);
     this.vx *= friction;
     this.vy *= friction;

@@ -434,3 +434,86 @@ describe("PowerUp pickup", () => {
     expect(g._powerupDuration).toBe(POWERUP_DURATION_LEVELS[2]);
   });
 });
+
+// ── _scanBullets helper ───────────────────────────────────────────────────────
+
+describe("CollisionSystem._scanBullets", () => {
+  test("removes bullets for which testFn returns true", () => {
+    const g = makeGame();
+    g.bullets = [
+      { x: 0, y: 0, vx: 1, vy: 0, radius: 3 },
+      { x: 100, y: 0, vx: 1, vy: 0, radius: 3 },
+    ];
+    g.collisions._scanBullets((b) => b.x === 0);
+    expect(g.bullets).toHaveLength(1);
+    expect(g.bullets[0].x).toBe(100);
+  });
+
+  test("keeps bullets for which testFn returns false", () => {
+    const g = makeGame();
+    g.bullets = [{ x: 0, y: 0, vx: 1, vy: 0, radius: 3 }];
+    g.collisions._scanBullets(() => false);
+    expect(g.bullets).toHaveLength(1);
+  });
+
+  test("iterates in reverse so splicing does not skip bullets", () => {
+    const g = makeGame();
+    const seen = [];
+    g.bullets = [
+      { x: 1, y: 0, vx: 0, vy: 0, radius: 3 },
+      { x: 2, y: 0, vx: 0, vy: 0, radius: 3 },
+      { x: 3, y: 0, vx: 0, vy: 0, radius: 3 },
+    ];
+    g.collisions._scanBullets((b) => {
+      seen.push(b.x);
+      return true;
+    });
+    expect(seen).toEqual([3, 2, 1]);
+    expect(g.bullets).toHaveLength(0);
+  });
+});
+
+// ── Bullet × Pumice ──────────────────────────────────────────────────────────
+
+describe("Bullet × Pumice collision", () => {
+  function makePumiceStub(hitResult) {
+    return { alive: true, handleBulletHit: jest.fn(() => hitResult) };
+  }
+
+  test("bullet is consumed when handleBulletHit returns true", () => {
+    const g = makeGame();
+    g.pumices = [makePumiceStub(true)];
+    g.bullets = [{ x: 400, y: 300, vx: 100, vy: 0, radius: 3 }];
+    g.collisions.updateBullet();
+    expect(g.bullets).toHaveLength(0);
+  });
+
+  test("bullet is kept when handleBulletHit returns false", () => {
+    const g = makeGame();
+    g.pumices = [makePumiceStub(false)];
+    g.bullets = [{ x: 400, y: 300, vx: 100, vy: 0, radius: 3 }];
+    g.collisions.updateBullet();
+    expect(g.bullets).toHaveLength(1);
+  });
+
+  test("dead pumice cells are filtered out after bullet processing", () => {
+    const g = makeGame();
+    const dead = { alive: false, handleBulletHit: jest.fn(() => false) };
+    const alive = makePumiceStub(false);
+    g.pumices = [dead, alive];
+    g.bullets = [];
+    g.collisions.updateBullet();
+    expect(g.pumices).toHaveLength(1);
+    expect(g.pumices[0]).toBe(alive);
+  });
+
+  test("dead pumice is skipped during bullet check", () => {
+    const g = makeGame();
+    const dead = { alive: false, handleBulletHit: jest.fn(() => true) };
+    g.pumices = [dead];
+    g.bullets = [{ x: 400, y: 300, vx: 100, vy: 0, radius: 3 }];
+    g.collisions.updateBullet();
+    expect(dead.handleBulletHit).not.toHaveBeenCalled();
+    expect(g.bullets).toHaveLength(1); // bullet untouched
+  });
+});

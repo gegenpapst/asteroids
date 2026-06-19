@@ -22,6 +22,7 @@ class AsteroidBase {
     this.rot = rand(0, TAU);
 
     const rotBase = this.constructor._rotBase;
+    // 0.38 scale: (size+1) makes larger asteroids spin faster; 0.38 keeps the range playable
     this.rotSpeed = rand(-rotBase, rotBase) * (size + 1) * 0.38;
 
     this.maxBumps = maxBumps;
@@ -52,6 +53,7 @@ class AsteroidBase {
   // wrap=false → no plugin.wrap (for constraint-bound subclasses like SatelliteAsteroid).
   _makeBody(wrap = true) {
     const r = this.radius;
+    // core shrinks from 85% to 35% of radius as bump count rises 0→7
     this._coreR = r * (0.85 - (0.5 * Math.min(this.bumpCount, 7)) / 7);
     this._bumps = this._genBumps();
 
