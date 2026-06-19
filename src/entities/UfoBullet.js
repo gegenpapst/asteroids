@@ -1,6 +1,7 @@
-"use strict";
+import { clamp, TAU } from "../utils.js";
+import { Bullet } from "./Bullet.js";
 
-class UfoBullet extends Bullet {
+export class UfoBullet extends Bullet {
   draw(ctx) {
     const alpha = clamp((this.life / this.maxLife) * 2, 0, 1);
     ctx.beginPath();
@@ -12,5 +13,3 @@ class UfoBullet extends Bullet {
     ctx.shadowBlur = 0;
   }
 }
-
-if (typeof module !== "undefined") module.exports = { UfoBullet };

@@ -1,15 +1,4 @@
-"use strict";
-
-const {
-  generateHexCells,
-  buildMetaballCanvas,
-  renderMetaballFrame,
-} = require("../../src/entities/Metaball.js");
-global.generateHexCells = generateHexCells;
-global.buildMetaballCanvas = buildMetaballCanvas;
-global.renderMetaballFrame = renderMetaballFrame;
-
-const { RockCluster } = require("../../src/entities/RockCluster.js");
+import { RockCluster } from "../../src/entities/RockCluster.js";
 
 describe("RockCluster constructor", () => {
   test("position is set from constructor arguments", () => {

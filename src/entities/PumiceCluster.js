@@ -1,9 +1,23 @@
-"use strict";
+import { rand, dist } from "../utils.js";
+import {
+  PUMICE_RADIUS_MIN,
+  PUMICE_RADIUS_MAX,
+  PUMICE_CELL_FACTOR,
+  PUMICE_SPACING_FACTOR,
+  PUMICE_BLUR_FACTOR,
+  PUMICE_CONTRAST,
+  PUMICE_NEIGHBOR_FACTOR,
+  PUMICE_COLLISION_FACTOR,
+  METABALL_HEX_PACKING,
+} from "../Globals.js";
+import { renderMetaballFrame } from "./Metaball.js";
+import { Particle } from "./Particle.js";
+import { Matter } from "../physics.js";
 
 // Pumice cluster: static obstacle built from individual Matter bodies per cell.
 // Cells can be destroyed individually; metaball rendering is rebuilt each frame
 // based on the living cells.
-class PumiceCluster {
+export class PumiceCluster {
   constructor(x, y) {
     this.x = x;
     this.y = y;
@@ -54,8 +68,6 @@ class PumiceCluster {
     return this.cells.some((c) => c.alive);
   }
 
-  // Removes living cells that have no living neighbour (single pass, no cascade).
-  // Threshold ≈ 1.6× hex spacing — tolerates the ±1.5 px jitter from cell placement.
   cullIsolated(world) {
     const threshold = this._cellR * PUMICE_NEIGHBOR_FACTOR;
     for (const c of this.cells) {
@@ -82,12 +94,10 @@ class PumiceCluster {
     return true;
   }
 
-  // Safe-spawn check: would point (x, y) be within margin of any living cell?
   pointInsideMargin(x, y, margin) {
     return this.cells.some((c) => c.alive && Math.hypot(x - c.x, y - c.y) < c.r + margin);
   }
 
-  // Unified bullet collision: returns true on hit (side-effects handled internally).
   handleBulletHit(b, world, game) {
     const hits = this.findHit(b.x, b.y, b.radius);
     if (hits.length === 0) return false;
@@ -101,7 +111,6 @@ class PumiceCluster {
     return true;
   }
 
-  // Unified ship collision: returns true on hit.
   handleShipHit(ship) {
     return this.findHit(ship.x, ship.y, ship.hitRadius).length > 0;
   }
@@ -115,11 +124,9 @@ class PumiceCluster {
       alive,
       this.x,
       this.y,
-      "rgb(146, 146, 150)", // compact: dense, grey, cool tone
+      "rgb(146, 146, 150)",
       this._blur,
       PUMICE_CONTRAST,
     );
   }
 }
-
-if (typeof module !== "undefined") module.exports = { PumiceCluster };

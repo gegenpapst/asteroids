@@ -1,9 +1,15 @@
-"use strict";
+import { rand, TAU, W, H } from "../utils.js";
+import {
+  DEBRIS_RADIUS_MIN,
+  DEBRIS_RADIUS_MAX,
+  DEBRIS_LIFE,
+  DEBRIS_FRICTION_AIR,
+} from "../Globals.js";
+import { Matter } from "../physics.js";
 
-// Debris particle on asteroid death.
 // Uses a Matter body for physically correct deceleration (frictionAir);
 // wall reflection is handled manually. No collisions with other entities (mask: 0).
-class Debris {
+export class Debris {
   constructor(x, y, vx, vy) {
     this.radius = rand(DEBRIS_RADIUS_MIN, DEBRIS_RADIUS_MAX);
     this.life = DEBRIS_LIFE;
@@ -11,7 +17,6 @@ class Debris {
     this.x = x;
     this.y = y;
 
-    // Baked rocky color so it doesn't flicker each frame
     const hue = Math.round(rand(18, 46));
     const lum = Math.round(rand(52, 72));
     this.color = `hsl(${hue},18%,${lum}%)`;
@@ -21,9 +26,8 @@ class Debris {
       frictionAir: DEBRIS_FRICTION_AIR,
       restitution: 0,
       label: "debris",
-      collisionFilter: { mask: 0 }, // sensor: no collisions with other bodies
+      collisionFilter: { mask: 0 },
     });
-    // Matter velocity is in px/frame at 60 fps, matching AsteroidBase convention
     Matter.Body.setVelocity(this.body, { x: vx / 60, y: vy / 60 });
   }
 
@@ -31,7 +35,6 @@ class Debris {
     this.life -= dt;
     if (this.life <= 0) return false;
 
-    // Bounce off screen edges by flipping velocity component
     const pos = this.body.position;
     const vel = this.body.velocity;
     let px = pos.x,
@@ -82,5 +85,3 @@ class Debris {
     ctx.restore();
   }
 }
-
-if (typeof module !== "undefined") module.exports = { Debris };

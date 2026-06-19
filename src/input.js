@@ -1,6 +1,4 @@
-"use strict";
-
-const Input = {
+export const Input = {
   _held: new Set(),
   _pressed: new Set(),
 
@@ -59,5 +57,3 @@ const Input = {
     return this._shift() && (this.isHeld("ArrowRight") || this.isHeld("KeyD"));
   },
 };
-
-if (typeof module !== "undefined") module.exports = { Input };

@@ -1,4 +1,6 @@
-"use strict";
+import { dist, randInt } from "./utils.js";
+import { POWERUP_TYPES, TURRET_SCORE } from "./Globals.js";
+import { PowerUp } from "./entities/PowerUp.js";
 
 // Handles all per-frame collision detection for the game.
 // Reads Game entity arrays directly and calls back into the following Game/entity interface:
@@ -12,13 +14,11 @@ function _overlaps(a, b, rA, rB) {
   return dist(a, b) < rA + rB;
 }
 
-class CollisionSystem {
+export class CollisionSystem {
   constructor(game) {
     this._g = game;
   }
 
-  // All bullet × entity collisions.
-  // Asteroid/Rock/Pumice use unified arrays — mode implicitly determines entity types.
   updateBullet() {
     this._bulletVsAsteroids();
     this._bulletVsUfos();
@@ -27,8 +27,6 @@ class CollisionSystem {
     this._bulletVsTurrets();
   }
 
-  // All ship × entity collisions + power-up pickup.
-  // With shield: bounce + optionally split asteroid. Without shield: _killShip().
   updateShip() {
     this._shipVsAsteroids();
     this._shipVsRocks();
@@ -39,9 +37,6 @@ class CollisionSystem {
     this._shipVsPowerups();
   }
 
-  // ── Bullet sub-checks ───────────────────────────────────────────────────
-
-  // Iterates bullets in reverse; removes each bullet for which testFn returns true.
   _scanBullets(testFn) {
     const bullets = this._g.bullets;
     for (let bi = bullets.length - 1; bi >= 0; bi--) {
@@ -58,7 +53,6 @@ class CollisionSystem {
           const hitDx = b.x - a.x,
             hitDy = b.y - a.y;
           const bLen = Math.hypot(b.vx, b.vy) || 1;
-          // signed 2D cross product: lever-arm from hit point to bullet axis → angular impulse
           const cross = hitDx * (b.vy / bLen) - hitDy * (b.vx / bLen);
           g._addScore(a.score);
           if (Math.random() < g._powerupChance)
@@ -118,14 +112,12 @@ class CollisionSystem {
             g._addScore(TURRET_SCORE);
             g.turrets.splice(ti, 1);
           }
-          return true; // bullet consumed on any turret hit, regardless of HP
+          return true;
         }
       }
       return false;
     });
   }
-
-  // ── Ship sub-checks ─────────────────────────────────────────────────────
 
   _shipVsAsteroids() {
     const g = this._g;
@@ -137,7 +129,6 @@ class CollisionSystem {
           const sLen = Math.hypot(g.ship.vx, g.ship.vy) || 1;
           const hitDx = a.x - g.ship.x,
             hitDy = a.y - g.ship.y;
-          // signed 2D cross product: lever-arm from contact point to ship velocity axis → angular impulse
           const cross = hitDx * (g.ship.vy / sLen) - hitDy * (g.ship.vx / sLen);
           const children = g._destroyAsteroid(a, null, g.ship.vx, g.ship.vy, cross);
           g.asteroids.splice(ai, 1, ...children);
@@ -228,5 +219,3 @@ class CollisionSystem {
     }
   }
 }
-
-if (typeof module !== "undefined") module.exports = { CollisionSystem };

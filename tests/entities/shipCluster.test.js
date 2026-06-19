@@ -1,12 +1,6 @@
-"use strict";
-
-const { ShipBase } = require("../../src/entities/ShipBase.js");
-global.ShipBase = ShipBase;
-
-const { Bullet } = require("../../src/entities/Bullet.js");
-global.Bullet = Bullet;
-
-const { ShipCluster } = require("../../src/entities/ShipCluster.js");
+import { jest } from "@jest/globals";
+import { Bullet } from "../../src/entities/Bullet.js";
+import { ShipCluster } from "../../src/entities/ShipCluster.js";
 
 // Silence all input by default; individual tests re-mock what they need.
 const INPUT_METHODS = ["left", "right", "up", "fire", "strafeLeft", "strafeRight"];

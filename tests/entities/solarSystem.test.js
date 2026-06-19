@@ -1,8 +1,5 @@
-"use strict";
-
-global.Particle = function () {};
-
-const { SolarSystem } = require("../../src/entities/SolarSystem.js");
+import { jest } from "@jest/globals";
+import { SolarSystem } from "../../src/entities/SolarSystem.js";
 
 // Minimal stubs so SolarSystem can construct and update without a full game context.
 function makeFakeGame() {

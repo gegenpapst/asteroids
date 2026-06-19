@@ -1,7 +1,15 @@
-"use strict";
+import { rand } from "../utils.js";
+import {
+  ROCK_CLUSTER_RADIUS_MIN,
+  ROCK_CLUSTER_RADIUS_MAX,
+  CLUSTER_CELL_FACTOR,
+  CLUSTER_COLLISION_FACTOR,
+} from "../Globals.js";
+import { generateHexCells, buildMetaballCanvas } from "./Metaball.js";
+import { Matter } from "../physics.js";
 
 // Metaball variant of the static rock — ember color.
-class RockCluster {
+export class RockCluster {
   constructor(x, y) {
     this.x = x;
     this.y = y;
@@ -9,7 +17,7 @@ class RockCluster {
 
     const cellR = this.radius * CLUSTER_CELL_FACTOR;
     const cells = generateHexCells(this.radius, cellR);
-    this._offCanvas = buildMetaballCanvas(cells, "rgb(155, 140, 118)", this.radius, cellR); // Glut
+    this._offCanvas = buildMetaballCanvas(cells, "rgb(155, 140, 118)", this.radius, cellR);
 
     this.body = Matter.Bodies.circle(x, y, this.radius, {
       isStatic: true,
@@ -33,5 +41,3 @@ class RockCluster {
     ctx.restore();
   }
 }
-
-if (typeof module !== "undefined") module.exports = { RockCluster };

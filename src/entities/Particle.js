@@ -1,6 +1,7 @@
-"use strict";
+import { rand, wrap, TAU } from "../utils.js";
+import { WW, WH, PARTICLE_SPEED, PARTICLE_LIFE } from "../Globals.js";
 
-class Particle {
+export class Particle {
   constructor(x, y, color) {
     this.x = x;
     this.y = y;
@@ -34,5 +35,3 @@ class Particle {
     ctx.globalAlpha = 1;
   }
 }
-
-if (typeof module !== "undefined") module.exports = { Particle };

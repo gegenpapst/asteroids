@@ -1,7 +1,76 @@
-"use strict";
+import { W, H, rand, randInt, TAU, dist, clamp } from "./utils.js";
+import {
+  WW,
+  WH,
+  setWorldDimensions,
+  CONFIG_PARAMS,
+  GAME_MODES,
+  EXTRA_LIFE_SCORE,
+  UFO_SPAWN_MIN,
+  UFO_HUM_INTERVAL,
+  INVULNERABLE_TIME,
+  BEAT_INTERVAL_MAX,
+  BEAT_INTERVAL_MIN,
+  BEAT_DENSITY_FACTOR,
+  ASTEROID_SPEED,
+  ASTEROID_SPIN_FACTOR,
+  SHIP_SIZE,
+  SHIP_HULL_FACTOR,
+  MAX_BULLETS,
+  UFO_SMALL_SCORE_THRESHOLD,
+  UFO_SMALL_CHANCE,
+  UFO_SPAWN_JITTER,
+  SOLAR_START_LEVEL,
+  SOLAR_MAX_COUNT,
+  SOLAR_SATELLITE_MIN,
+  SOLAR_SATELLITE_MAX,
+  SOLAR_TETHER_MIN,
+  SOLAR_TETHER_MAX,
+  SOLAR_ORBIT_SPEED_MIN,
+  SOLAR_ORBIT_SPEED_MAX,
+  SOLAR_SPAWN_MARGIN,
+  TURRET_START_LEVEL,
+  TURRET_MAX_COUNT,
+  TURRET_RADIUS,
+  PUMICE_RADIUS_MAX,
+  PUMICE_COUNT_RANGES,
+  SPAWN_SAFE_RADIUS_FACTOR,
+  BULLET_LIFE_LEVELS,
+  POWERUP_CHANCE_LEVELS,
+  POWERUP_DURATION_LEVELS,
+  INITIAL_ROCKS,
+  MAX_ROCKS_PER_LEVEL,
+  RESPAWN_DELAY,
+  SHIP_DEATH_PARTICLES,
+  DEBRIS_COUNT_MIN,
+  DEBRIS_COUNT_MAX,
+  DEBRIS_SPEED_MIN,
+  DEBRIS_SPEED_MAX,
+  BOOM_PARTICLE_COUNTS,
+  STARS,
+  STAR_PARALLAX,
+  bgCanvas,
+  DBG_COLLISION_WARN,
+  DBG_COLLISION_CRIT,
+  DBG_FRAME_WARN_MS,
+  DBG_FRAME_CRIT_MS,
+  DBG_FPS_WARN,
+  DBG_FPS_CRIT,
+} from "./Globals.js";
+import { Input } from "./input.js";
+import { Matter, MatterWrap } from "./physics.js";
+import { Sound } from "./entities/Sound.js";
+import { Particle } from "./entities/Particle.js";
+import { Debris } from "./entities/Debris.js";
+import { Turret } from "./entities/Turret.js";
+import { SolarSystem } from "./entities/SolarSystem.js";
+import { BackgroundSaturn } from "./entities/BackgroundSaturn.js";
+import { MetaballMode } from "./VisualMode.js";
+import { CollisionSystem } from "./CollisionSystem.js";
+import { UIRenderer } from "./UIRenderer.js";
 
 // ─── Game ────────────────────────────────────────────────────────────────────
-const STATE = Object.freeze({
+export const STATE = Object.freeze({
   START: 0,
   PLAYING: 1,
   DEAD: 2,
@@ -12,8 +81,6 @@ const STATE = Object.freeze({
   QUIT_CONFIRM: 7,
 });
 
-// Valid state transitions: source state → allowed target states.
-// Checked in _transitionTo() when _debugCollision is on.
 const _VALID_TRANSITIONS = {
   [STATE.START]: [STATE.CONFIG],
   [STATE.GAMEOVER]: [STATE.CONFIG],
@@ -25,13 +92,11 @@ const _VALID_TRANSITIONS = {
   [STATE.QUIT_CONFIRM]: [STATE.PLAYING, STATE.GAMEOVER],
 };
 
-// Derived from CONFIG_PARAMS — stable across all _handleConfigDetailInput calls.
 const _CONFIG_PARAM_KEYS = Object.keys(CONFIG_PARAMS);
 
-// Sound method names indexed by asteroid size — avoids allocating closures in _boom().
 const _BOOM_SOUNDS = ["explodeLarge", "explodeMed", "explodeSmall"];
 
-class Game {
+export class Game {
   constructor() {
     Matter.use(MatterWrap);
     this.engine = Matter.Engine.create({ gravity: { x: 0, y: 0 } });
@@ -44,7 +109,7 @@ class Game {
     this._dbgFPS = 0;
     this._dbgFrameMs = 0;
     this._dbgPeakCC = 0;
-    this._dbgPeakTTL = 0; // frames until peak reset
+    this._dbgPeakTTL = 0;
 
     this.score = 0;
     this.lives = 3;
@@ -86,17 +151,16 @@ class Game {
       rockCount: 3,
       pumiceCount: 3,
       asteroidBounce: 2,
-      worldSize: 3, // Expert default matches mode: 3
+      worldSize: 3,
     };
     this._configCursor = 0;
     this._detailCursor = 0;
-    this._configFocus = "mode"; // "mode" | "details"
+    this._configFocus = "mode";
     this._configPrevState = STATE.START;
   }
 
   start() {
-    WW = W * (this.config.worldSize || 1);
-    WH = H * (this.config.worldSize || 1);
+    setWorldDimensions(W * (this.config.worldSize || 1), H * (this.config.worldSize || 1));
     this.saturn = new BackgroundSaturn(WW / 2, WH / 2);
     this._camX = 0;
     this._camY = 0;
@@ -139,7 +203,6 @@ class Game {
       this.engine.world,
       this.rocks.map((r) => r.body),
     );
-    // PumiceCluster: one body per cell
     for (const p of this.pumices) {
       if (p.cells)
         Matter.World.add(
@@ -162,7 +225,6 @@ class Game {
 
     if (this._updateStateInput()) return;
 
-    // Beat throb
     this.beatTimer -= dt;
     if (this.beatTimer <= 0) {
       this.beatInterval = clamp(
@@ -175,7 +237,6 @@ class Game {
       this.snd.throb(this.beatPhase);
     }
 
-    // UFO hum
     if (this.ufos.length > 0) {
       this.ufoHumTimer -= dt;
       if (this.ufoHumTimer <= 0) {
@@ -184,7 +245,6 @@ class Game {
       }
     }
 
-    // Update universally (all non-START states)
     if (this.saturn) this.saturn.update(dt);
     this.particles = this.particles.filter((p) => p.update(dt));
     this.powerups = this.powerups.filter((p) => p.update(dt));
@@ -209,7 +269,6 @@ class Game {
     this.turrets = this.turrets.filter((t) => t.update(dt));
     this._updateDebugStats();
 
-    // Level clear (UFOs persist between levels; solar systems must be fully destroyed first)
     if (
       this.asteroids.filter((a) => !a.isSatellite).length === 0 &&
       this.solarSystems.length === 0
@@ -219,7 +278,6 @@ class Game {
       if (this.ship) this.ship.invulnerable = INVULNERABLE_TIME;
     }
 
-    // Update camera: center on ship, clamp to world bounds
     if (this.ship) {
       this._camX = Math.max(0, Math.min(this.ship.x - W / 2, WW - W));
       this._camY = Math.max(0, Math.min(this.ship.y - H / 2, WH - H));
@@ -231,7 +289,6 @@ class Game {
   draw() {
     ctx.drawImage(bgCanvas, 0, 0);
 
-    // Twinkling stars — parallax-scrolled relative to camera
     ctx.shadowBlur = 0;
     for (const s of STARS) {
       const sx = (((s.x - this._camX * STAR_PARALLAX) % W) + W) % W;
@@ -262,14 +319,13 @@ class Game {
       return;
     }
 
-    // World-space entities
     ctx.save();
     ctx.translate(-this._camX, -this._camY);
     if (this.saturn) this.saturn.draw(ctx);
     this.turrets.forEach((t) => t.draw(ctx));
     this.rocks.forEach((r) => r.draw(ctx));
     this.pumices.forEach((p) => p.draw(ctx));
-    this.solarSystems.forEach((s) => s.draw(ctx)); // centers drawn before satellites
+    this.solarSystems.forEach((s) => s.draw(ctx));
     this.asteroids.forEach((a) => a.draw(ctx));
     this.debris.forEach((d) => d.draw(ctx));
     this.powerups.forEach((p) => p.draw(ctx));
@@ -279,7 +335,7 @@ class Game {
     this.particles.forEach((p) => p.draw(ctx));
     if (this.ship) this.ship.draw(ctx);
     if (this._debugCollision) this._drawDebugOverlay();
-    ctx.restore(); // back to screen space
+    ctx.restore();
 
     this.ui.drawHUD(ctx);
     if (this._debugCollision) this._drawDebugStats();
@@ -287,7 +343,6 @@ class Game {
     if (this.state === STATE.GAMEOVER) this.ui.drawGameOver(ctx);
   }
 
-  // Collision debug circles in world space (already inside the camera transform when called).
   _drawDebugOverlay() {
     ctx.save();
     ctx.shadowBlur = 0;
@@ -300,28 +355,24 @@ class Game {
       ctx.strokeStyle = col;
       ctx.stroke();
     };
-    // Obstacles
     this.rocks.forEach((r) => drawC(r.x, r.y, r.collisionRadius, "#f44"));
     this.asteroids.forEach((a) => drawC(a.x, a.y, a.radius, "#f84"));
     this.pumices.forEach((p) => {
       if (p.cells) p.cells.filter((c) => c.alive).forEach((c) => drawC(c.x, c.y, c.r, "#f4f"));
       else if (p.alive) drawC(p.x, p.y, p.radius, "#f4f");
     });
-    // Enemies
     this.ufos.forEach((u) => drawC(u.x, u.y, u.radius, "#f00"));
     this.ufoBullets.forEach((b) => drawC(b.x, b.y, b.radius, "#f60"));
-    // Player
     this.bullets.forEach((b) => drawC(b.x, b.y, b.radius, "#0f4"));
     this.powerups.forEach((p) => drawC(p.x, p.y, p.radius, "#ff0"));
     if (this.ship) {
-      drawC(this.ship.x, this.ship.y, this.ship.radius, "#4ff"); // hull
+      drawC(this.ship.x, this.ship.y, this.ship.radius, "#4ff");
       if (this.ship.hitRadius > this.ship.radius)
-        drawC(this.ship.x, this.ship.y, this.ship.hitRadius, "#0cf"); // shield bubble
+        drawC(this.ship.x, this.ship.y, this.ship.hitRadius, "#0cf");
     }
     ctx.restore();
   }
 
-  // Performance and entity-count overlay in screen space (must be called after camera ctx.restore).
   _drawDebugStats() {
     const fps = Math.round(this._dbgFPS);
     const ms = this._dbgFrameMs.toFixed(1);
@@ -380,7 +431,6 @@ class Game {
     let x,
       y,
       tries = 0;
-    // Generous buffer first; if no spot found, fall back to minimum-safe spacing
     for (const margin of [sR + 50, sR + 15]) {
       tries = 0;
       do {
@@ -392,7 +442,7 @@ class Game {
           this.asteroids.some((a) => dist({ x, y }, a) < a.collisionRadius + margin) ||
           this.pumices.some((p) => p.pointInsideMargin(x, y, margin));
         if (!collides) return [x, y];
-      } while (tries < SAFE_POS_TRIES);
+      } while (tries < 300);
     }
     return [x, y];
   }
@@ -422,8 +472,6 @@ class Game {
     }
   }
 
-  // Clamp each asteroid's Matter body velocity to prevent restitution:1 collisions
-  // from compounding speed unboundedly over many frames.
   _capAsteroidSpeeds() {
     for (const a of this.asteroids) {
       const v = a.body.velocity;
@@ -438,17 +486,14 @@ class Game {
     }
   }
 
-  // How many asteroids to spawn for the current level (ramps up, then caps).
   _asteroidsForLevel() {
     return Math.min(INITIAL_ROCKS + this.level - 1, MAX_ROCKS_PER_LEVEL);
   }
 
-  // How many solar systems to place at the current level (+1 every 2 levels after start).
   _solarCountForLevel() {
     return Math.min(Math.floor((this.level - SOLAR_START_LEVEL) / 2) + 1, SOLAR_MAX_COUNT);
   }
 
-  // How many turrets to place at the current level (+1 per level after start, then caps).
   _turretCountForLevel() {
     return Math.min(this.level - TURRET_START_LEVEL + 1, TURRET_MAX_COUNT);
   }
@@ -471,7 +516,6 @@ class Game {
     }
     this._applyAsteroidFilter();
 
-    // Solar systems: appear from level SOLAR_START_LEVEL, max SOLAR_MAX_COUNT at a time
     if (this.level >= SOLAR_START_LEVEL) {
       const solarCount = this._solarCountForLevel();
       for (let si = 0; si < solarCount; si++) {
@@ -496,7 +540,6 @@ class Game {
       }
     }
 
-    // Turrets: appear from TURRET_START_LEVEL, one additional per level up to TURRET_MAX_COUNT
     if (this.level >= TURRET_START_LEVEL) {
       const turretCount = this._turretCountForLevel();
       for (let i = 0; i < turretCount; i++) {
@@ -528,7 +571,6 @@ class Game {
     this.snd[_BOOM_SOUNDS[size]]();
   }
 
-  // Transitions to a new game state. Logs a warning in debug mode for unexpected edges.
   _transitionTo(newState) {
     if (this._debugCollision) {
       const allowed = _VALID_TRANSITIONS[this.state] ?? [];
@@ -539,8 +581,6 @@ class Game {
     this.state = newState;
   }
 
-  // Shared asteroid-destruction sequence used by both bullet and shield collisions.
-  // Returns the split children (already added to the world).
   _destroyAsteroid(asteroid, bulletAngle, debrisVx, debrisVy, spinCross) {
     this._boom(asteroid.x, asteroid.y, asteroid.size);
     this._spawnDebris(asteroid.x, asteroid.y, debrisVx, debrisVy);
@@ -564,8 +604,6 @@ class Game {
     this.ufoBullets = [];
   }
 
-  // Handles all state transitions based on input (START, HELP, CONFIG, PLAYING keys).
-  // Returns `true` if update() should abort (state needs no further processing).
   _updateStateInput() {
     switch (this.state) {
       case STATE.START:
@@ -605,12 +643,10 @@ class Game {
   _handleConfigInput() {
     const readOnly = this._configPrevState === STATE.PLAYING;
 
-    // Switch focus between mode tiles and the details button
     if (Input.wasPressed("ArrowDown") && this._configFocus === "mode")
       this._configFocus = "details";
     if (Input.wasPressed("ArrowUp") && this._configFocus === "details") this._configFocus = "mode";
 
-    // Mode change works with ArrowLeft/Right regardless of focus
     if (!readOnly) {
       const prevMode = this.config.mode;
       if (Input.wasPressed("ArrowLeft")) this.config.mode = Math.max(1, this.config.mode - 1);
@@ -621,7 +657,6 @@ class Game {
       }
     }
 
-    // Open details: D key always, Enter when details are focused
     if (
       Input.wasPressed("KeyD") ||
       (Input.wasPressed("Enter") && this._configFocus === "details")
@@ -638,7 +673,6 @@ class Game {
       return true;
     }
 
-    // Start game: Enter when mode tiles are focused, or C key
     if ((Input.wasPressed("Enter") && this._configFocus === "mode") || Input.config()) {
       if (readOnly) this._transitionTo(STATE.PLAYING);
       else this.start();
@@ -700,8 +734,6 @@ class Game {
     return false;
   }
 
-  // STATE.DEAD: count down deadTimer, keep asteroids/UFOs running,
-  // then respawn (PLAYING) or game over.
   _updateDeadState(dt) {
     this.deadTimer -= dt;
     this.asteroids.forEach((a) => a.update(dt));
@@ -728,11 +760,9 @@ class Game {
     Input.flush();
   }
 
-  // Ship update + thrust particles + teleport + shooting + bullets/asteroids/physics tick.
   _updateShipAndBullets(dt) {
     this.ship.update(dt);
 
-    // Thrust trail particles
     if (this.ship.thrusting) {
       for (let i = 0; i < 2; i++) {
         const ex = this.ship.x - Math.cos(this.ship.angle) * SHIP_SIZE * 0.35;
@@ -761,7 +791,6 @@ class Game {
     this.bullets = this.bullets.filter((b) => b.update(dt));
     this.asteroids.forEach((a) => a.update(dt));
 
-    // Sync ship position/velocity into Matter body before physics tick
     Matter.Body.setPosition(this.ship.body, { x: this.ship.x, y: this.ship.y });
     Matter.Body.setVelocity(this.ship.body, {
       x: this.ship.vx / 60,
@@ -773,8 +802,6 @@ class Game {
     this._capAsteroidSpeeds();
   }
 
-  // UFO spawn timer + UFO update (sinusoidal movement, possibly firing).
-  // UFOs persist across level transitions.
   _updateUFOs(dt) {
     this.ufoTimer -= dt;
     if (this.ufoTimer <= 0) {
@@ -786,11 +813,8 @@ class Game {
     this.ufos = this.ufos.filter((u) => u.update(dt, this.ship));
   }
 
-  // Theoretical max collision checks per frame: bullets × entities + ship × entities.
-  // Peak holds for 120 frames (~2 s), then resets to the current value.
   _updateDebugStats() {
     if (!this._debugCollision) return;
-    // PumiceCluster: count of alive cells
     const pumiceUnits = this.pumices.reduce(
       (s, p) => s + (p.cells ? p.cells.filter((c) => c.alive).length : 1),
       0,
@@ -845,7 +869,6 @@ class Game {
     for (const a of this.asteroids) Matter.Body.set(a.body, "collisionFilter", f);
   }
 
-  // Adds asteroid children (split result) to the physics world and applies the collision filter.
   _addAsteroidsToWorld(asteroids) {
     if (!asteroids.length) return;
     Matter.World.add(
@@ -859,7 +882,6 @@ class Game {
     }
   }
 
-  // Spawns 3–5 debris bodies at the explosion site with random direction + impulse share.
   _spawnDebris(ax, ay, impulseVx, impulseVy) {
     const count = randInt(DEBRIS_COUNT_MIN, DEBRIS_COUNT_MAX);
     const baseSpeed = Math.hypot(impulseVx, impulseVy) * 0.3;
@@ -877,7 +899,6 @@ class Game {
     }
   }
 
-  // Update + cleanup of all debris bodies after the physics tick.
   _tickDebris(dt) {
     this.debris = this.debris.filter((d) => {
       if (!d.update(dt)) {
@@ -888,5 +909,3 @@ class Game {
     });
   }
 }
-
-if (typeof module !== "undefined") module.exports = { Game, STATE };

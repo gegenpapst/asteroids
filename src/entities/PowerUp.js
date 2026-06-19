@@ -1,6 +1,7 @@
-"use strict";
+import { rand, wrap, TAU } from "../utils.js";
+import { WW, WH } from "../Globals.js";
 
-class PowerUp {
+export class PowerUp {
   constructor(x, y, type) {
     this.x = x;
     this.y = y;
@@ -67,7 +68,6 @@ class PowerUp {
         ctx.stroke();
       }
     } else {
-      // heavy — diamond outline + filled center dot
       ctx.strokeStyle = "#f64";
       ctx.shadowColor = "#f40";
       ctx.shadowBlur = 18;
@@ -89,5 +89,3 @@ class PowerUp {
     ctx.restore();
   }
 }
-
-if (typeof module !== "undefined") module.exports = { PowerUp };

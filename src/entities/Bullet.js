@@ -1,6 +1,7 @@
-"use strict";
+import { wrap, clamp, TAU } from "../utils.js";
+import { WW, WH, BULLET_LIFE } from "../Globals.js";
 
-class Bullet {
+export class Bullet {
   constructor(x, y, vx, vy, life = BULLET_LIFE, power = 1) {
     this.x = x;
     this.y = y;
@@ -43,5 +44,3 @@ class Bullet {
     }
   }
 }
-
-if (typeof module !== "undefined") module.exports = { Bullet };

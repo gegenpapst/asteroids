@@ -1,9 +1,33 @@
-"use strict";
+import { W, H, wrap, clamp } from "../utils.js";
+import {
+  WW,
+  WH,
+  SHIP_SIZE,
+  SHIP_HULL_FACTOR,
+  SHIP_SHIELD_FACTOR,
+  SHIP_THRUST,
+  SHIP_MAX_SPEED,
+  SHIP_FRICTION,
+  SHIP_MIN_SPEED,
+  SHIP_ROTATION,
+  SHIP_STRAFE_SPEED,
+  SHIP_STRAFE_ACCEL,
+  SHIP_BOUNCE_MIN_SPEED,
+  BULLET_SPEED,
+  BULLET_LIFE,
+  BULLET_SPREAD_ANGLE,
+  FIRE_RATE,
+  RAPID_FIRE_FACTOR,
+  INVULNERABLE_TIME,
+} from "../Globals.js";
+import { Input } from "../input.js";
+import { Bullet } from "./Bullet.js";
+import { Matter } from "../physics.js";
 
 // Shared base for ship variants (e.g. ShipCluster).
 // Handles movement, firing, power-up timers and teleport.
 // Subclasses implement only draw().
-class ShipBase {
+export class ShipBase {
   constructor() {
     this.x = W / 2;
     this.y = H / 2;
@@ -19,8 +43,6 @@ class ShipBase {
     this.spreadTimer = 0;
     this.heavyTimer = 0;
 
-    // Matter body — always a sensor (mask:0). Ship physics are owned entirely by
-    // entity state; the body is only a passive position shadow for the physics world.
     this.body = Matter.Bodies.circle(this.x, this.y, SHIP_SIZE * SHIP_HULL_FACTOR, {
       friction: 0,
       frictionAir: 0,
@@ -82,7 +104,6 @@ class ShipBase {
       this.vy *= s;
     }
 
-    // dt*60 normalises exponential decay to be frame-rate independent
     const friction = Math.pow(SHIP_FRICTION, dt * 60);
     this.vx *= friction;
     this.vy *= friction;
@@ -149,7 +170,6 @@ class ShipBase {
     ];
   }
 
-  // Reflects the ship's velocity off a surface whose outward normal points from (ox,oy) to ship.
   bounceOff(ox, oy) {
     const dx = this.x - ox,
       dy = this.y - oy;
@@ -157,7 +177,7 @@ class ShipBase {
     const nx = dx / d,
       ny = dy / d;
     const dot = this.vx * nx + this.vy * ny;
-    if (dot > 0) return; // already moving away — skip re-bounce
+    if (dot > 0) return;
     this.vx -= 2 * dot * nx;
     this.vy -= 2 * dot * ny;
     const spd = Math.hypot(this.vx, this.vy);
@@ -167,5 +187,3 @@ class ShipBase {
     }
   }
 }
-
-if (typeof module !== "undefined") module.exports = { ShipBase };

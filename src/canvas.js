@@ -1,19 +1,24 @@
-"use strict";
+import { W, H } from "./utils.js";
 
-const W = 800;
-const H = 600;
+let canvas = null;
+let ctx = null;
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-canvas.width = W;
-canvas.height = H;
+if (typeof globalThis.document !== "undefined") {
+  canvas = document.getElementById("canvas");
+  ctx = canvas.getContext("2d");
+  canvas.width = W;
+  canvas.height = H;
 
-function fitCanvas() {
-  const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
-  canvas.style.width = `${W * scale}px`;
-  canvas.style.height = `${H * scale}px`;
+  function fitCanvas() {
+    const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
+    canvas.style.width = `${W * scale}px`;
+    canvas.style.height = `${H * scale}px`;
+  }
+  fitCanvas();
+  window.addEventListener("resize", fitCanvas);
+
+  globalThis.ctx = ctx;
+  globalThis.canvas = canvas;
 }
-fitCanvas();
-window.addEventListener("resize", fitCanvas);
 
-if (typeof module !== "undefined") module.exports = { W, H };
+export { canvas, ctx };
