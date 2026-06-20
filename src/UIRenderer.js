@@ -4,9 +4,21 @@ import { WW, WH, HEAT_MAX, OVERHEAT_LOCKOUT } from "./Globals.js";
 // Radar / minimap layout (screen-space, bottom-right corner).
 const RADAR_W = 140; // world is always 4:3 → height derives from uniform scale
 const RADAR_MARGIN = 12;
-const RADAR_DOT = 1.6; // asteroid / pumice dot radius
+const RADAR_DOT = 1.6; // asteroid dot radius
 const RADAR_THREAT_DOT = 2.2; // UFO / turret dot radius
 const RADAR_SHIP_SIZE = 4; // ship heading-arrow length
+
+// Color scheme: green = shoots worth taking (darker = fewer points),
+// red = active threat (UFO / turret), grey = no points / navigation hazard.
+const RADAR_COLOR_THREAT = "#f44"; // UFO, turret
+const RADAR_COLOR_OBSTACLE = "rgba(100,100,100,0.7)"; // rock, pumice — no points
+// Asteroid green gradient indexed by size (0 = large/20pts … 2 = small/100pts).
+const RADAR_COLOR_ASTEROID = [
+  "hsl(120,100%,30%)", // size 0 — large, 20 pts
+  "hsl(120,100%,45%)", // size 1 — medium, 50 pts
+  "hsl(120,100%,60%)", // size 2 — small / satellite, 100 pts
+];
+const RADAR_COLOR_SOLAR = "hsl(120,100%,80%)"; // solar center, 500 pts
 
 // Renders all HUD and screen overlays (start, help, config, game-over, HUD bars).
 // Reads game state via this._g; never mutates game state directly.
@@ -135,16 +147,17 @@ export class UIRenderer {
       ctx.fill();
     };
 
-    // Indestructible rocks — dim grey navigation hazards (drawn first, lowest).
-    for (const e of g.rocks) dot(e, RADAR_DOT, "rgba(150,150,150,0.7)");
-    // Neutral targets — asteroids (all sizes) and pumice clusters.
-    for (const e of g.asteroids) dot(e, RADAR_DOT, "#fff");
-    for (const e of g.pumices) dot(e, RADAR_DOT, "#fff");
-    // Bounty — solar-system centers.
-    for (const e of g.solarSystems) dot(e, RADAR_THREAT_DOT, "#fc0");
-    // Active threats — UFOs and turrets.
-    for (const e of g.ufos) dot(e, RADAR_THREAT_DOT, "#f44");
-    for (const e of g.turrets) dot(e, RADAR_THREAT_DOT, "#f44");
+    // No-point hazards — drawn first (lowest layer).
+    for (const e of g.rocks) dot(e, RADAR_DOT, RADAR_COLOR_OBSTACLE);
+    for (const e of g.pumices) dot(e, RADAR_DOT, RADAR_COLOR_OBSTACLE);
+    // Point targets — asteroids shaded by size (darker = fewer points).
+    for (const e of g.asteroids)
+      dot(e, RADAR_DOT, RADAR_COLOR_ASTEROID[e.size] ?? RADAR_COLOR_ASTEROID[2]);
+    // Solar-system centers — highest-value stationary target.
+    for (const e of g.solarSystems) dot(e, RADAR_THREAT_DOT, RADAR_COLOR_SOLAR);
+    // Active threats — UFOs and turrets (red regardless of point value).
+    for (const e of g.ufos) dot(e, RADAR_THREAT_DOT, RADAR_COLOR_THREAT);
+    for (const e of g.turrets) dot(e, RADAR_THREAT_DOT, RADAR_COLOR_THREAT);
 
     // Viewport rectangle — the slice the player currently sees.
     ctx.strokeStyle = "rgba(120,200,255,0.8)";
