@@ -7,6 +7,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Comments always in English** — no German comments, no mixed-language comments
 - **Format before editing** — run `npx prettier --write <file>` on every file before making changes to it
 
+## Worktrees & working directory
+
+- **Confirm the working directory first** — before editing or committing, verify that the current directory matches the target project (`git rev-parse --show-toplevel`)
+- **Never commit `.claude/settings.local.json`** — keep it in `.gitignore`; it contains machine-local config that must not be pushed
+- If the user asks to work on a different project (e.g. the homepage repo), start a new session there rather than switching directories in the current one
+
+## Testing
+
+- **Run the full test suite after every code change** — `npm test` must show all tests green before deploying or merging
+- Do not declare a task done until the test count is confirmed
+
 ## Task recipes
 
 Before starting work, identify the category and follow the checklist. Two categories have dedicated
@@ -27,20 +38,24 @@ skills that must be invoked:
 2. Identify root cause, not just symptom — read the full call chain
 3. After the fix: run the original reproduction sequence and confirm it no longer triggers
 4. Check whether the fix could introduce a regression in adjacent logic
+5. **Visual check** — open the browser preview and verify the changed area plus adjacent rendering (stars, ship, asteroids) for regressions before declaring done
 
 ### Refactoring
 
 1. Is there test coverage for the code being moved or renamed? If not: write tests first
 2. Check every reference to renamed/moved symbols — especially in `Game.js` where closed-over
    locals and `this.*` properties look identical but have different scope
-3. No behaviour change: verify the game starts, plays through a level, and transitions to the next
-4. Run Prettier on all touched files
+3. **Before removing any constant or dead code** — grep the full codebase to confirm it is truly unused; do not rely on appearances alone
+4. No behaviour change: verify the game starts, plays through a level, and transitions to the next
+5. Run Prettier on all touched files
+6. **Visual check** — open the browser preview and verify the changed area plus adjacent rendering (stars, ship, asteroids) for regressions before declaring done
 
 ### Visual change
 
 1. If an offscreen canvas (`_offCanvas`) is involved: ensure it is invalidated and rebuilt
 2. Do split children inherit the updated visual correctly?
 3. Does the start-screen showcase need updating to match?
+4. **Visual check** — open the browser preview and verify the changed area plus adjacent rendering (stars, ship, asteroids) for regressions before declaring done
 
 ### New game mechanic
 
@@ -48,6 +63,7 @@ skills that must be invoked:
 2. Every tuning value must be a named constant in `Globals.js` — no magic numbers inline
 3. Does it interact with score, lives, or level progression? Check all three
 4. Write a test or add a manual verification note in the commit message
+5. **Visual check** — open the browser preview and verify the changed area plus adjacent rendering (stars, ship, asteroids) for regressions before declaring done
 
 ## Running the game
 
