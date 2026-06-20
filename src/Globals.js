@@ -19,6 +19,11 @@ export const MAX_BULLETS = 8;
 export const FIRE_RATE = 0.22;
 export const BULLET_SPREAD_ANGLE = 0.26;
 
+export const HEAT_MAX = 100;
+export const HEAT_PER_SHOT = 20; // 5 shots to overheat at normal fire rate
+export const HEAT_COOLDOWN_RATE = 30; // units per second; full cool in ~3.3 s
+export const OVERHEAT_LOCKOUT = 2.5; // seconds weapon is locked after overheat
+
 export const INVULNERABLE_TIME = 3.0;
 
 export const ASTEROID_RADIUS = [48, 26, 13];
