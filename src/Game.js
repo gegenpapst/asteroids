@@ -45,6 +45,14 @@ import {
   DBG_FRAME_CRIT_MS,
   DBG_FPS_WARN,
   DBG_FPS_CRIT,
+  SHAKE_DECAY,
+  SHAKE_MAX_OFFSET,
+  SHAKE_BOOM,
+  SHAKE_SHIP_DEATH,
+  FLASH_DECAY,
+  FLASH_DEATH,
+  VIGNETTE_DECAY,
+  VIGNETTE_DEATH,
 } from "./Globals.js";
 import { Input } from "./input.js";
 import { Matter } from "./physics.js";
@@ -235,6 +243,14 @@ export class Game {
     this._camX = 0;
     this._camY = 0;
 
+    // Screen-feedback ("juice") state — see _updateFx / _drawScreenFx.
+    this._shakeTrauma = 0;
+    this._shakeX = 0;
+    this._shakeY = 0;
+    this._flashAlpha = 0;
+    this._flashColor = "#fff";
+    this._vignetteAlpha = 0;
+
     this.collisions = new CollisionSystem(this);
     this.ui = new UIRenderer(this);
 
@@ -259,6 +275,11 @@ export class Game {
     this.saturn = new BackgroundSaturn(WW / 2, WH / 2);
     this._camX = 0;
     this._camY = 0;
+    this._shakeTrauma = 0;
+    this._shakeX = 0;
+    this._shakeY = 0;
+    this._flashAlpha = 0;
+    this._vignetteAlpha = 0;
     this.mode = new MetaballMode();
     this.score = 0;
     this.lives = 3;
@@ -307,6 +328,40 @@ export class Game {
     this._transitionTo(STATE.PLAYING);
   }
 
+  // ── Screen feedback ("juice") ─────────────────────────────────────────────
+  // Decays shake trauma, flash and vignette; recomputes the per-frame shake offset.
+  _updateFx(dt) {
+    if (this._shakeTrauma > 0) {
+      this._shakeTrauma = Math.max(0, this._shakeTrauma - SHAKE_DECAY * dt);
+      // Squaring trauma gives a punchy onset and a gentle tail-off.
+      const mag = SHAKE_MAX_OFFSET * this._shakeTrauma * this._shakeTrauma;
+      this._shakeX = rand(-mag, mag);
+      this._shakeY = rand(-mag, mag);
+    } else {
+      this._shakeX = 0;
+      this._shakeY = 0;
+    }
+    if (this._flashAlpha > 0) this._flashAlpha = Math.max(0, this._flashAlpha - FLASH_DECAY * dt);
+    if (this._vignetteAlpha > 0)
+      this._vignetteAlpha = Math.max(0, this._vignetteAlpha - VIGNETTE_DECAY * dt);
+  }
+
+  // Add camera-shake trauma (0..1, clamped). Larger events stack up to 1.
+  _addShake(trauma) {
+    this._shakeTrauma = Math.min(1, this._shakeTrauma + trauma);
+  }
+
+  // Trigger a full-screen additive flash (brightest pending value wins).
+  _addFlash(alpha, color = "#fff") {
+    if (alpha > this._flashAlpha) this._flashColor = color;
+    this._flashAlpha = Math.max(this._flashAlpha, alpha);
+  }
+
+  // Trigger a red damage vignette pulse.
+  _addVignette(alpha) {
+    this._vignetteAlpha = Math.max(this._vignetteAlpha, alpha);
+  }
+
   update(dt) {
     dt = Math.min(dt, 1 / 20);
     this.t += dt;
@@ -318,6 +373,7 @@ export class Game {
     if (this._updateStateInput()) return;
 
     this.world.tickAudio(dt);
+    this._updateFx(dt);
     this.world.tickUniversal(dt);
 
     if (this.state === STATE.DEAD) {
@@ -416,7 +472,7 @@ export class Game {
     }
 
     ctx.save();
-    ctx.translate(-this._camX, -this._camY);
+    ctx.translate(-this._camX + this._shakeX, -this._camY + this._shakeY);
     if (this.saturn) this.saturn.draw(ctx);
     this.turrets.forEach((t) => t.draw(ctx));
     this.rocks.forEach((r) => r.draw(ctx));
@@ -433,10 +489,34 @@ export class Game {
     if (this._debugCollision) this._drawDebugOverlay();
     ctx.restore();
 
+    this._drawScreenFx();
     this.ui.drawHUD(ctx);
     if (this._debugCollision) this._drawDebugStats();
     if (this.state === STATE.QUIT_CONFIRM) this.ui.drawQuitConfirm(ctx);
     if (this.state === STATE.GAMEOVER) this.ui.drawGameOver(ctx);
+  }
+
+  // Screen-space flash and damage vignette, drawn over the world (under the HUD).
+  _drawScreenFx() {
+    if (this._flashAlpha > 0) {
+      ctx.save();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = Math.min(1, this._flashAlpha);
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = this._flashColor;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+    if (this._vignetteAlpha > 0) {
+      ctx.save();
+      ctx.shadowBlur = 0;
+      const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.32, W / 2, H / 2, H * 0.75);
+      g.addColorStop(0, "rgba(255,0,0,0)");
+      g.addColorStop(1, `rgba(255,0,0,${Math.min(0.85, this._vignetteAlpha)})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
   }
 
   _drawDebugOverlay() {
@@ -622,6 +702,7 @@ export class Game {
   _boom(x, y, size) {
     for (let i = 0; i < BOOM_PARTICLE_COUNTS[size]; i++) this.particles.push(new Particle(x, y));
     this.snd[_BOOM_SOUNDS[size]]();
+    this._addShake(SHAKE_BOOM[size]);
   }
 
   _transitionTo(newState) {
@@ -648,6 +729,9 @@ export class Game {
     for (let i = 0; i < SHIP_DEATH_PARTICLES; i++)
       this.particles.push(new Particle(this.ship.x, this.ship.y, "#8ef"));
     this.snd.shipDie();
+    this._addShake(SHAKE_SHIP_DEATH);
+    this._addFlash(FLASH_DEATH, "#f33");
+    this._addVignette(VIGNETTE_DEATH);
     this.lives--;
     Matter.World.remove(this.engine.world, this.ship.body);
     this.ship = null;

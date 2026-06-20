@@ -1,5 +1,5 @@
 import { dist, randInt } from "./utils.js";
-import { POWERUP_TYPES, TURRET_SCORE } from "./Globals.js";
+import { POWERUP_TYPES, TURRET_SCORE, FLASH_KILL } from "./Globals.js";
 import { PowerUp } from "./entities/PowerUp.js";
 
 // Handles all per-frame collision detection for the game.
@@ -85,6 +85,7 @@ export class CollisionSystem {
         if (_overlaps(b, u, b.radius, u.radius)) {
           g._addScore(u.score);
           g._boom(u.x, u.y, 1);
+          g._addFlash(FLASH_KILL);
           g.ufos.splice(ui, 1);
           return true;
         }
