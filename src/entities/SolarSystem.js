@@ -4,6 +4,8 @@ import {
   SOLAR_CENTER_SPEED,
   SOLAR_TETHER_MAX,
   ASTEROID_RADIUS,
+  FLASH_KILL,
+  SHAKE_BOOM,
 } from "../Globals.js";
 import { Particle } from "./Particle.js";
 import { Matter } from "../physics.js";
@@ -48,6 +50,8 @@ export class SolarSystem {
     for (let i = 0; i < 14; i++) game.particles.push(new Particle(this.x, this.y, "#fff"));
     game.snd.explodeLarge();
     game._addScore(SOLAR_CENTER_SCORE);
+    game._addFlash(FLASH_KILL);
+    game._addShake(SHAKE_BOOM[0]);
   }
 
   update(dt) {

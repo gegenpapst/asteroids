@@ -14,6 +14,8 @@ export const SHIP_SHIELD_FACTOR = 2.2;
 
 export const BULLET_SPEED = 560;
 export const BULLET_LIFE = 0.65;
+// Length of the additive motion streak behind a bullet, expressed in seconds of velocity.
+export const BULLET_TRAIL_TIME = 0.022;
 export const BULLET_LIFE_LEVELS = [0.35, 0.65, 1.0];
 export const MAX_BULLETS = 8;
 export const FIRE_RATE = 0.22;
@@ -177,6 +179,18 @@ export const BOOM_PARTICLE_COUNTS = [22, 14, 7];
 export const SHIP_DEATH_PARTICLES = 22;
 export const SAFE_POS_TRIES = 300;
 export const STAR_PARALLAX = 0.15;
+
+// ── Screen feedback / "juice" (camera shake, flash, vignette) ────────────────
+// Trauma model: a 0..1 value that decays linearly; screen offset scales with trauma².
+export const SHAKE_DECAY = 1.6; // trauma units lost per second
+export const SHAKE_MAX_OFFSET = 16; // px of camera jitter at full trauma
+export const SHAKE_BOOM = [0.55, 0.32, 0.18]; // trauma added per boom, indexed by size (large→small)
+export const SHAKE_SHIP_DEATH = 0.95; // trauma on player death
+export const FLASH_DECAY = 4.0; // flash alpha lost per second
+export const FLASH_KILL = 0.28; // white flash alpha when destroying a UFO / solar center
+export const FLASH_DEATH = 0.4; // red flash alpha on player death
+export const VIGNETTE_DECAY = 1.8; // vignette alpha lost per second
+export const VIGNETTE_DEATH = 0.75; // red vignette alpha on player death
 
 // ── Debug overlay thresholds ─────────────────────────────────────────────────
 export const DBG_COLLISION_WARN = 80;

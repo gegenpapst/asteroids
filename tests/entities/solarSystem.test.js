@@ -7,6 +7,8 @@ function makeFakeGame() {
     particles: [],
     snd: { explodeLarge: jest.fn() },
     _addScore: jest.fn(),
+    _addFlash: jest.fn(),
+    _addShake: jest.fn(),
     engine: { world: {} },
   };
 }

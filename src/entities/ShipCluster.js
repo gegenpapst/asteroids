@@ -81,21 +81,42 @@ export class ShipCluster extends ShipBase {
 
     if (this.thrusting) {
       const flicker = 0.5 + 0.5 * Math.sin(this.flameT);
-      const flameLen = s * (0.45 + flicker * 0.55);
-      const r = 255,
-        g = (90 + flicker * 120) | 0;
+      const flameLen = s * (0.55 + flicker * 0.7);
+      const baseX = -s * 0.35;
+      const tipX = baseX - flameLen;
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.angle);
+      // Additive layers so the flame glows rather than paints over the hull.
+      ctx.globalCompositeOperation = "lighter";
+
+      // Outer cone — orange→transparent gradient, pulsing length.
+      const outer = ctx.createLinearGradient(baseX, 0, tipX, 0);
+      outer.addColorStop(0, `rgba(255,150,0,${0.5 + flicker * 0.3})`);
+      outer.addColorStop(1, "rgba(255,40,0,0)");
       ctx.beginPath();
-      ctx.moveTo(-s * 0.35, -s * 0.2);
-      ctx.lineTo(-s * 0.35 - flameLen, 0);
-      ctx.lineTo(-s * 0.35, s * 0.2);
-      ctx.strokeStyle = `rgba(${r},${g},0,${0.75 + flicker * 0.25})`;
-      ctx.shadowColor = "#f80";
-      ctx.shadowBlur = 14;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      ctx.moveTo(baseX, -s * 0.26);
+      ctx.lineTo(tipX, 0);
+      ctx.lineTo(baseX, s * 0.26);
+      ctx.closePath();
+      ctx.fillStyle = outer;
+      ctx.shadowColor = "#f60";
+      ctx.shadowBlur = 16;
+      ctx.fill();
+
+      // Inner core — shorter, hot white→amber.
+      const inner = ctx.createLinearGradient(baseX, 0, tipX * 0.62, 0);
+      inner.addColorStop(0, `rgba(255,255,210,${0.7 + flicker * 0.3})`);
+      inner.addColorStop(1, "rgba(255,180,40,0)");
+      ctx.beginPath();
+      ctx.moveTo(baseX, -s * 0.13);
+      ctx.lineTo(tipX * 0.62, 0);
+      ctx.lineTo(baseX, s * 0.13);
+      ctx.closePath();
+      ctx.fillStyle = inner;
+      ctx.shadowBlur = 0;
+      ctx.fill();
+
       ctx.restore();
     }
   }
