@@ -42,8 +42,8 @@ Statisches Objekt mit Anziehungsradius: Bullets krümmen sich, Asteroiden und Sh
 angezogen. Kein direkter Schaden, aber lokal veränderte Bewegungsphysik → Slingshot-Manöver
 als Skill.
 
-- Nutzt Matter.js und die vorhandene `SOLAR_*`-Constraint-Infrastruktur (radiale Kraft auf
-  nahe Bodies). Klein im Code, groß im Spielgefühl.
+- Nutzt Matter.js `Body.applyForce()` pro Frame auf alle nahen Bodies — ~5–10 Zeilen
+  Physikcode, keine eigene Kollisionslogik.
 - Umsetzung über die `/new-game-entity`-Skill.
 
 ### B) Splitter-Asteroid mit Schockwelle
@@ -58,6 +58,29 @@ weg und schädigt das Ship (außer mit `shield`).
 
 Gegner mit Seek-Verhalten, der das Ship aktiv verfolgt und rammt statt schießt; optional
 ausweichend, wenn man auf ihn zielt. Erstmals echtes aktives Verhalten gegen den Spieler.
+
+### E) Ketten-Hindernis
+
+Eine Reihe kleiner Kreis-Bodies, verbunden durch `Matter.Constraint` mit kurzer Länge, spannt
+sich quer durch einen Weltbereich. Das Ship muss Lücken hereinschießen, bevor es
+hindurchfliegen kann. Einzelne Links reißen, wenn der Body zerstört wird — der Rest schwingt
+physikalisch korrekt nach.
+
+- Verwendet dieselbe Constraint-Infrastruktur wie `SolarSystem` und die Pendulum-Asteroiden,
+  nur als Blockade-Mechanik umgeordnet. `stiffness`-Wert steuert die Nachgiebigkeit.
+- Umsetzung über die `/new-game-entity`-Skill.
+
+### F) Sprengmine (Radial-Impuls)
+
+Statischer Body, der beim Treffer eine physikalische Explosion auslöst: `Body.applyForce()`
+radial auf alle Bodies im Explosionsradius — Asteroiden fliegen auseinander, das Ship wird
+weggestoßen. Mehrere Minen können Kettenreaktionen auslösen, wenn der Impuls einen anderen
+Mine-Body trifft. Der Effekt entsteht komplett aus Matter.js-Physik, ohne eigene
+Kollisionslogik.
+
+- Radiale `applyForce`-Schleife über alle Composite-Bodies; das Engine rechnet Folgewirkungen
+  automatisch durch.
+- Umsetzung über die `/new-game-entity`-Skill.
 
 ### D) Wurmlochpaar (empfohlen — bessere erste Wahl als der Gravitationsbrunnen)
 
@@ -155,6 +178,11 @@ Clutter in späten Levels (durch kleine Punkte / Splitter-Filter mildern).
 ## Empfohlene Reihenfolge (Quick-Wins zuerst)
 
 1. **1A Combo-System** + **3C Camera-Shake/Hit-Flash** — minimaler Eingriff, sofort spürbar.
-2. **2A Gravitationsbrunnen** — stärkstes neues Feature, über `/new-game-entity`.
-3. ~~**4 Radar**~~ — ✅ umgesetzt; reines HUD, macht die großen Welten (`worldSize` 2–3) erst
+2. **2A Gravitationsbrunnen** — stärkstes neues Feature, über `/new-game-entity`. Matter.js
+   `applyForce()` macht die Implementierung trivial.
+3. **2E Ketten-Hindernis** — wiederverwendet bestehende Constraint-Infrastruktur, neue
+   taktische Dimension ohne neuen Physikcode.
+4. **2F Sprengmine** — Kettenreaktionen aus reiner Matter.js-Physik, kein eigener
+   Kollisionscode nötig.
+5. ~~**4 Radar**~~ — ✅ umgesetzt; reines HUD, macht die großen Welten (`worldSize` 2–3) erst
    richtig spielbar.
