@@ -135,3 +135,37 @@ describe("ShipCluster.canFire / fire", () => {
     expect(b.power).toBe(2);
   });
 });
+
+describe("ShipCluster.draw", () => {
+  test("does not throw in normal state", () => {
+    const s = new ShipCluster();
+    s.invulnerable = 0;
+    s.shieldTimer = 0;
+    s.thrusting = false;
+    expect(() => s.draw(ctx)).not.toThrow();
+  });
+
+  test("does not throw with shield active", () => {
+    const s = new ShipCluster();
+    s.invulnerable = 0;
+    s.shieldTimer = 2.0;
+    s.thrusting = false;
+    expect(() => s.draw(ctx)).not.toThrow();
+  });
+
+  test("does not throw while thrusting", () => {
+    const s = new ShipCluster();
+    s.invulnerable = 0;
+    s.shieldTimer = 0;
+    s.thrusting = true;
+    s.flameT = 0;
+    expect(() => s.draw(ctx)).not.toThrow();
+  });
+
+  test("does not throw during invulnerable blink", () => {
+    const s = new ShipCluster();
+    s.invulnerable = 0.0625; // Math.floor(0.0625*8)%2 === 0 → skips draw
+    s.thrusting = false;
+    expect(() => s.draw(ctx)).not.toThrow();
+  });
+});

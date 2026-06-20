@@ -39,3 +39,16 @@ describe("UfoBullet.update", () => {
     expect(b.update(BULLET_LIFE + 0.1)).toBe(false);
   });
 });
+
+describe("UfoBullet.draw", () => {
+  test("does not throw", () => {
+    const b = new UfoBullet(100, 100, 0, 0);
+    expect(() => b.draw(ctx)).not.toThrow();
+  });
+
+  test("does not throw when nearly expired (fade branch)", () => {
+    const b = new UfoBullet(100, 100, 0, 0);
+    b.life = b.maxLife * 0.3;
+    expect(() => b.draw(ctx)).not.toThrow();
+  });
+});

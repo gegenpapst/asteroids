@@ -314,6 +314,89 @@ describe("Help and config transitions", () => {
   });
 });
 
+// ── _boom ─────────────────────────────────────────────────────────────────────
+
+describe("Game._boom", () => {
+  test("adds particles for each size", () => {
+    for (const size of [0, 1, 2]) {
+      const g = makeGame();
+      g._boom(100, 100, size);
+      expect(g.particles.length).toBe(BOOM_PARTICLE_COUNTS[size]);
+    }
+  });
+
+  test("particles are spawned at the given position", () => {
+    const g = makeGame();
+    g._boom(200, 150, 2);
+    expect(g.particles[0].x).toBe(200);
+    expect(g.particles[0].y).toBe(150);
+  });
+});
+
+// ── _spawnDebris ──────────────────────────────────────────────────────────────
+
+describe("Game._spawnDebris", () => {
+  test("adds debris in expected count range", () => {
+    const g = makeGame();
+    g._spawnDebris(300, 300, 0, 0);
+    expect(g.debris.length).toBeGreaterThanOrEqual(DEBRIS_COUNT_MIN);
+    expect(g.debris.length).toBeLessThanOrEqual(DEBRIS_COUNT_MAX);
+  });
+
+  test("debris is spawned near the given position", () => {
+    const g = makeGame();
+    g._spawnDebris(500, 400, 0, 0);
+    for (const d of g.debris) {
+      expect(Math.abs(d.x - 500)).toBeLessThanOrEqual(10);
+      expect(Math.abs(d.y - 400)).toBeLessThanOrEqual(10);
+    }
+  });
+});
+
+// ── _killShip ─────────────────────────────────────────────────────────────────
+
+describe("Game._killShip", () => {
+  function makeGameWithShip() {
+    const g = makeGame();
+    g.ship = { x: 100, y: 200, body: {} };
+    g.bullets = [makeBullet(0, 0)];
+    g.ufoBullets = [makeBullet(10, 10)];
+    return g;
+  }
+
+  test("decrements lives by 1", () => {
+    const g = makeGameWithShip();
+    const livesBefore = g.lives;
+    g._killShip();
+    expect(g.lives).toBe(livesBefore - 1);
+  });
+
+  test("sets ship to null", () => {
+    const g = makeGameWithShip();
+    g._killShip();
+    expect(g.ship).toBeNull();
+  });
+
+  test("transitions to DEAD state", () => {
+    const g = makeGameWithShip();
+    g._killShip();
+    expect(g.state).toBe(STATE.DEAD);
+  });
+
+  test("clears bullets and ufoBullets", () => {
+    const g = makeGameWithShip();
+    g._killShip();
+    expect(g.bullets).toHaveLength(0);
+    expect(g.ufoBullets).toHaveLength(0);
+  });
+
+  test("spawns death particles", () => {
+    const g = makeGameWithShip();
+    g._killShip();
+    expect(g.particles.length).toBeGreaterThan(0);
+  });
+});
+
 // ── Config getters ───────────────────────────────────────────────────────────
 
 describe("Config-derived getters", () => {

@@ -57,3 +57,16 @@ describe("Bullet.update", () => {
     expect(b.x).toBeLessThan(W);
   });
 });
+
+describe("Bullet.draw", () => {
+  test("does not throw", () => {
+    const b = new Bullet(100, 100, 0, 0, 1.0);
+    expect(() => b.draw(ctx)).not.toThrow();
+  });
+
+  test("does not throw when nearly expired", () => {
+    const b = new Bullet(100, 100, 0, 0, 0.65);
+    b.life = 0.05;
+    expect(() => b.draw(ctx)).not.toThrow();
+  });
+});

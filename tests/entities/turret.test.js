@@ -91,3 +91,16 @@ describe("Turret.update()", () => {
     expect(fired).toHaveLength(0);
   });
 });
+
+describe("Turret.draw", () => {
+  test("does not throw at full HP", () => {
+    const t = new Turret(100, 100, () => {});
+    expect(() => t.draw()).not.toThrow();
+  });
+
+  test("does not throw at reduced HP (damage glow branch)", () => {
+    const t = new Turret(100, 100, () => {});
+    for (let i = 0; i < TURRET_HP - 1; i++) t.hit();
+    expect(() => t.draw()).not.toThrow();
+  });
+});

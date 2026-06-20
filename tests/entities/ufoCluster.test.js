@@ -79,3 +79,17 @@ describe("UfoCluster.update", () => {
     expect(Math.abs(angle)).toBeLessThanOrEqual(0.26 + 1e-9);
   });
 });
+
+describe("UfoCluster.draw", () => {
+  const ellipseCtx = Object.assign({}, ctx, { ellipse: () => {} });
+
+  test("does not throw for large UFO (size 0)", () => {
+    const u = new UfoCluster(0, () => {});
+    expect(() => u.draw(ellipseCtx)).not.toThrow();
+  });
+
+  test("does not throw for small UFO (size 1)", () => {
+    const u = new UfoCluster(1, () => {});
+    expect(() => u.draw(ellipseCtx)).not.toThrow();
+  });
+});
