@@ -1,5 +1,5 @@
 import { W, H, TAU } from "./utils.js";
-import { WW, WH } from "./Globals.js";
+import { WW, WH, HEAT_MAX, OVERHEAT_LOCKOUT } from "./Globals.js";
 
 // Radar / minimap layout (screen-space, bottom-right corner).
 const RADAR_W = 140; // world is always 4:3 → height derives from uniform scale
@@ -74,6 +74,26 @@ export class UIRenderer {
         ctx.fillStyle = "#fff";
         ctx.fillText(ind.label, bx + 8, by + barH - 4);
       });
+
+      // Heat bar — bottom-right, same row as power-up bars
+      const heatBarW = 60;
+      const heatPct = g.ship.heat / HEAT_MAX;
+      const overheated = g.ship.overheatTimer > 0;
+      const hbx = W - 8 - heatBarW;
+      const hby = H - 40;
+      // Flicker effect when overheated: alternate alpha 60 / 100 / 60 fps
+      const flashAlpha = overheated ? 0.5 + 0.5 * Math.sin(Date.now() / 80) : 1;
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(hbx, hby, heatBarW, barH);
+      const r = Math.round(heatPct * 255);
+      const g2 = Math.round((1 - heatPct) * 200);
+      ctx.globalAlpha = 0.85 * flashAlpha;
+      ctx.fillStyle = overheated ? "#f44" : `rgb(${r},${g2},0)`;
+      ctx.fillRect(hbx, hby, heatBarW * (overheated ? 1 : heatPct), barH);
+      ctx.globalAlpha = flashAlpha;
+      ctx.fillStyle = overheated ? "#faa" : "#fff";
+      ctx.fillText(overheated ? "OH" : "HT", hbx + 8, hby + barH - 4);
+      ctx.globalAlpha = 1;
     }
 
     this.drawRadar(ctx);

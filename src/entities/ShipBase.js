@@ -19,6 +19,10 @@ import {
   FIRE_RATE,
   RAPID_FIRE_FACTOR,
   INVULNERABLE_TIME,
+  HEAT_MAX,
+  HEAT_PER_SHOT,
+  HEAT_COOLDOWN_RATE,
+  OVERHEAT_LOCKOUT,
 } from "../Globals.js";
 import { Input } from "../input.js";
 import { Bullet } from "./Bullet.js";
@@ -42,6 +46,8 @@ export class ShipBase {
     this.rapidTimer = 0;
     this.spreadTimer = 0;
     this.heavyTimer = 0;
+    this.heat = 0;
+    this.overheatTimer = 0;
 
     this.body = Matter.Bodies.circle(this.x, this.y, SHIP_SIZE * SHIP_HULL_FACTOR, {
       friction: 0,
@@ -118,6 +124,17 @@ export class ShipBase {
       "heavyTimer",
     ])
       if (this[k] > 0) this[k] -= dt;
+
+    if (this.overheatTimer > 0) {
+      this.overheatTimer -= dt;
+      if (this.overheatTimer <= 0) {
+        this.overheatTimer = 0;
+        this.heat = 0;
+      }
+    } else {
+      this.heat = Math.max(0, this.heat - HEAT_COOLDOWN_RATE * dt);
+    }
+
     this._handleSteering(dt);
     this._applyPhysics(dt);
     this.x = wrap(this.x + this.vx * dt, WW);
@@ -126,11 +143,13 @@ export class ShipBase {
   }
 
   canFire() {
-    return this.fireTimer <= 0 && Input.fire();
+    return this.fireTimer <= 0 && this.overheatTimer <= 0 && Input.fire();
   }
 
   fire(bulletLife = BULLET_LIFE) {
     this.fireTimer = this.rapidTimer > 0 ? FIRE_RATE * RAPID_FIRE_FACTOR : FIRE_RATE;
+    this.heat = Math.min(HEAT_MAX, this.heat + HEAT_PER_SHOT);
+    if (this.heat >= HEAT_MAX) this.overheatTimer = OVERHEAT_LOCKOUT;
     const tx = this.x + Math.cos(this.angle) * SHIP_SIZE;
     const ty = this.y + Math.sin(this.angle) * SHIP_SIZE;
     const power = this.heavyTimer > 0 ? 2 : 1;
