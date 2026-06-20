@@ -398,22 +398,24 @@ export class UIRenderer {
     }
   }
 
-  // --- NEW ENTITY SHOWCASE: GravityWell (round 2 — all based on double-ring) ---
-  // Variants 1–4. Temporary start-screen preview so the look can be chosen
-  // before the entity class is written. Remove once a variant is picked.
+  // --- NEW ENTITY SHOWCASE: GravityWell (round 3 — spark-stream, 4 palettes) ---
+  // Variants 1–4: identical double-ring + accretion-spark design, different
+  // colour schemes. Temporary start-screen preview; remove once a palette is chosen.
   _drawGravityWellShowcase(ctx) {
     const t = Date.now() / 1000;
     const cols = 2;
     const cellW = 260;
-    const cellH = 180;
+    const cellH = 190;
     const gridW = cols * cellW;
     const ox = (W - gridW) / 2 + cellW / 2;
-    const oy = 210;
+    const oy = 220;
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#8af";
     ctx.font = "bold 15px monospace";
-    ctx.fillText("SCHWARZES LOCH — DOPPELRING-VARIANTEN (1–4)", W / 2, 130);
+    ctx.fillText("SCHWARZES LOCH — FARBSCHEMA WÄHLEN (1–4)", W / 2, 130);
+
+    const labels = ["FEUER / GOLD", "EIS / CYAN", "PLASMA / MAGENTA", "SMARAGD / GRÜN"];
 
     for (let i = 0; i < 4; i++) {
       const gx = ox + (i % cols) * cellW;
@@ -424,21 +426,76 @@ export class UIRenderer {
       ctx.font = "bold 16px monospace";
       ctx.textAlign = "center";
       ctx.fillText(String(i + 1), gx, gy + 74);
+      ctx.fillStyle = "#888";
+      ctx.font = "11px monospace";
+      ctx.fillText(labels[i], gx, gy + 90);
     }
   }
 
-  // Draws one double-ring black-hole variant centred at (x, y), core radius r.
+  // Draws one spark-stream double-ring black-hole variant centred at (x, y).
+  // All four variants share this geometry; only the palette (by index n) differs.
   _drawWellVariant(ctx, n, x, y, r, t) {
+    // Palettes: outer/inner ring conic stops + glow, spark colour, halo rgb, photon.
+    const PALETTES = {
+      1: {
+        // Feuer / Gold
+        halo: "255,150,40",
+        outer: ["#fa0", "#fe8", "#fa0"],
+        outerGlow: "#fb0",
+        inner: ["#f50", "#fd9", "#f50"],
+        innerGlow: "#f60",
+        spark: "#fe8",
+        sparkGlow: "#fb0",
+        photon: "#fc9",
+      },
+      2: {
+        // Eis / Cyan
+        halo: "100,200,255",
+        outer: ["#28f", "#bdf", "#28f"],
+        outerGlow: "#5af",
+        inner: ["#0ef", "#dff", "#0ef"],
+        innerGlow: "#0ff",
+        spark: "#dff",
+        sparkGlow: "#0ef",
+        photon: "#fff",
+      },
+      3: {
+        // Plasma / Magenta
+        halo: "200,100,255",
+        outer: ["#a3f", "#e9f", "#a3f"],
+        outerGlow: "#b5f",
+        inner: ["#f2c", "#fbf", "#f2c"],
+        innerGlow: "#f4d",
+        spark: "#fbf",
+        sparkGlow: "#f4d",
+        photon: "#fdf",
+      },
+      4: {
+        // Smaragd / Grün
+        halo: "80,255,160",
+        outer: ["#1d8", "#cfe", "#1d8"],
+        outerGlow: "#4e9",
+        inner: ["#7f2", "#efd", "#7f2"],
+        innerGlow: "#8f4",
+        spark: "#dfa",
+        sparkGlow: "#9f4",
+        photon: "#cfd",
+      },
+    };
+    const p = PALETTES[n] || PALETTES[1];
+
     ctx.save();
     ctx.translate(x, y);
 
     // Conic-gradient ring with glow. rot rotates the gradient seam.
-    const ring = (rad, lw, stops, blur, glow, rot = 0) => {
+    const ring = (rad, lw, stops3, blur, glow, rot) => {
       ctx.save();
       ctx.rotate(rot);
       const g = ctx.createConicGradient ? ctx.createConicGradient(0, 0, 0) : null;
       if (g) {
-        for (const [stop, c] of stops) g.addColorStop(stop, c);
+        g.addColorStop(0, stops3[0]);
+        g.addColorStop(0.5, stops3[1]);
+        g.addColorStop(1, stops3[2]);
         ctx.strokeStyle = g;
       } else {
         ctx.strokeStyle = glow;
@@ -453,166 +510,46 @@ export class UIRenderer {
     };
 
     // Soft radial glow behind the rings.
-    const halo = (rad, rgb, alpha) => {
-      const g = ctx.createRadialGradient(0, 0, rad * 0.55, 0, 0, rad);
-      g.addColorStop(0, `rgba(${rgb},${alpha})`);
-      g.addColorStop(1, `rgba(${rgb},0)`);
-      ctx.fillStyle = g;
+    const g = ctx.createRadialGradient(0, 0, r * 1.5, 0, 0, r * 2.7);
+    g.addColorStop(0, `rgba(${p.halo},0.16)`);
+    g.addColorStop(1, `rgba(${p.halo},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 2.7, 0, TAU);
+    ctx.fill();
+
+    // Outer (thin, slow, counter-rotating) and inner (thick, fast) rings.
+    ring(r * 2.0, 3, p.outer, 12, p.outerGlow, t * -0.5);
+    ring(r * 1.45, 6, p.inner, 18, p.innerGlow, t * 1.0);
+
+    // Accretion sparks spiralling inward — phase-offset orbits at shrinking radius.
+    const SPARKS = 7;
+    for (let s = 0; s < SPARKS; s++) {
+      const phase = (s / SPARKS) * TAU;
+      const orbit = (t * 1.6 + phase) % TAU;
+      const spiral = r * 1.1 + r * 0.9 * ((1 + Math.sin(t * 0.9 + phase)) / 2);
       ctx.beginPath();
-      ctx.arc(0, 0, rad, 0, TAU);
+      ctx.arc(Math.cos(orbit) * spiral, Math.sin(orbit) * spiral, 1.6, 0, TAU);
+      ctx.fillStyle = p.spark;
+      ctx.shadowColor = p.sparkGlow;
+      ctx.shadowBlur = 8;
       ctx.fill();
-    };
+    }
+    ctx.shadowBlur = 0;
 
     // Black core with a thin bright photon ring hugging the event horizon.
-    const core = (rad, photonColor) => {
-      ctx.beginPath();
-      ctx.arc(0, 0, rad, 0, TAU);
-      ctx.fillStyle = "#000";
-      ctx.shadowBlur = 0;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, 0, rad + 1, 0, TAU);
-      ctx.strokeStyle = photonColor;
-      ctx.lineWidth = 1.5;
-      ctx.shadowColor = photonColor;
-      ctx.shadowBlur = 8;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    };
-
-    if (n === 1) {
-      // Klassik-Doppelring (verfeinert) — heißer Innen-, kühler Außenring, Photonring
-      halo(r * 2.7, "150,110,255", 0.18);
-      ring(
-        r * 2.0,
-        3,
-        [
-          [0, "#53f"],
-          [0.5, "#9cf"],
-          [1, "#53f"],
-        ],
-        12,
-        "#7af",
-        t * -0.5,
-      );
-      ring(
-        r * 1.45,
-        6,
-        [
-          [0, "#f70"],
-          [0.5, "#fe9"],
-          [1, "#f70"],
-        ],
-        18,
-        "#f80",
-        t * 1.0,
-      );
-      core(r, "#fc9");
-    } else if (n === 2) {
-      // Neon-Doppelring — Cyan innen, Magenta außen (Spiel-Ästhetik)
-      halo(r * 2.7, "80,220,255", 0.2);
-      ring(
-        r * 2.0,
-        3.5,
-        [
-          [0, "#f2c"],
-          [0.5, "#fbf"],
-          [1, "#f2c"],
-        ],
-        16,
-        "#f4d",
-        t * -0.6,
-      );
-      ring(
-        r * 1.45,
-        5,
-        [
-          [0, "#0df"],
-          [0.5, "#cff"],
-          [1, "#0df"],
-        ],
-        18,
-        "#0ef",
-        t * 1.1,
-      );
-      core(r, "#fff");
-    } else if (n === 3) {
-      // Geneigte 3D-Scheibe — beide Ringe auf gekippter Ebene (Interstellar-Look)
-      halo(r * 2.6, "255,160,90", 0.16);
-      ctx.save();
-      ctx.scale(1, 0.4);
-      ring(
-        r * 2.0,
-        4,
-        [
-          [0, "#46f"],
-          [0.5, "#bdf"],
-          [1, "#46f"],
-        ],
-        12,
-        "#7af",
-        t * -0.5,
-      );
-      ring(
-        r * 1.5,
-        6,
-        [
-          [0, "#f60"],
-          [0.5, "#fea"],
-          [1, "#f60"],
-        ],
-        18,
-        "#f80",
-        t * 0.9,
-      );
-      ctx.restore();
-      // Core stays spherical (not tilted) for the light-bending illusion.
-      core(r, "#fda");
-    } else {
-      // Doppelring + Funkenstrom — einströmende Akkretions-Funken
-      halo(r * 2.7, "160,130,255", 0.16);
-      ring(
-        r * 2.0,
-        3,
-        [
-          [0, "#53f"],
-          [0.5, "#9cf"],
-          [1, "#53f"],
-        ],
-        12,
-        "#7af",
-        t * -0.5,
-      );
-      ring(
-        r * 1.45,
-        6,
-        [
-          [0, "#f70"],
-          [0.5, "#fe9"],
-          [1, "#f70"],
-        ],
-        18,
-        "#f80",
-        t * 1.0,
-      );
-      // Sparks spiral inward: each has a phase offset and orbits at shrinking radius.
-      const SPARKS = 7;
-      for (let s = 0; s < SPARKS; s++) {
-        const phase = (s / SPARKS) * TAU;
-        const orbit = (t * 1.6 + phase) % TAU;
-        const spiral = r * 1.1 + r * 0.9 * ((1 + Math.sin(t * 0.9 + phase)) / 2);
-        const sx = Math.cos(orbit) * spiral;
-        const sy = Math.sin(orbit) * spiral;
-        ctx.beginPath();
-        ctx.arc(sx, sy, 1.6, 0, TAU);
-        ctx.fillStyle = "#fe8";
-        ctx.shadowColor = "#fb0";
-        ctx.shadowBlur = 8;
-        ctx.fill();
-      }
-      ctx.shadowBlur = 0;
-      core(r, "#fc9");
-    }
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, TAU);
+    ctx.fillStyle = "#000";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 1, 0, TAU);
+    ctx.strokeStyle = p.photon;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = p.photon;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 
     ctx.restore();
   }
