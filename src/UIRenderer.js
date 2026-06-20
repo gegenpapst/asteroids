@@ -398,52 +398,53 @@ export class UIRenderer {
     }
   }
 
-  // --- NEW ENTITY SHOWCASE: GravityWell ---
-  // Variants 1–6. Temporary start-screen preview so the user can pick a look
-  // before the entity class is written. Remove once a variant is chosen.
+  // --- NEW ENTITY SHOWCASE: GravityWell (round 2 — all based on double-ring) ---
+  // Variants 1–4. Temporary start-screen preview so the look can be chosen
+  // before the entity class is written. Remove once a variant is picked.
   _drawGravityWellShowcase(ctx) {
     const t = Date.now() / 1000;
-    const cols = 3;
-    const cellW = 200;
-    const cellH = 150;
+    const cols = 2;
+    const cellW = 260;
+    const cellH = 180;
     const gridW = cols * cellW;
     const ox = (W - gridW) / 2 + cellW / 2;
-    const oy = 150;
+    const oy = 210;
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#8af";
     ctx.font = "bold 15px monospace";
-    ctx.fillText("SCHWARZES LOCH — VARIANTE WÄHLEN (1–6)", W / 2, 110);
+    ctx.fillText("SCHWARZES LOCH — DOPPELRING-VARIANTEN (1–4)", W / 2, 130);
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       const gx = ox + (i % cols) * cellW;
       const gy = oy + Math.floor(i / cols) * cellH;
-      this._drawWellVariant(ctx, i + 1, gx, gy, 26, t);
+      this._drawWellVariant(ctx, i + 1, gx, gy, 32, t);
 
       ctx.fillStyle = "#ccc";
       ctx.font = "bold 16px monospace";
       ctx.textAlign = "center";
-      ctx.fillText(String(i + 1), gx, gy + 56);
+      ctx.fillText(String(i + 1), gx, gy + 74);
     }
   }
 
-  // Draws one black-hole variant centred at (x, y) with core radius r.
+  // Draws one double-ring black-hole variant centred at (x, y), core radius r.
   _drawWellVariant(ctx, n, x, y, r, t) {
     ctx.save();
     ctx.translate(x, y);
 
-    const ring = (rad, lw, stops, blur, color, rot = 0) => {
+    // Conic-gradient ring with glow. rot rotates the gradient seam.
+    const ring = (rad, lw, stops, blur, glow, rot = 0) => {
       ctx.save();
       ctx.rotate(rot);
-      const g = stops && ctx.createConicGradient ? ctx.createConicGradient(0, 0, 0) : null;
+      const g = ctx.createConicGradient ? ctx.createConicGradient(0, 0, 0) : null;
       if (g) {
         for (const [stop, c] of stops) g.addColorStop(stop, c);
         ctx.strokeStyle = g;
       } else {
-        ctx.strokeStyle = color;
+        ctx.strokeStyle = glow;
       }
       ctx.lineWidth = lw;
-      ctx.shadowColor = color;
+      ctx.shadowColor = glow;
       ctx.shadowBlur = blur;
       ctx.beginPath();
       ctx.arc(0, 0, rad, 0, TAU);
@@ -451,136 +452,166 @@ export class UIRenderer {
       ctx.restore();
     };
 
-    const core = (rad) => {
-      ctx.beginPath();
-      ctx.arc(0, 0, rad, 0, TAU);
-      ctx.fillStyle = "#000";
-      ctx.shadowBlur = 0;
-      ctx.fill();
-    };
-
-    const halo = (rad, color, alpha) => {
-      const g = ctx.createRadialGradient(0, 0, rad * 0.6, 0, 0, rad);
-      g.addColorStop(0, color.replace("ALPHA", alpha));
-      g.addColorStop(1, color.replace("ALPHA", "0"));
+    // Soft radial glow behind the rings.
+    const halo = (rad, rgb, alpha) => {
+      const g = ctx.createRadialGradient(0, 0, rad * 0.55, 0, 0, rad);
+      g.addColorStop(0, `rgba(${rgb},${alpha})`);
+      g.addColorStop(1, `rgba(${rgb},0)`);
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(0, 0, rad, 0, TAU);
       ctx.fill();
     };
 
+    // Black core with a thin bright photon ring hugging the event horizon.
+    const core = (rad, photonColor) => {
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, TAU);
+      ctx.fillStyle = "#000";
+      ctx.shadowBlur = 0;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, rad + 1, 0, TAU);
+      ctx.strokeStyle = photonColor;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = photonColor;
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    };
+
     if (n === 1) {
-      // Klassisch — orange/violetter Ring + dünner Halo
-      halo(r * 2.2, "rgba(180,120,255,ALPHA)", "0.18");
+      // Klassik-Doppelring (verfeinert) — heißer Innen-, kühler Außenring, Photonring
+      halo(r * 2.7, "150,110,255", 0.18);
       ring(
-        r * 1.5,
-        5,
-        [
-          [0, "#f80"],
-          [0.3, "#fc6"],
-          [0.5, "#a4f"],
-          [0.75, "#f80"],
-          [1, "#f80"],
-        ],
-        14,
-        "#f90",
-        t * 0.8,
-      );
-      core(r);
-    } else if (n === 2) {
-      // Heiß — orange/rote Akkretion, hell
-      halo(r * 2.4, "rgba(255,120,40,ALPHA)", "0.28");
-      ring(
-        r * 1.55,
-        7,
-        [
-          [0, "#f40"],
-          [0.25, "#fd8"],
-          [0.5, "#f60"],
-          [0.75, "#fa0"],
-          [1, "#f40"],
-        ],
-        20,
-        "#f60",
-        t * 1.1,
-      );
-      core(r);
-    } else if (n === 3) {
-      // Kühl — violett/blauer Ring
-      halo(r * 2.3, "rgba(120,160,255,ALPHA)", "0.22");
-      ring(
-        r * 1.5,
-        5,
-        [
-          [0, "#46f"],
-          [0.3, "#8cf"],
-          [0.55, "#a4f"],
-          [0.8, "#46f"],
-          [1, "#46f"],
-        ],
-        16,
-        "#69f",
-        t * -0.9,
-      );
-      core(r);
-    } else if (n === 4) {
-      // Doppelring — heißer Innen-, kühler Außenring
-      halo(r * 2.6, "rgba(160,120,255,ALPHA)", "0.16");
-      ring(
-        r * 1.9,
+        r * 2.0,
         3,
         [
-          [0, "#64f"],
-          [0.5, "#8df"],
-          [1, "#64f"],
+          [0, "#53f"],
+          [0.5, "#9cf"],
+          [1, "#53f"],
         ],
         12,
         "#7af",
         t * -0.5,
       );
       ring(
-        r * 1.4,
-        5,
+        r * 1.45,
+        6,
         [
           [0, "#f70"],
-          [0.5, "#fd8"],
+          [0.5, "#fe9"],
           [1, "#f70"],
         ],
-        16,
+        18,
         "#f80",
         t * 1.0,
       );
-      core(r);
-    } else if (n === 5) {
-      // Geneigte Scheibe — elliptische Perspektive
-      halo(r * 2.2, "rgba(255,160,80,ALPHA)", "0.18");
+      core(r, "#fc9");
+    } else if (n === 2) {
+      // Neon-Doppelring — Cyan innen, Magenta außen (Spiel-Ästhetik)
+      halo(r * 2.7, "80,220,255", 0.2);
+      ring(
+        r * 2.0,
+        3.5,
+        [
+          [0, "#f2c"],
+          [0.5, "#fbf"],
+          [1, "#f2c"],
+        ],
+        16,
+        "#f4d",
+        t * -0.6,
+      );
+      ring(
+        r * 1.45,
+        5,
+        [
+          [0, "#0df"],
+          [0.5, "#cff"],
+          [1, "#0df"],
+        ],
+        18,
+        "#0ef",
+        t * 1.1,
+      );
+      core(r, "#fff");
+    } else if (n === 3) {
+      // Geneigte 3D-Scheibe — beide Ringe auf gekippter Ebene (Interstellar-Look)
+      halo(r * 2.6, "255,160,90", 0.16);
       ctx.save();
-      ctx.scale(1, 0.42);
-      ctx.rotate(t * 0.7);
-      const g = ctx.createConicGradient ? ctx.createConicGradient(0, 0, 0) : null;
-      if (g) {
-        g.addColorStop(0, "#f80");
-        g.addColorStop(0.3, "#fe9");
-        g.addColorStop(0.5, "#c6f");
-        g.addColorStop(0.8, "#f80");
-        g.addColorStop(1, "#f80");
-        ctx.strokeStyle = g;
-      } else {
-        ctx.strokeStyle = "#f90";
-      }
-      ctx.lineWidth = 6;
-      ctx.shadowColor = "#f90";
-      ctx.shadowBlur = 16;
-      ctx.beginPath();
-      ctx.arc(0, 0, r * 1.7, 0, TAU);
-      ctx.stroke();
+      ctx.scale(1, 0.4);
+      ring(
+        r * 2.0,
+        4,
+        [
+          [0, "#46f"],
+          [0.5, "#bdf"],
+          [1, "#46f"],
+        ],
+        12,
+        "#7af",
+        t * -0.5,
+      );
+      ring(
+        r * 1.5,
+        6,
+        [
+          [0, "#f60"],
+          [0.5, "#fea"],
+          [1, "#f60"],
+        ],
+        18,
+        "#f80",
+        t * 0.9,
+      );
       ctx.restore();
-      core(r);
+      // Core stays spherical (not tilted) for the light-bending illusion.
+      core(r, "#fda");
     } else {
-      // Minimal — Kern + ein dünner heller Ring + dezenter Verzerrungs-Glow
-      halo(r * 1.8, "rgba(200,220,255,ALPHA)", "0.12");
-      ring(r * 1.35, 2.5, null, 18, "#cdf", t * 0.6);
-      core(r);
+      // Doppelring + Funkenstrom — einströmende Akkretions-Funken
+      halo(r * 2.7, "160,130,255", 0.16);
+      ring(
+        r * 2.0,
+        3,
+        [
+          [0, "#53f"],
+          [0.5, "#9cf"],
+          [1, "#53f"],
+        ],
+        12,
+        "#7af",
+        t * -0.5,
+      );
+      ring(
+        r * 1.45,
+        6,
+        [
+          [0, "#f70"],
+          [0.5, "#fe9"],
+          [1, "#f70"],
+        ],
+        18,
+        "#f80",
+        t * 1.0,
+      );
+      // Sparks spiral inward: each has a phase offset and orbits at shrinking radius.
+      const SPARKS = 7;
+      for (let s = 0; s < SPARKS; s++) {
+        const phase = (s / SPARKS) * TAU;
+        const orbit = (t * 1.6 + phase) % TAU;
+        const spiral = r * 1.1 + r * 0.9 * ((1 + Math.sin(t * 0.9 + phase)) / 2);
+        const sx = Math.cos(orbit) * spiral;
+        const sy = Math.sin(orbit) * spiral;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.6, 0, TAU);
+        ctx.fillStyle = "#fe8";
+        ctx.shadowColor = "#fb0";
+        ctx.shadowBlur = 8;
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      core(r, "#fc9");
     }
 
     ctx.restore();
