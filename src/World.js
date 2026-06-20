@@ -143,6 +143,7 @@ export class World {
       this.ufoTimer = UFO_SPAWN_MIN + rand(0, UFO_SPAWN_JITTER);
     }
     this.ufos = this.ufos.filter((u) => u.update(dt, this.ship));
+    this._tickDebris(dt);
   }
 
   // ── Create and position the player ship ──────────────────────────────────────
