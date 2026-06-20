@@ -1,5 +1,5 @@
 import { W, H, TAU } from "./utils.js";
-import { WW, WH, HEAT_MAX, OVERHEAT_LOCKOUT } from "./Globals.js";
+import { WW, WH, HEAT_MAX, OVERHEAT_LOCKOUT, COMBO_WINDOW } from "./Globals.js";
 
 // Radar / minimap layout (screen-space, bottom-right corner).
 const RADAR_W = 140; // world is always 4:3 → height derives from uniform scale
@@ -39,6 +39,23 @@ export class UIRenderer {
     ctx.fillText(`HI ${String(g.hiScore).padStart(6, "0")}`, W - 16, 28);
     ctx.textAlign = "center";
     ctx.fillText(`LVL ${g.level}`, W / 2, 28);
+
+    if (g._comboCount >= 2) {
+      const COMBO_COLORS = ["", "", "#ff4", "#f80", "#f44"];
+      const color = COMBO_COLORS[g._comboCount] ?? "#f44";
+      ctx.font = "bold 14px monospace";
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.fillText(`×${g._comboCount}`, W / 2, 48);
+      ctx.shadowBlur = 0;
+      const barW = 48;
+      const frac = Math.max(0, g._comboTimer / COMBO_WINDOW);
+      ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.fillRect(W / 2 - barW / 2, 52, barW, 3);
+      ctx.fillStyle = color;
+      ctx.fillRect(W / 2 - barW / 2, 52, barW * frac, 3);
+    }
 
     for (let i = 0; i < g.lives; i++) {
       ctx.save();

@@ -40,10 +40,17 @@ afterEach(() => jest.restoreAllMocks());
 
 // ── _addScore ────────────────────────────────────────────────────────────────
 
+/** Reset combo so consecutive calls behave like independent scores. */
+function resetCombo(g) {
+  g._comboCount = 0;
+  g._comboTimer = 0;
+}
+
 describe("Game._addScore", () => {
   test("accumulates score", () => {
     const g = makeGame();
     g._addScore(100);
+    resetCombo(g);
     g._addScore(50);
     expect(g.score).toBe(150);
   });
@@ -77,10 +84,71 @@ describe("Game._addScore", () => {
     const g = makeGame();
     const livesBefore = g.lives;
     g._addScore(EXTRA_LIFE_SCORE);
+    resetCombo(g);
     g._addScore(EXTRA_LIFE_SCORE - 1);
     expect(g.lives).toBe(livesBefore + 1);
+    resetCombo(g);
     g._addScore(1);
     expect(g.lives).toBe(livesBefore + 2);
+  });
+});
+
+// ── Combo system ──────────────────────────────────────────────────────────────
+
+describe("Game combo system", () => {
+  test("first hit gives ×1 (no bonus)", () => {
+    const g = makeGame();
+    g._addScore(100);
+    expect(g.score).toBe(100);
+    expect(g._comboCount).toBe(1);
+  });
+
+  test("second hit in window gives ×2", () => {
+    const g = makeGame();
+    g._addScore(100);
+    g._addScore(100);
+    expect(g.score).toBe(300); // 100×1 + 100×2
+    expect(g._comboCount).toBe(2);
+  });
+
+  test("third hit gives ×3", () => {
+    const g = makeGame();
+    g._addScore(100);
+    g._addScore(100);
+    g._addScore(100);
+    expect(g.score).toBe(600); // 100 + 200 + 300
+    expect(g._comboCount).toBe(3);
+  });
+
+  test("multiplier caps at COMBO_MAX", () => {
+    const g = makeGame();
+    for (let i = 0; i < COMBO_MAX + 5; i++) g._addScore(0);
+    expect(g._comboCount).toBe(COMBO_MAX);
+  });
+
+  test("each hit resets the combo timer", () => {
+    const g = makeGame();
+    g._addScore(100);
+    expect(g._comboTimer).toBe(COMBO_WINDOW);
+  });
+
+  test("combo resets after timer expires via _updateFx", () => {
+    const g = makeGame();
+    g._addScore(100);
+    g._addScore(100);
+    expect(g._comboCount).toBe(2);
+    g._updateFx(COMBO_WINDOW + 0.01);
+    expect(g._comboCount).toBe(0);
+  });
+
+  test("_killShip resets combo", () => {
+    const g = makeGame();
+    g._addScore(100);
+    g._addScore(100);
+    g.ship = { x: 400, y: 300, body: {} };
+    g._killShip();
+    expect(g._comboCount).toBe(0);
+    expect(g._comboTimer).toBe(0);
   });
 });
 
