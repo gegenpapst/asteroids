@@ -57,6 +57,9 @@ export const INITIAL_ROCKS = 4;
 export const MAX_ROCKS_PER_LEVEL = 10;
 export const EXTRA_LIFE_SCORE = 10000;
 
+export const COMBO_WINDOW = 2.0; // seconds between hits before combo resets
+export const COMBO_MAX = 4; // maximum score multiplier
+
 export const PARTICLE_LIFE = 0.85;
 export const PARTICLE_SPEED = 170;
 

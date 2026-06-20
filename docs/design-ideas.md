@@ -42,8 +42,8 @@ Statisches Objekt mit Anziehungsradius: Bullets krümmen sich, Asteroiden und Sh
 angezogen. Kein direkter Schaden, aber lokal veränderte Bewegungsphysik → Slingshot-Manöver
 als Skill.
 
-- Nutzt Matter.js und die vorhandene `SOLAR_*`-Constraint-Infrastruktur (radiale Kraft auf
-  nahe Bodies). Klein im Code, groß im Spielgefühl.
+- Nutzt Matter.js `Body.applyForce()` pro Frame auf alle nahen Bodies — ~5–10 Zeilen
+  Physikcode, keine eigene Kollisionslogik.
 - Umsetzung über die `/new-game-entity`-Skill.
 
 ### B) Splitter-Asteroid mit Schockwelle
@@ -58,6 +58,29 @@ weg und schädigt das Ship (außer mit `shield`).
 
 Gegner mit Seek-Verhalten, der das Ship aktiv verfolgt und rammt statt schießt; optional
 ausweichend, wenn man auf ihn zielt. Erstmals echtes aktives Verhalten gegen den Spieler.
+
+### E) Ketten-Hindernis
+
+Eine Reihe kleiner Kreis-Bodies, verbunden durch `Matter.Constraint` mit kurzer Länge, spannt
+sich quer durch einen Weltbereich. Das Ship muss Lücken hereinschießen, bevor es
+hindurchfliegen kann. Einzelne Links reißen, wenn der Body zerstört wird — der Rest schwingt
+physikalisch korrekt nach.
+
+- Verwendet dieselbe Constraint-Infrastruktur wie `SolarSystem` und die Pendulum-Asteroiden,
+  nur als Blockade-Mechanik umgeordnet. `stiffness`-Wert steuert die Nachgiebigkeit.
+- Umsetzung über die `/new-game-entity`-Skill.
+
+### F) Sprengmine (Radial-Impuls)
+
+Statischer Body, der beim Treffer eine physikalische Explosion auslöst: `Body.applyForce()`
+radial auf alle Bodies im Explosionsradius — Asteroiden fliegen auseinander, das Ship wird
+weggestoßen. Mehrere Minen können Kettenreaktionen auslösen, wenn der Impuls einen anderen
+Mine-Body trifft. Der Effekt entsteht komplett aus Matter.js-Physik, ohne eigene
+Kollisionslogik.
+
+- Radiale `applyForce`-Schleife über alle Composite-Bodies; das Engine rechnet Folgewirkungen
+  automatisch durch.
+- Umsetzung über die `/new-game-entity`-Skill.
 
 ### D) Wurmlochpaar (empfohlen — bessere erste Wahl als der Gravitationsbrunnen)
 
@@ -152,9 +175,57 @@ Entschieden: keine Power-up-Punkte, kein Config-Schalter (fest aktiv), alle Aste
 **Risiken:** Spannungsverlust (gilt aber nur für die kleine Wrap-Welt — dort kein Radar);
 Clutter in späten Levels (durch kleine Punkte / Splitter-Filter mildern).
 
+## 5. Grafik-Infrastruktur: Renderer-Upgrade
+
+Bewertung möglicher Grafik-Libraries als Ersatz oder Ergänzung zum aktuellen Canvas-2D-Setup.
+Aktueller Flaschenhals: OffscreenCanvas-Blur für Metaballs und `shadowBlur` für Glow/Partikel.
+
+### A) Metaball-Shader (raw WebGL, keine Lib) — empfohlen als nächster Schritt
+
+Nur das Metaball-Rendering wird auf einen WebGL-`<canvas>` mit GLSL-Fragment-Shader
+ausgelagert. Jeder Pixel prüft die Summe der Blob-Einflussfelder — triviale parallele
+GPU-Arbeit. Der Rest des Spiels bleibt unverändert (Canvas 2D).
+
+- Kein neues Dependency, kein Build-Step — reine WebGL-API.
+- Ermöglicht dynamischen Treffer-Tint als Uniform (Design-Idee 3B wird trivial).
+- Aufwand: mittel (GLSL ist eine neue Sprache im Projekt, Koordinaten-Sync nötig).
+- **Empfehlung: gezielter Hebel mit minimalem Umbaurisiko.**
+
+### B) PixiJS (v8) — langfristig, wenn das Spiel wächst
+
+WebGL-beschleunigter 2D-Renderer, ersetzt alle `draw()`-Methoden. `ParticleContainer`
+ermöglicht 10× mehr Partikel; Bloom-/Glow-Filter ersetzen den `globalCompositeOperation`-Hack.
+
+- Alle `draw()`-Methoden müssen auf PixiJS-`DisplayObject`-Szenegraph umgeschrieben werden.
+- Metaball-Rendering braucht einen Custom-GLSL-Filter — nicht trivial.
+- CDN ~1 MB. Größter Migrationsaufwand der drei Optionen.
+- **Empfehlung: richtige Wahl, wenn das Spiel deutlich mehr Entities/Effekte bekommt.**
+
+### C) Three.js Post-Processing — nicht empfohlen
+
+Three.js als Post-Processing-Layer (`UnrealBloomPass`, `EffectComposer`) über dem Canvas.
+Bloom über das gesamte Bild in wenigen Zeilen möglich.
+
+- Three.js ist primär eine 3D-Engine — ~600 KB für Post-Processing allein überdimensioniert.
+- Canvas-zu-WebGL-Textur-Upload jedes Frame kostet GPU-Bandbreite.
+- **Empfehlung: falsches Tool für diesen Anwendungsfall.**
+
+| Option                 | Aufwand   | Gewinn             | Empfehlung          |
+| ---------------------- | --------- | ------------------ | ------------------- |
+| **5A Metaball-Shader** | mittel    | hoch (gezielt)     | ✅ nächster Schritt |
+| **5B PixiJS**          | sehr hoch | sehr hoch (global) | langfristig         |
+| **5C Three.js**        | hoch      | niedrig–mittel     | ✗                   |
+
 ## Empfohlene Reihenfolge (Quick-Wins zuerst)
 
 1. **1A Combo-System** + **3C Camera-Shake/Hit-Flash** — minimaler Eingriff, sofort spürbar.
-2. **2A Gravitationsbrunnen** — stärkstes neues Feature, über `/new-game-entity`.
-3. ~~**4 Radar**~~ — ✅ umgesetzt; reines HUD, macht die großen Welten (`worldSize` 2–3) erst
+2. **2A Gravitationsbrunnen** — stärkstes neues Feature, über `/new-game-entity`. Matter.js
+   `applyForce()` macht die Implementierung trivial.
+3. **5A Metaball-Shader** — löst den größten Performance-Flaschenhals (OffscreenCanvas-Blur),
+   kein Architektur-Umbau nötig.
+4. **2E Ketten-Hindernis** — wiederverwendet bestehende Constraint-Infrastruktur, neue
+   taktische Dimension ohne neuen Physikcode.
+5. **2F Sprengmine** — Kettenreaktionen aus reiner Matter.js-Physik, kein eigener
+   Kollisionscode nötig.
+6. ~~**4 Radar**~~ — ✅ umgesetzt; reines HUD, macht die großen Welten (`worldSize` 2–3) erst
    richtig spielbar.

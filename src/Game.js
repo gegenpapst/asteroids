@@ -53,6 +53,8 @@ import {
   FLASH_DEATH,
   VIGNETTE_DECAY,
   VIGNETTE_DEATH,
+  COMBO_WINDOW,
+  COMBO_MAX,
 } from "./Globals.js";
 import { Input } from "./input.js";
 import { Matter } from "./physics.js";
@@ -251,6 +253,10 @@ export class Game {
     this._flashColor = "#fff";
     this._vignetteAlpha = 0;
 
+    // Combo multiplier state — see _addScore / _updateFx.
+    this._comboCount = 0;
+    this._comboTimer = 0;
+
     this.collisions = new CollisionSystem(this);
     this.ui = new UIRenderer(this);
 
@@ -344,6 +350,10 @@ export class Game {
     if (this._flashAlpha > 0) this._flashAlpha = Math.max(0, this._flashAlpha - FLASH_DECAY * dt);
     if (this._vignetteAlpha > 0)
       this._vignetteAlpha = Math.max(0, this._vignetteAlpha - VIGNETTE_DECAY * dt);
+    if (this._comboTimer > 0) {
+      this._comboTimer -= dt;
+      if (this._comboTimer <= 0) this._comboCount = 0;
+    }
   }
 
   // Add camera-shake trauma (0..1, clamped). Larger events stack up to 1.
@@ -687,7 +697,9 @@ export class Game {
   }
 
   _addScore(pts) {
-    this.score += pts;
+    this._comboCount = Math.min(COMBO_MAX, this._comboCount + 1);
+    this._comboTimer = COMBO_WINDOW;
+    this.score += pts * this._comboCount;
     if (this.score > this.hiScore) {
       this.hiScore = this.score;
       localStorage.setItem("ast_hi", this.hiScore);
@@ -732,6 +744,8 @@ export class Game {
     this._addShake(SHAKE_SHIP_DEATH);
     this._addFlash(FLASH_DEATH, "#f33");
     this._addVignette(VIGNETTE_DEATH);
+    this._comboCount = 0;
+    this._comboTimer = 0;
     this.lives--;
     Matter.World.remove(this.engine.world, this.ship.body);
     this.ship = null;
