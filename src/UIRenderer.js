@@ -388,12 +388,202 @@ export class UIRenderer {
     ctx.fillText("ASTEROIDS", cx, 58);
     ctx.shadowBlur = 0;
 
+    this._drawGravityWellShowcase(ctx);
+
     if (Math.floor(Date.now() / 520) % 2) {
       ctx.fillStyle = "#ccc";
       ctx.font = "16px monospace";
       ctx.textAlign = "center";
       ctx.fillText("PRESS ENTER OR SPACE TO START", cx, H - 16);
     }
+  }
+
+  // --- NEW ENTITY SHOWCASE: GravityWell ---
+  // Variants 1–6. Temporary start-screen preview so the user can pick a look
+  // before the entity class is written. Remove once a variant is chosen.
+  _drawGravityWellShowcase(ctx) {
+    const t = Date.now() / 1000;
+    const cols = 3;
+    const cellW = 200;
+    const cellH = 150;
+    const gridW = cols * cellW;
+    const ox = (W - gridW) / 2 + cellW / 2;
+    const oy = 150;
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#8af";
+    ctx.font = "bold 15px monospace";
+    ctx.fillText("SCHWARZES LOCH — VARIANTE WÄHLEN (1–6)", W / 2, 110);
+
+    for (let i = 0; i < 6; i++) {
+      const gx = ox + (i % cols) * cellW;
+      const gy = oy + Math.floor(i / cols) * cellH;
+      this._drawWellVariant(ctx, i + 1, gx, gy, 26, t);
+
+      ctx.fillStyle = "#ccc";
+      ctx.font = "bold 16px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(String(i + 1), gx, gy + 56);
+    }
+  }
+
+  // Draws one black-hole variant centred at (x, y) with core radius r.
+  _drawWellVariant(ctx, n, x, y, r, t) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    const ring = (rad, lw, stops, blur, color, rot = 0) => {
+      ctx.save();
+      ctx.rotate(rot);
+      const g = stops && ctx.createConicGradient ? ctx.createConicGradient(0, 0, 0) : null;
+      if (g) {
+        for (const [stop, c] of stops) g.addColorStop(stop, c);
+        ctx.strokeStyle = g;
+      } else {
+        ctx.strokeStyle = color;
+      }
+      ctx.lineWidth = lw;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = blur;
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    const core = (rad) => {
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, TAU);
+      ctx.fillStyle = "#000";
+      ctx.shadowBlur = 0;
+      ctx.fill();
+    };
+
+    const halo = (rad, color, alpha) => {
+      const g = ctx.createRadialGradient(0, 0, rad * 0.6, 0, 0, rad);
+      g.addColorStop(0, color.replace("ALPHA", alpha));
+      g.addColorStop(1, color.replace("ALPHA", "0"));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, TAU);
+      ctx.fill();
+    };
+
+    if (n === 1) {
+      // Klassisch — orange/violetter Ring + dünner Halo
+      halo(r * 2.2, "rgba(180,120,255,ALPHA)", "0.18");
+      ring(
+        r * 1.5,
+        5,
+        [
+          [0, "#f80"],
+          [0.3, "#fc6"],
+          [0.5, "#a4f"],
+          [0.75, "#f80"],
+          [1, "#f80"],
+        ],
+        14,
+        "#f90",
+        t * 0.8,
+      );
+      core(r);
+    } else if (n === 2) {
+      // Heiß — orange/rote Akkretion, hell
+      halo(r * 2.4, "rgba(255,120,40,ALPHA)", "0.28");
+      ring(
+        r * 1.55,
+        7,
+        [
+          [0, "#f40"],
+          [0.25, "#fd8"],
+          [0.5, "#f60"],
+          [0.75, "#fa0"],
+          [1, "#f40"],
+        ],
+        20,
+        "#f60",
+        t * 1.1,
+      );
+      core(r);
+    } else if (n === 3) {
+      // Kühl — violett/blauer Ring
+      halo(r * 2.3, "rgba(120,160,255,ALPHA)", "0.22");
+      ring(
+        r * 1.5,
+        5,
+        [
+          [0, "#46f"],
+          [0.3, "#8cf"],
+          [0.55, "#a4f"],
+          [0.8, "#46f"],
+          [1, "#46f"],
+        ],
+        16,
+        "#69f",
+        t * -0.9,
+      );
+      core(r);
+    } else if (n === 4) {
+      // Doppelring — heißer Innen-, kühler Außenring
+      halo(r * 2.6, "rgba(160,120,255,ALPHA)", "0.16");
+      ring(
+        r * 1.9,
+        3,
+        [
+          [0, "#64f"],
+          [0.5, "#8df"],
+          [1, "#64f"],
+        ],
+        12,
+        "#7af",
+        t * -0.5,
+      );
+      ring(
+        r * 1.4,
+        5,
+        [
+          [0, "#f70"],
+          [0.5, "#fd8"],
+          [1, "#f70"],
+        ],
+        16,
+        "#f80",
+        t * 1.0,
+      );
+      core(r);
+    } else if (n === 5) {
+      // Geneigte Scheibe — elliptische Perspektive
+      halo(r * 2.2, "rgba(255,160,80,ALPHA)", "0.18");
+      ctx.save();
+      ctx.scale(1, 0.42);
+      ctx.rotate(t * 0.7);
+      const g = ctx.createConicGradient ? ctx.createConicGradient(0, 0, 0) : null;
+      if (g) {
+        g.addColorStop(0, "#f80");
+        g.addColorStop(0.3, "#fe9");
+        g.addColorStop(0.5, "#c6f");
+        g.addColorStop(0.8, "#f80");
+        g.addColorStop(1, "#f80");
+        ctx.strokeStyle = g;
+      } else {
+        ctx.strokeStyle = "#f90";
+      }
+      ctx.lineWidth = 6;
+      ctx.shadowColor = "#f90";
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.7, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+      core(r);
+    } else {
+      // Minimal — Kern + ein dünner heller Ring + dezenter Verzerrungs-Glow
+      halo(r * 1.8, "rgba(200,220,255,ALPHA)", "0.12");
+      ring(r * 1.35, 2.5, null, 18, "#cdf", t * 0.6);
+      core(r);
+    }
+
+    ctx.restore();
   }
 
   drawHelp(ctx) {
