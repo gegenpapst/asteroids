@@ -87,11 +87,11 @@ export class UIRenderer {
         ctx.fillText(ind.label, bx + 8, by + barH - 4);
       });
 
-      // Heat bar — bottom-right, same row as power-up bars
+      // Heat bar — bottom-left, same row as power-up bars
       const heatBarW = 60;
       const heatPct = g.ship.heat / HEAT_MAX;
       const overheated = g.ship.overheatTimer > 0;
-      const hbx = W - 8 - heatBarW;
+      const hbx = 8 + indicators.length * (barW + gap);
       const hby = H - 40;
       // Flicker effect when overheated: alternate alpha 60 / 100 / 60 fps
       const flashAlpha = overheated ? 0.5 + 0.5 * Math.sin(Date.now() / 80) : 1;
