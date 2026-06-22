@@ -9,6 +9,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `GravityWell` — a drifting black hole (from level 3) that bends the motion of the ship, bullets, and asteroids within its reach without dealing contact damage, enabling slingshot manoeuvres. Plasma/magenta double-ring visual with spiralling accretion sparks (`GRAVITY_WELL_*` constants)
+- Score-multiplier combo system: chaining hits within a 2 s window builds a ×2/×3/×4 multiplier shown in the HUD; resets on timeout or player death (`COMBO_WINDOW`, `COMBO_MAX`)
 - Screen-feedback "juice": camera shake on explosions and player death, an additive flash when destroying a UFO or solar-system center, and a red damage vignette on player death (`SHAKE_*`, `FLASH_*`, `VIGNETTE_*` constants)
 - Bullets now render an additive glow head with a short motion-trail streak; ship thrust gained a layered, gradient flame cone
 

@@ -36,15 +36,18 @@ Optional eskaliert eine ungelöste Bedrohung (Turret feuert schneller, je länge
 
 ## 2. Neue Spielelemente (Kollision & Verhalten)
 
-### A) Gravitationsbrunnen / Schwarzes Loch (empfohlen)
+### A) Gravitationsbrunnen / Schwarzes Loch (✅ umgesetzt)
 
-Statisches Objekt mit Anziehungsradius: Bullets krümmen sich, Asteroiden und Ship werden
+Driftendes Objekt mit Anziehungsradius: Bullets krümmen sich, Asteroiden und Ship werden
 angezogen. Kein direkter Schaden, aber lokal veränderte Bewegungsphysik → Slingshot-Manöver
 als Skill.
 
-- Nutzt Matter.js `Body.applyForce()` pro Frame auf alle nahen Bodies — ~5–10 Zeilen
-  Physikcode, keine eigene Kollisionslogik.
-- Umsetzung über die `/new-game-entity`-Skill.
+**Umgesetzt** als `GravityWell` (`src/entities/GravityWell.js`): driftet langsam und prallt an
+Weltgrenzen ab, zieht Ship/Bullets (Euler-`vx/vy`) und Asteroiden (Matter-`setVelocity`, /60)
+mit linear abfallender Beschleunigung an. Kein Kontakt-Schaden, keine `CollisionSystem`-Logik —
+das Kraftfeld wird in `World.tickUniversal` angewandt. Erscheint ab Level
+`GRAVITY_WELL_START_LEVEL` (3), max. `GRAVITY_WELL_MAX_COUNT` (2). Optik: Plasma/Magenta-
+Doppelring mit einspiralenden Akkretions-Funken.
 
 ### B) Splitter-Asteroid mit Schockwelle
 
@@ -218,9 +221,8 @@ Bloom über das gesamte Bild in wenigen Zeilen möglich.
 
 ## Empfohlene Reihenfolge (Quick-Wins zuerst)
 
-1. **1A Combo-System** + **3C Camera-Shake/Hit-Flash** — minimaler Eingriff, sofort spürbar.
-2. **2A Gravitationsbrunnen** — stärkstes neues Feature, über `/new-game-entity`. Matter.js
-   `applyForce()` macht die Implementierung trivial.
+1. ~~**1A Combo-System** + **3C Camera-Shake/Hit-Flash**~~ — ✅ umgesetzt.
+2. ~~**2A Gravitationsbrunnen**~~ — ✅ umgesetzt als `GravityWell` (Plasma/Magenta).
 3. **5A Metaball-Shader** — löst den größten Performance-Flaschenhals (OffscreenCanvas-Blur),
    kein Architektur-Umbau nötig.
 4. **2E Ketten-Hindernis** — wiederverwendet bestehende Constraint-Infrastruktur, neue

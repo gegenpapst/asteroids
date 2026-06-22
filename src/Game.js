@@ -21,6 +21,8 @@ import {
   TURRET_START_LEVEL,
   TURRET_MAX_COUNT,
   TURRET_RADIUS,
+  GRAVITY_WELL_START_LEVEL,
+  GRAVITY_WELL_MAX_COUNT,
   PUMICE_RADIUS_MAX,
   PUMICE_COUNT_RANGES,
   SPAWN_SAFE_RADIUS_FACTOR,
@@ -63,6 +65,7 @@ import { Particle } from "./entities/Particle.js";
 import { Debris } from "./entities/Debris.js";
 import { Turret } from "./entities/Turret.js";
 import { SolarSystem } from "./entities/SolarSystem.js";
+import { GravityWell } from "./entities/GravityWell.js";
 import { BackgroundSaturn } from "./entities/BackgroundSaturn.js";
 import { MetaballMode } from "./VisualMode.js";
 import { CollisionSystem } from "./CollisionSystem.js";
@@ -187,6 +190,12 @@ export class Game {
   set turrets(v) {
     this.world.turrets = v;
   }
+  get gravityWells() {
+    return this.world.gravityWells;
+  }
+  set gravityWells(v) {
+    this.world.gravityWells = v;
+  }
   get deadTimer() {
     return this.world.deadTimer;
   }
@@ -299,6 +308,7 @@ export class Game {
     this.debris = [];
     this.solarSystems = [];
     this.turrets = [];
+    this.gravityWells = [];
     Matter.World.clear(this.engine.world, false);
     const rockCount = randInt(1, this.config.rockCount);
     this.rocks = Array.from({ length: rockCount }, () =>
@@ -487,6 +497,7 @@ export class Game {
     this.turrets.forEach((t) => t.draw(ctx));
     this.rocks.forEach((r) => r.draw(ctx));
     this.pumices.forEach((p) => p.draw(ctx));
+    this.gravityWells.forEach((w) => w.draw(ctx)); // behind asteroids so they read as sinking in
     this.solarSystems.forEach((s) => s.draw(ctx));
     this.asteroids.forEach((a) => a.draw(ctx));
     this.debris.forEach((d) => d.draw(ctx));
@@ -692,6 +703,20 @@ export class Game {
           ty = rand(TURRET_RADIUS * 2, WH - TURRET_RADIUS * 2);
         } while (dist({ x: tx, y: ty }, { x: WW / 2, y: WH / 2 }) < WW * SPAWN_SAFE_RADIUS_FACTOR);
         this.turrets.push(new Turret(tx, ty, (b) => this.ufoBullets.push(b)));
+      }
+    }
+
+    // Gravity wells are indestructible, so clear and respawn each level (count scales).
+    if (this.level >= GRAVITY_WELL_START_LEVEL) {
+      this.gravityWells = [];
+      const wellCount = Math.min(this.level - GRAVITY_WELL_START_LEVEL + 1, GRAVITY_WELL_MAX_COUNT);
+      for (let i = 0; i < wellCount; i++) {
+        let wx, wy;
+        do {
+          wx = rand(WW * 0.15, WW * 0.85);
+          wy = rand(WH * 0.15, WH * 0.85);
+        } while (dist({ x: wx, y: wy }, { x: WW / 2, y: WH / 2 }) < WW * SPAWN_SAFE_RADIUS_FACTOR);
+        this.gravityWells.push(new GravityWell(wx, wy));
       }
     }
   }

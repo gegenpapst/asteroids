@@ -60,6 +60,14 @@ export const EXTRA_LIFE_SCORE = 10000;
 export const COMBO_WINDOW = 2.0; // seconds between hits before combo resets
 export const COMBO_MAX = 4; // maximum score multiplier
 
+// GravityWell — drifting black hole that bends nearby motion (no contact damage)
+export const GRAVITY_WELL_RADIUS = 12; // visual core radius (also the radius getter)
+export const GRAVITY_WELL_REACH = 230; // influence radius in px
+export const GRAVITY_WELL_STRENGTH = 900; // peak acceleration at the centre (px/s²)
+export const GRAVITY_WELL_DRIFT_SPEED = 22; // px/s the well drifts across the world
+export const GRAVITY_WELL_START_LEVEL = 3; // first level a well appears
+export const GRAVITY_WELL_MAX_COUNT = 2; // hard cap on simultaneous wells
+
 export const PARTICLE_LIFE = 0.85;
 export const PARTICLE_SPEED = 170;
 

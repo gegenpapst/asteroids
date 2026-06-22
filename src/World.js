@@ -42,6 +42,7 @@ export class World {
     this.debris = [];
     this.solarSystems = [];
     this.turrets = [];
+    this.gravityWells = [];
 
     this.deadTimer = 0;
     this.ufoTimer = UFO_SPAWN_MIN;
@@ -79,6 +80,21 @@ export class World {
     this.particles = this.particles.filter((p) => p.update(dt));
     this.powerups = this.powerups.filter((p) => p.update(dt));
     this.ufoBullets = this.ufoBullets.filter((b) => b.update(dt));
+    // Gravity wells drift, then pull the ship/bullets/asteroids. Applying the
+    // pull here (before tickPlaying/tickDead) lets the same-frame ship/bullet
+    // Euler steps and the Matter engine step integrate the added velocity.
+    for (const w of this.gravityWells) w.update(dt);
+    this._applyGravityWells(dt);
+  }
+
+  // ── Apply every gravity well's pull to all affectable entities ────────────────
+  _applyGravityWells(dt) {
+    if (this.gravityWells.length === 0) return;
+    for (const w of this.gravityWells) {
+      if (this.ship) w.pull(this.ship, dt, false);
+      for (const b of this.bullets) w.pull(b, dt, false);
+      for (const a of this.asteroids) w.pull(a, dt, true);
+    }
   }
 
   // ── Dead-state entity ticking — returns true when the respawn timer expires ───
